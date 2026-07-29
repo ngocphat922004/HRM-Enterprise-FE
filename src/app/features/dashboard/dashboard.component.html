@@ -1,0 +1,605 @@
+<div class="dashboard-shell">
+  <div
+    class="sidebar-backdrop"
+    [class.sidebar-backdrop--visible]="sidebarOpen"
+    (click)="closeSidebar()"
+    aria-hidden="true"
+  ></div>
+
+  <aside
+    class="sidebar"
+    [class.sidebar--open]="sidebarOpen"
+  >
+    <div class="sidebar__brand">
+      <div class="brand-mark" aria-hidden="true">
+        HR
+      </div>
+
+      <div>
+        <strong>HRM Admin</strong>
+        <span>Quản lý nhân sự</span>
+      </div>
+
+      <button
+        class="sidebar__close"
+        type="button"
+        (click)="closeSidebar()"
+        aria-label="Đóng menu"
+      >
+        ×
+      </button>
+    </div>
+
+    <nav
+      class="sidebar__nav"
+      aria-label="Điều hướng chính"
+    >
+      @for (
+        item of sidebarItems;
+        track item.label
+      ) {
+        <a
+          [routerLink]="item.route"
+          class="nav-item"
+          [class.nav-item--active]="
+            activeMenu === item.label
+          "
+          (click)="setActiveMenu(item.label)"
+        >
+          <span
+            class="nav-item__icon"
+            aria-hidden="true"
+          >
+            @switch (item.icon) {
+              @case ('dashboard') {
+                <span>▦</span>
+              }
+
+              @case ('employees') {
+                <span>♙</span>
+              }
+
+              @case ('department') {
+                <span>▤</span>
+              }
+
+              @case ('contract') {
+                <span>▱</span>
+              }
+
+              @case ('attendance') {
+                <span>◷</span>
+              }
+
+              @case ('leave') {
+                <span>▣</span>
+              }
+
+              @case ('payroll') {
+                <span>▥</span>
+              }
+
+              @case ('report') {
+                <span>▧</span>
+              }
+
+              @default {
+                <span>⚙</span>
+              }
+            }
+          </span>
+
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__profile">
+      <span class="avatar avatar--profile">
+        TN
+      </span>
+
+      <div>
+        <strong>Trần Hoàng Nam</strong>
+        <span>Quản trị viên</span>
+      </div>
+
+      <button
+        type="button"
+        aria-label="Tùy chọn tài khoản"
+      >
+        ⋮
+      </button>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <header class="top-header">
+      <button
+        class="mobile-menu-button"
+        type="button"
+        (click)="toggleSidebar()"
+        aria-label="Mở menu"
+      >
+        ☰
+      </button>
+
+      <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+
+        <input
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Tìm kiếm nhân viên, hồ sơ..."
+          aria-label="Tìm kiếm nhân viên"
+        />
+      </label>
+
+      <div class="top-header__actions">
+        <button
+          type="button"
+          class="icon-button notification-button"
+          aria-label="Thông báo"
+        >
+          ♢
+          <span class="notification-dot"></span>
+        </button>
+
+        <button
+          type="button"
+          class="icon-button"
+          aria-label="Chế độ giao diện"
+        >
+          ◔
+        </button>
+
+        <strong>HRM SYSTEM</strong>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <section
+        class="alert-banner"
+        aria-label="Cảnh báo hợp đồng"
+      >
+        <span
+          class="alert-banner__icon"
+          aria-hidden="true"
+        >
+          ▲
+        </span>
+
+        <div>
+          <strong>
+            Cảnh báo: 3 hợp đồng sắp hết hạn
+          </strong>
+
+          <p>
+            Có 3 nhân sự có hợp đồng sẽ hết hạn
+            trong vòng 30 ngày tới. Vui lòng kiểm
+            tra và thực hiện gia hạn hoặc kết thúc
+            hợp đồng.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="
+            showToast(
+              'Đang mở danh sách hợp đồng sắp hết hạn.'
+            )
+          "
+        >
+          Xem chi tiết
+        </button>
+      </section>
+
+      <section
+        class="stats-grid"
+        aria-label="Thống kê tổng quan"
+      >
+        @for (stat of stats; track stat.title) {
+          <article
+            class="stat-card"
+            [class]="
+              'stat-card stat-card--' +
+              stat.theme
+            "
+          >
+            <div>
+              <span class="stat-card__title">
+                {{ stat.title }}
+              </span>
+
+              <strong>{{ stat.value }}</strong>
+
+              <small>
+                {{ stat.description }}
+              </small>
+            </div>
+
+            <span
+              class="stat-card__icon"
+              aria-hidden="true"
+            >
+              @switch (stat.icon) {
+                @case ('users') {
+                  <span>♟</span>
+                }
+
+                @case ('briefcase') {
+                  <span>▣</span>
+                }
+
+                @case ('calendar') {
+                  <span>□</span>
+                }
+
+                @case ('clock') {
+                  <span>◷</span>
+                }
+
+                @default {
+                  <span>▤</span>
+                }
+              }
+            </span>
+          </article>
+        }
+      </section>
+
+      <section class="charts-grid">
+        <article
+          class="dashboard-card chart-card"
+        >
+          <div class="card-heading">
+            <h2>Biến động nhân sự</h2>
+
+            <button type="button">
+              6 tháng qua⌄
+            </button>
+          </div>
+
+          <div
+            class="bar-chart"
+            role="img"
+            aria-label="Biểu đồ biến động nhân sự trong 6 tháng"
+          >
+            @for (
+              item of employeeTrend;
+              track item.month
+            ) {
+              <div class="bar-chart__item">
+                <span class="bar-chart__value">
+                  {{ item.value }}
+                </span>
+
+                <div class="bar-chart__track">
+                  <span
+                    class="bar-chart__bar"
+                    [style.height.%]="
+                      item.value * 2.8
+                    "
+                  ></span>
+                </div>
+
+                <small>{{ item.month }}</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article
+          class="dashboard-card department-card"
+        >
+          <div class="card-heading">
+            <h2>Tỷ lệ theo phòng ban</h2>
+          </div>
+
+          <div class="department-chart">
+            <div
+              class="donut-chart"
+              role="img"
+              aria-label="Kỹ thuật 40%, Kinh doanh 30%, Nhân sự 20%, Khác 10%"
+            >
+              <div class="donut-chart__center">
+                <strong>100%</strong>
+                <span>Tổng cộng</span>
+              </div>
+            </div>
+
+            <ul class="department-list">
+              @for (
+                department of departments;
+                track department.name
+              ) {
+                <li>
+                  <span
+                    class="department-dot"
+                    [class]="
+                      'department-dot ' +
+                      department.className
+                    "
+                  ></span>
+
+                  <span>
+                    {{ department.name }}
+                  </span>
+
+                  <strong>
+                    {{ department.value }}%
+                  </strong>
+                </li>
+              }
+            </ul>
+          </div>
+        </article>
+      </section>
+
+      <section class="lists-grid">
+        <article
+          class="dashboard-card list-card"
+        >
+          <div class="card-heading">
+            <h2>Nhân viên mới nhất</h2>
+
+            <button
+              type="button"
+              aria-label="Lọc nhân viên"
+            >
+              ⌁
+            </button>
+          </div>
+
+          <div class="employee-list">
+            @for (
+              employee of filteredEmployees;
+              track employee.employeeCode
+            ) {
+              <div class="employee-row">
+                <span class="avatar">
+                  {{ employee.initials }}
+                </span>
+
+                <div>
+                  <strong>
+                    {{ employee.name }}
+                  </strong>
+
+                  <span>
+                    {{ employee.position }}
+                    ·
+                    {{ employee.employeeCode }}
+                  </span>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-state">
+                Không tìm thấy nhân viên phù hợp.
+              </p>
+            }
+          </div>
+
+          <a
+            routerLink="/employees"
+            class="card-footer-link"
+          >
+            Xem tất cả nhân viên
+          </a>
+        </article>
+
+        <article
+          class="dashboard-card list-card"
+        >
+          <div class="card-heading">
+            <h2>Đơn nghỉ phép chờ duyệt</h2>
+
+            <button
+              type="button"
+              aria-label="Xem tùy chọn"
+            >
+              ⋮
+            </button>
+          </div>
+
+          <div class="leave-list">
+            @for (
+              request of leaveRequests;
+              track request.id
+            ) {
+              <div class="leave-row">
+                <div class="leave-row__person">
+                  <span
+                    class="avatar avatar--soft"
+                  >
+                    {{ request.initials }}
+                  </span>
+
+                  <div>
+                    <strong>
+                      {{ request.employeeName }}
+                    </strong>
+
+                    <span>
+                      {{ request.leaveType }}
+                      ·
+                      {{ request.numberOfDays }}
+                      ngày
+                    </span>
+                  </div>
+                </div>
+
+                @if (
+                  request.status === 'pending'
+                ) {
+                  <div class="leave-actions">
+                    <button
+                      type="button"
+                      class="button-primary"
+                      (click)="
+                        updateLeaveStatus(
+                          request.id,
+                          'approved'
+                        )
+                      "
+                    >
+                      Duyệt
+                    </button>
+
+                    <button
+                      type="button"
+                      class="button-outline"
+                      (click)="
+                        updateLeaveStatus(
+                          request.id,
+                          'rejected'
+                        )
+                      "
+                    >
+                      Từ chối
+                    </button>
+                  </div>
+                } @else {
+                  <span
+                    class="status-badge"
+                    [class.status-badge--rejected]="
+                      request.status ===
+                      'rejected'
+                    "
+                  >
+                    {{
+                      request.status ===
+                      'approved'
+                        ? 'Đã duyệt'
+                        : 'Đã từ chối'
+                    }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+
+          <a
+            routerLink="/leave"
+            class="card-footer-link"
+          >
+            Xem tất cả đơn
+          </a>
+        </article>
+
+        <article
+          class="dashboard-card list-card"
+        >
+          <div class="card-heading">
+            <h2>Hợp đồng sắp hết hạn</h2>
+
+            <span
+              class="heading-icon"
+              aria-hidden="true"
+            >
+              ▱
+            </span>
+          </div>
+
+          <div class="contract-list">
+            @for (
+              contract of expiringContracts;
+              track contract.employeeName
+            ) {
+              <button
+                type="button"
+                class="contract-row"
+                (click)="
+                  openContract(
+                    contract.employeeName
+                  )
+                "
+              >
+                <div>
+                  <strong>
+                    {{ contract.employeeName }}
+                  </strong>
+
+                  <span>
+                    Ngày hết hạn:
+                    {{ contract.expiryDate }}
+                  </span>
+                </div>
+
+                <span
+                  class="expiry-badge"
+                  [class.expiry-badge--urgent]="
+                    contract.remainingDays <= 5
+                  "
+                >
+                  Còn
+                  {{ contract.remainingDays }}
+                  ngày
+                </span>
+
+                <span aria-hidden="true">›</span>
+              </button>
+            }
+          </div>
+
+          <a
+            routerLink="/contracts"
+            class="card-footer-link"
+          >
+            Tất cả hợp đồng
+          </a>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <div
+    class="quick-actions"
+    [class.quick-actions--open]="
+      quickMenuOpen
+    "
+  >
+    <div class="quick-actions__menu">
+      <button
+        type="button"
+        (click)="quickAction('Thêm nhân viên')"
+      >
+        Thêm nhân viên
+      </button>
+
+      <button
+        type="button"
+        (click)="quickAction('Tạo hợp đồng')"
+      >
+        Tạo hợp đồng
+      </button>
+
+      <button
+        type="button"
+        (click)="
+          quickAction('Tạo đơn nghỉ phép')
+        "
+      >
+        Tạo đơn nghỉ phép
+      </button>
+    </div>
+
+    <button
+      class="floating-button"
+      type="button"
+      (click)="toggleQuickMenu()"
+      aria-label="Thêm mới"
+    >
+      +
+    </button>
+  </div>
+
+  @if (toastMessage) {
+    <div
+      class="toast-message"
+      role="status"
+    >
+      {{ toastMessage }}
+    </div>
+  }
+</div>

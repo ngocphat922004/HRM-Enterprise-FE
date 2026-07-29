@@ -1,0 +1,532 @@
+<div class="employee-page">
+    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="
+      sidebarOpen
+    " (click)="closeSidebar()" aria-hidden="true"></div>
+
+    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
+        <div class="sidebar__brand">
+            <div class="brand-icon" aria-hidden="true">
+                HR
+            </div>
+
+            <div>
+                <strong>HRM Admin</strong>
+                <span>Quản lý nhân sự</span>
+            </div>
+
+            <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+                ×
+            </button>
+        </div>
+
+        <nav class="sidebar__navigation" aria-label="Menu chính">
+            @for (
+            item of sidebarItems;
+            track item.label
+            ) {
+            <a [routerLink]="item.route" class="navigation-item" [class.navigation-item--active]="
+            activeMenu === item.label
+          " (click)="
+            setActiveMenu(item.label)
+          ">
+                <span class="navigation-item__icon" aria-hidden="true">
+                    {{ item.icon }}
+                </span>
+
+                <span>{{ item.label }}</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar__account">
+            <span class="account-avatar">
+                AU
+            </span>
+
+            <div>
+                <strong>Admin User</strong>
+                <span>admin&#64;hrmsystem.com</span>
+            </div>
+
+            <button type="button" aria-label="Tùy chọn tài khoản">
+                ⋮
+            </button>
+        </div>
+    </aside>
+
+    <section class="workspace">
+        <header class="top-header">
+            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
+                ☰
+            </button>
+
+            <label class="header-search">
+                <span aria-hidden="true">⌕</span>
+
+                <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+                    placeholder="Tìm kiếm nhanh nhân viên, mã số..." aria-label="Tìm kiếm nhanh" />
+            </label>
+
+            <div class="header-actions">
+                <button class="header-icon-button" type="button" aria-label="Thông báo">
+                    ♧
+                    <span class="notification-dot"></span>
+                </button>
+
+                <button class="header-icon-button" type="button" aria-label="Chế độ giao diện">
+                    ◔
+                </button>
+
+                <button class="user-button" type="button">
+                    <span class="user-avatar">
+                        LA
+                    </span>
+
+                    <strong>Lan Anh</strong>
+                    <span aria-hidden="true">⌄</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="page-heading">
+                <div>
+                    <h1>Danh sách nhân viên</h1>
+
+                    <p>
+                        Quản lý thông tin hồ sơ nhân viên
+                        trong toàn hệ thống
+                    </p>
+                </div>
+
+                <div class="page-actions">
+                    <button class="export-button" type="button" (click)="exportExcel()">
+                        <span aria-hidden="true">⇩</span>
+                        Xuất Excel
+                    </button>
+
+                    <button class="add-button" type="button" (click)="
+              openAddEmployeeModal()
+            ">
+                        <span aria-hidden="true">＋</span>
+                        Thêm nhân viên mới
+                    </button>
+                </div>
+            </section>
+
+            <section class="filter-card" aria-label="Bộ lọc nhân viên">
+                <label class="filter-field">
+                    <span>Tìm kiếm</span>
+
+                    <div class="filter-input">
+                        <span aria-hidden="true">⌕</span>
+
+                        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="
+                applyFilters()
+              " placeholder="Tên hoặc Mã NV..." />
+                    </div>
+                </label>
+
+                <label class="filter-field">
+                    <span>Phòng ban</span>
+
+                    <select [(ngModel)]="
+              selectedDepartment
+            " (ngModelChange)="
+              applyFilters()
+            ">
+                        <option value="">
+                            Tất cả phòng ban
+                        </option>
+
+                        @for (
+                        department of departments;
+                        track department
+                        ) {
+                        <option [value]="department">
+                            {{ department }}
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label class="filter-field">
+                    <span>Chức vụ</span>
+
+                    <select [(ngModel)]="
+              selectedPosition
+            " (ngModelChange)="
+              applyFilters()
+            ">
+                        <option value="">
+                            Tất cả chức vụ
+                        </option>
+
+                        @for (
+                        position of positions;
+                        track position
+                        ) {
+                        <option [value]="position">
+                            {{ position }}
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label class="filter-field">
+                    <span>Trạng thái</span>
+
+                    <select [(ngModel)]="
+              selectedStatus
+            " (ngModelChange)="
+              applyFilters()
+            ">
+                        <option value="">
+                            Tất cả trạng thái
+                        </option>
+                        <option value="working">
+                            Đang làm việc
+                        </option>
+                        <option value="probation">
+                            Thử việc
+                        </option>
+                        <option value="on-leave">
+                            Nghỉ phép
+                        </option>
+                        <option value="resigned">
+                            Đã nghỉ
+                        </option>
+                    </select>
+                </label>
+            </section>
+
+            <section class="employee-table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="checkbox-column">
+                                    <input type="checkbox" [checked]="
+                      allCurrentPageSelected
+                    " (change)="
+                      toggleSelectAll()
+                    " aria-label="Chọn tất cả" />
+                                </th>
+
+                                <th>Nhân viên</th>
+                                <th>Mã NV</th>
+                                <th>Phòng ban</th>
+                                <th>Chức vụ</th>
+                                <th>Ngày vào làm</th>
+                                <th>Trạng thái</th>
+                                <th class="action-column"></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @for (
+                            employee of paginatedEmployees;
+                            track employee.id
+                            ) {
+                            <tr>
+                                <td class="checkbox-column">
+                                    <input type="checkbox" [checked]="
+                        selectedEmployeeIds.has(
+                          employee.id
+                        )
+                      " (change)="
+                        toggleEmployeeSelection(
+                          employee.id
+                        )
+                      " [attr.aria-label]="
+                        'Chọn ' +
+                        employee.fullName
+                      " />
+                                </td>
+
+                                <td>
+                                    <div class="employee-info">
+                                        <span class="employee-avatar">
+                                            {{
+                                            employee.initials
+                                            }}
+                                        </span>
+
+                                        <div>
+                                            <strong>
+                                                {{
+                                                employee.fullName
+                                                }}
+                                            </strong>
+
+                                            <span>
+                                                {{ employee.email }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {{
+                                    employee.employeeCode
+                                    }}
+                                </td>
+
+                                <td>
+                                    {{
+                                    employee.department
+                                    }}
+                                </td>
+
+                                <td>
+                                    {{ employee.position }}
+                                </td>
+
+                                <td>
+                                    {{ employee.joinDate }}
+                                </td>
+
+                                <td>
+                                    <span class="status-badge" [class]="
+                        'status-badge ' +
+                        getStatusClass(
+                          employee.status
+                        )
+                      ">
+                                        {{
+                                        getStatusLabel(
+                                        employee.status
+                                        )
+                                        }}
+                                    </span>
+                                </td>
+
+                                <td class="action-column">
+                                    <div class="row-menu-wrapper">
+                                        <button class="row-menu-button" type="button" (click)="
+                          toggleRowMenu(
+                            employee.id
+                          )
+                        " aria-label="Tùy chọn nhân viên">
+                                            ⋮
+                                        </button>
+
+                                        @if (
+                                        openedMenuId ===
+                                        employee.id
+                                        ) {
+                                        <div class="row-menu">
+                                            <button type="button" (click)="
+                              viewEmployee(
+                                employee
+                              )
+                            ">
+                                                Xem chi tiết
+                                            </button>
+
+                                            <button type="button" (click)="
+                              editEmployee(
+                                employee
+                              )
+                            ">
+                                                Chỉnh sửa
+                                            </button>
+
+                                            <button class="delete-action" type="button" (click)="
+                              deleteEmployee(
+                                employee
+                              )
+                            ">
+                                                Xóa
+                                            </button>
+                                        </div>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            } @empty {
+                            <tr>
+                                <td colspan="8" class="empty-table">
+                                    Không tìm thấy nhân viên phù hợp.
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <footer class="table-footer">
+                    <p>
+                        Hiển thị
+                        {{ firstDisplayedRow }} -
+                        {{ lastDisplayedRow }}
+                        trên tổng số
+                        {{ filteredEmployees.length }}
+                        nhân viên
+                    </p>
+
+                    <div class="pagination">
+                        <button type="button" [disabled]="currentPage === 1" (click)="
+                goToPage(
+                  currentPage - 1
+                )
+              " aria-label="Trang trước">
+                            ‹
+                        </button>
+
+                        @for (
+                        page of visiblePages;
+                        track page
+                        ) {
+                        <button type="button" [class.pagination__active]="
+                  currentPage === page
+                " (click)="goToPage(page)">
+                            {{ page }}
+                        </button>
+                        }
+
+                        <button type="button" [disabled]="
+                currentPage === totalPages
+              " (click)="
+                goToPage(
+                  currentPage + 1
+                )
+              " aria-label="Trang sau">
+                            ›
+                        </button>
+                    </div>
+
+                    <label class="page-size">
+                        <span>Số dòng mỗi trang</span>
+
+                        <select [(ngModel)]="pageSize" (ngModelChange)="
+                changePageSize()
+              ">
+                            <option [ngValue]="5">
+                                5
+                            </option>
+                            <option [ngValue]="10">
+                                10
+                            </option>
+                            <option [ngValue]="20">
+                                20
+                            </option>
+                        </select>
+                    </label>
+                </footer>
+            </section>
+        </main>
+    </section>
+
+    @if (showEmployeeModal) {
+    <div class="modal-backdrop" (click)="closeAddEmployeeModal()">
+        <section class="employee-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
+            aria-labelledby="employee-modal-title">
+            <header class="modal-header">
+                <div>
+                    <h2 id="employee-modal-title">
+                        Thêm nhân viên mới
+                    </h2>
+
+                    <p>
+                        Nhập thông tin nhân viên
+                        vào biểu mẫu bên dưới.
+                    </p>
+                </div>
+
+                <button type="button" (click)="
+              closeAddEmployeeModal()
+            " aria-label="Đóng">
+                    ×
+                </button>
+            </header>
+
+            <div class="modal-body">
+                <label>
+                    <span>Họ và tên</span>
+
+                    <input type="text" [(ngModel)]="
+                newEmployee.fullName
+              " placeholder="Nhập họ và tên" />
+                </label>
+
+                <label>
+                    <span>Email</span>
+
+                    <input type="email" [(ngModel)]="
+                newEmployee.email
+              " placeholder="employee@company.com" />
+                </label>
+
+                <label>
+                    <span>Phòng ban</span>
+
+                    <select [(ngModel)]="
+                newEmployee.department
+              ">
+                        <option value="">
+                            Chọn phòng ban
+                        </option>
+
+                        @for (
+                        department of departments;
+                        track department
+                        ) {
+                        <option [value]="department">
+                            {{ department }}
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label>
+                    <span>Chức vụ</span>
+
+                    <select [(ngModel)]="
+                newEmployee.position
+              ">
+                        <option value="">
+                            Chọn chức vụ
+                        </option>
+
+                        @for (
+                        position of positions;
+                        track position
+                        ) {
+                        <option [value]="position">
+                            {{ position }}
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label>
+                    <span>Ngày vào làm</span>
+
+                    <input type="date" [(ngModel)]="
+                newEmployee.joinDate
+              " />
+                </label>
+            </div>
+
+            <footer class="modal-footer">
+                <button class="cancel-button" type="button" (click)="
+              closeAddEmployeeModal()
+            ">
+                    Hủy
+                </button>
+
+                <button class="save-button" type="button" (click)="addEmployee()">
+                    Lưu nhân viên
+                </button>
+            </footer>
+        </section>
+    </div>
+    }
+
+    @if (toastMessage) {
+    <div class="toast-message" role="status">
+        {{ toastMessage }}
+    </div>
+    }
+</div>
