@@ -5,7 +5,7 @@
 
     <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
         <div class="sidebar__brand">
-            <div class="brand-icon" aria-hidden="true">
+            <div class="brand-mark" aria-hidden="true">
                 HR
             </div>
 
@@ -14,23 +14,116 @@
                 <span>Quản lý nhân sự</span>
             </div>
 
-            <button class="sidebar-close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
                 ×
             </button>
         </div>
 
-        <nav class="sidebar__navigation" aria-label="Menu chính">
+        <nav class="sidebar__nav" aria-label="Điều hướng chính">
             @for (
             item of sidebarItems;
             track item.label
             ) {
-            <a [routerLink]="item.route" class="navigation-item" [class.navigation-item--active]="
+            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="
             activeMenu === item.label
-          " (click)="
-            setActiveMenu(item.label)
-          ">
-                <span class="navigation-item__icon" aria-hidden="true">
-                    {{ item.icon }}
+          " (click)="setActiveMenu(item.label)">
+                <span class="nav-item__icon" aria-hidden="true">
+                    @switch (item.icon) {
+                    @case ('dashboard') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <rect width="7" height="9" x="3" y="3" rx="1" />
+                        <rect width="7" height="5" x="14" y="3" rx="1" />
+                        <rect width="7" height="9" x="14" y="12" rx="1" />
+                        <rect width="7" height="5" x="3" y="16" rx="1" />
+                    </svg>
+                    }
+
+                    @case ('employees') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    }
+
+                    @case ('department') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18" />
+                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2" />
+                        <path d="M10 6h4" />
+                        <path d="M10 10h4" />
+                        <path d="M10 14h4" />
+                        <path d="M10 18h4" />
+                    </svg>
+                    }
+
+                    @case ('contract') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" />
+                        <path d="M8 13h8" />
+                        <path d="M8 17h8" />
+                    </svg>
+                    }
+
+                    @case ('attendance') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                    </svg>
+                    }
+
+                    @case ('leave') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M8 2v4" />
+                        <path d="M16 2v4" />
+                        <rect width="18" height="18" x="3" y="4" rx="2" />
+                        <path d="M3 10h18" />
+                        <path d="m9 16 2 2 4-4" />
+                    </svg>
+                    }
+
+                    @case ('payroll') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7" />
+                        <path d="M16 14h2" />
+                    </svg>
+                    }
+
+                    @case ('report') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path d="M3 3v18h18" />
+                        <path d="m7 16 4-4 3 3 5-6" />
+                    </svg>
+                    }
+
+                    @default {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    }
+                    }
                 </span>
 
                 <span>{{ item.label }}</span>
@@ -38,18 +131,15 @@
             }
         </nav>
 
-        <div class="sidebar__account">
-            <span class="account-avatar">
-                AU
-            </span>
-
-            <div>
-                <strong>Admin User</strong>
-                <span>admin&#64;hrmsystem.com</span>
-            </div>
-
-            <button type="button" aria-label="Tùy chọn tài khoản">
-                ⋮
+        <div class="sidebar__footer">
+            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                </svg>
+                <span>Đăng xuất</span>
             </button>
         </div>
     </aside>
@@ -57,33 +147,69 @@
     <section class="workspace">
         <header class="top-header">
             <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                ☰
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
             </button>
 
-            <label class="header-search">
-                <span aria-hidden="true">⌕</span>
+            <label class="search-box">
+                <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg></span>
 
                 <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
-                    placeholder="Tìm kiếm nhanh nhân viên, mã số..." aria-label="Tìm kiếm nhanh" />
+                    placeholder="Tìm kiếm nhân viên, hồ sơ..." aria-label="Tìm kiếm nhân viên" />
             </label>
 
-            <div class="header-actions">
-                <button class="header-icon-button" type="button" aria-label="Thông báo">
-                    ♧
+            <div class="top-header__actions">
+                <a class="header-add-button" routerLink="/employees/add">
+                    <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5v14"></path>
+                        </svg></span>
+                    Thêm mới
+                </a>
+
+                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                        <path d="M4 17h16"></path>
+                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
+                    </svg>
                     <span class="notification-dot"></span>
                 </button>
 
-                <button class="header-icon-button" type="button" aria-label="Chế độ giao diện">
-                    ◔
+                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+                    </svg>
                 </button>
 
-                <button class="user-button" type="button">
-                    <span class="user-avatar">
-                        LA
+                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
+                    <div class="header-profile__info">
+                        <strong>Trần Hoàng Nam</strong>
+                        <span>Quản trị viên</span>
+                    </div>
+
+                    <span class="header-profile__avatar">
+                        TN
                     </span>
 
-                    <strong>Lan Anh</strong>
-                    <span aria-hidden="true">⌄</span>
+                    <span class="header-profile__arrow" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"></path>
+                        </svg>
+                    </span>
                 </button>
             </div>
         </header>
@@ -101,15 +227,13 @@
 
                 <div class="page-actions">
                     <button class="export-button" type="button" (click)="exportExcel()">
-                        <span aria-hidden="true">⇩</span>
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v12"></path>
+                            <path d="m7 10 5 5 5-5"></path>
+                            <path d="M5 21h14"></path>
+                        </svg>
                         Xuất Excel
-                    </button>
-
-                    <button class="add-button" type="button" (click)="
-              openAddEmployeeModal()
-            ">
-                        <span aria-hidden="true">＋</span>
-                        Thêm nhân viên mới
                     </button>
                 </div>
             </section>
@@ -119,7 +243,13 @@
                     <span>Tìm kiếm</span>
 
                     <div class="filter-input">
-                        <span aria-hidden="true">⌕</span>
+                        <span aria-hidden="true">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </svg>
+                        </span>
 
                         <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="
                 applyFilters()
@@ -417,112 +547,6 @@
             </section>
         </main>
     </section>
-
-    @if (showEmployeeModal) {
-    <div class="modal-backdrop" (click)="closeAddEmployeeModal()">
-        <section class="employee-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true"
-            aria-labelledby="employee-modal-title">
-            <header class="modal-header">
-                <div>
-                    <h2 id="employee-modal-title">
-                        Thêm nhân viên mới
-                    </h2>
-
-                    <p>
-                        Nhập thông tin nhân viên
-                        vào biểu mẫu bên dưới.
-                    </p>
-                </div>
-
-                <button type="button" (click)="
-              closeAddEmployeeModal()
-            " aria-label="Đóng">
-                    ×
-                </button>
-            </header>
-
-            <div class="modal-body">
-                <label>
-                    <span>Họ và tên</span>
-
-                    <input type="text" [(ngModel)]="
-                newEmployee.fullName
-              " placeholder="Nhập họ và tên" />
-                </label>
-
-                <label>
-                    <span>Email</span>
-
-                    <input type="email" [(ngModel)]="
-                newEmployee.email
-              " placeholder="employee@company.com" />
-                </label>
-
-                <label>
-                    <span>Phòng ban</span>
-
-                    <select [(ngModel)]="
-                newEmployee.department
-              ">
-                        <option value="">
-                            Chọn phòng ban
-                        </option>
-
-                        @for (
-                        department of departments;
-                        track department
-                        ) {
-                        <option [value]="department">
-                            {{ department }}
-                        </option>
-                        }
-                    </select>
-                </label>
-
-                <label>
-                    <span>Chức vụ</span>
-
-                    <select [(ngModel)]="
-                newEmployee.position
-              ">
-                        <option value="">
-                            Chọn chức vụ
-                        </option>
-
-                        @for (
-                        position of positions;
-                        track position
-                        ) {
-                        <option [value]="position">
-                            {{ position }}
-                        </option>
-                        }
-                    </select>
-                </label>
-
-                <label>
-                    <span>Ngày vào làm</span>
-
-                    <input type="date" [(ngModel)]="
-                newEmployee.joinDate
-              " />
-                </label>
-            </div>
-
-            <footer class="modal-footer">
-                <button class="cancel-button" type="button" (click)="
-              closeAddEmployeeModal()
-            ">
-                    Hủy
-                </button>
-
-                <button class="save-button" type="button" (click)="addEmployee()">
-                    Lưu nhân viên
-                </button>
-            </footer>
-        </section>
-    </div>
-    }
 
     @if (toastMessage) {
     <div class="toast-message" role="status">

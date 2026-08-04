@@ -4,12 +4,11 @@ import {
     Component,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
     Employee,
     EmployeeStatus,
-    NewEmployeeForm,
     SidebarItem,
 } from './employee.model';
 
@@ -25,6 +24,7 @@ import {
     styleUrl: './employee-list.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
+
 export class EmployeeListComponent {
     sidebarOpen = false;
     activeMenu = 'Nhân viên';
@@ -40,66 +40,52 @@ export class EmployeeListComponent {
     selectedEmployeeIds = new Set<number>();
     openedMenuId: number | null = null;
 
-    showEmployeeModal = false;
     toastMessage = '';
-
-    newEmployee: NewEmployeeForm = {
-        fullName: '',
-        email: '',
-        department: '',
-        position: '',
-        joinDate: '',
-    };
 
     readonly sidebarItems: SidebarItem[] = [
         {
             label: 'Bảng điều khiển',
-            icon: '▦',
+            icon: 'dashboard',
             route: '/dashboard',
         },
         {
             label: 'Nhân viên',
-            icon: '♙',
+            icon: 'employees',
             route: '/employees',
         },
         {
             label: 'Phòng ban',
-            icon: '▤',
+            icon: 'department',
             route: '/departments',
         },
         {
             label: 'Hợp đồng',
-            icon: '▱',
+            icon: 'contract',
             route: '/contracts',
         },
         {
             label: 'Chấm công',
-            icon: '◷',
+            icon: 'attendance',
             route: '/attendance',
         },
         {
             label: 'Nghỉ phép',
-            icon: '▣',
+            icon: 'leave',
             route: '/leave',
         },
         {
             label: 'Bảng lương',
-            icon: '▥',
+            icon: 'payroll',
             route: '/payroll',
         },
         {
-            label: 'Hiệu suất',
-            icon: '⌁',
-            route: '/performance',
-        },
-        {
             label: 'Báo cáo',
-            icon: '▧',
+            icon: 'report',
             route: '/reports',
         },
         {
             label: 'Cài đặt',
-            icon: '⚙',
+            icon: 'settings',
             route: '/settings',
         },
     ];
@@ -378,6 +364,9 @@ export class EmployeeListComponent {
         );
     }
 
+    constructor(
+        private readonly router: Router,
+    ) { }
     setActiveMenu(label: string): void {
         this.activeMenu = label;
         this.sidebarOpen = false;
@@ -479,9 +468,12 @@ export class EmployeeListComponent {
         employee: Employee,
     ): void {
         this.openedMenuId = null;
-        this.showToast(
-            `Chỉnh sửa ${employee.fullName} sẽ được kết nối sau.`,
-        );
+
+        void this.router.navigate([
+            '/employees',
+            employee.id,
+            'edit',
+        ]);
     }
 
     deleteEmployee(
@@ -503,96 +495,15 @@ export class EmployeeListComponent {
         );
     }
 
+    logout(): void {
+        localStorage.clear();
+        sessionStorage.clear();
+        void this.router.navigate(['/login']);
+    }
+
     exportExcel(): void {
         this.showToast(
             'Chức năng xuất Excel sẽ được kết nối sau.',
-        );
-    }
-
-    openAddEmployeeModal(): void {
-        this.newEmployee = {
-            fullName: '',
-            email: '',
-            department: '',
-            position: '',
-            joinDate: '',
-        };
-
-        this.showEmployeeModal = true;
-    }
-
-    closeAddEmployeeModal(): void {
-        this.showEmployeeModal = false;
-    }
-
-    addEmployee(): void {
-        if (
-            !this.newEmployee.fullName.trim() ||
-            !this.newEmployee.email.trim() ||
-            !this.newEmployee.department ||
-            !this.newEmployee.position ||
-            !this.newEmployee.joinDate
-        ) {
-            this.showToast(
-                'Vui lòng nhập đầy đủ thông tin.',
-            );
-            return;
-        }
-
-        const nextId =
-            Math.max(
-                ...this.employees.map(
-                    (employee) => employee.id,
-                ),
-                0,
-            ) + 1;
-
-        const initials = this.newEmployee.fullName
-            .trim()
-            .split(/\s+/)
-            .slice(-2)
-            .map((word) =>
-                word.charAt(0).toUpperCase(),
-            )
-            .join('');
-
-        const employeeCode =
-            `NV${String(nextId).padStart(
-                3,
-                '0',
-            )}`;
-
-        const formattedJoinDate =
-            this.formatDate(
-                this.newEmployee.joinDate,
-            );
-
-        const employee: Employee = {
-            id: nextId,
-            fullName:
-                this.newEmployee.fullName.trim(),
-            email:
-                this.newEmployee.email.trim(),
-            employeeCode,
-            department:
-                this.newEmployee.department,
-            position:
-                this.newEmployee.position,
-            joinDate: formattedJoinDate,
-            status: 'probation',
-            initials,
-        };
-
-        this.employees = [
-            employee,
-            ...this.employees,
-        ];
-
-        this.showEmployeeModal = false;
-        this.currentPage = 1;
-
-        this.showToast(
-            'Đã thêm nhân viên mới.',
         );
     }
 
@@ -616,15 +527,6 @@ export class EmployeeListComponent {
         status: EmployeeStatus,
     ): string {
         return `status-badge--${status}`;
-    }
-
-    private formatDate(
-        dateValue: string,
-    ): string {
-        const [year, month, day] =
-            dateValue.split('-');
-
-        return `${day}/${month}/${year}`;
     }
 
     private showToast(

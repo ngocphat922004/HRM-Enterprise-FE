@@ -4,7 +4,7 @@ import {
   Component,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import {
   DashboardStat,
@@ -28,6 +28,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent {
+  constructor(private readonly router: Router) { }
+
   searchTerm = '';
   sidebarOpen = false;
   activeMenu = 'Bảng điều khiển';
@@ -303,6 +305,12 @@ export class DashboardComponent {
     this.showToast(
       `${label} sẽ được kết nối ở bước tiếp theo.`,
     );
+  }
+
+  logout(): void {
+    localStorage.clear();
+    sessionStorage.clear();
+    void this.router.navigate(['/login']);
   }
 
   showToast(message: string): void {

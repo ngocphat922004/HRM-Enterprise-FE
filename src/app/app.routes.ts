@@ -21,6 +21,26 @@ export const routes: Routes = [
             ),
     },
     {
+        path: 'employees/add',
+        loadComponent: () =>
+            import(
+                './features/employees/add-employee/add-employee.component'
+            ).then(
+                (module) =>
+                    module.AddEmployeeComponent,
+            ),
+    },
+    {
+        path: 'employees/:id/edit',
+        loadComponent: () =>
+            import(
+                './features/employees/edit-employee/edit-employee.component'
+            ).then(
+                (module) =>
+                    module.EditEmployeeComponent,
+            ),
+    },
+    {
         path: 'employees',
         loadComponent: () =>
             import(
