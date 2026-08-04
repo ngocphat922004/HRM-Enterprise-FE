@@ -6,12 +6,10 @@
       <div class="login-visual__content">
         <div class="version-badge">
           <span class="version-badge__icon" aria-hidden="true">HR</span>
-          HRM Enterprise v1.0
+          <span>HRM Enterprise v1.0</span>
         </div>
 
-        <h1>
-          Quản trị nhân sự thông minh cho doanh nghiệp hiện đại
-        </h1>
+        <h1>Quản trị nhân sự thông minh cho doanh nghiệp hiện đại</h1>
 
         <p>
           Tối ưu hóa quy trình quản lý, gắn kết đội ngũ và nâng tầm hiệu suất
@@ -24,9 +22,14 @@
       <div class="login-card">
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M4 19V9.5a1.5 1.5 0 0 1 1.5-1.5H8V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V8h2.5A1.5 1.5 0 0 1 20 9.5V19H4Zm3-2h2v-3H7v3Zm4 0h2v-3h-2v3Zm4 0h2v-3h-2v3ZM10 8h4V6h-4v2Z" />
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+              <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+              <path d="M10 6h4"></path>
+              <path d="M10 10h4"></path>
+              <path d="M10 14h4"></path>
+              <path d="M10 18h4"></path>
             </svg>
           </span>
 
@@ -39,84 +42,76 @@
         </header>
 
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
-          <div class="form-field">
+          <div class="login-form-field">
             <label for="email">Tài khoản hoặc Email</label>
 
-            <div class="input-control" [class.input-control--invalid]="
-                emailControl.touched && emailControl.invalid
-              ">
-              <svg class="input-control__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z" />
+            <div class="input-control" [class.input-control--invalid]="emailControl.touched && emailControl.invalid">
+              <svg class="input-control__icon lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
               </svg>
 
               <input id="email" type="email" formControlName="email" placeholder="user@company.com"
                 autocomplete="username" aria-describedby="email-error" />
             </div>
 
-            @if (
-            emailControl.touched &&
-            emailControl.hasError('required')
-            ) {
+            @if (emailControl.touched && emailControl.hasError('required')) {
             <p id="email-error" class="field-error">
               Vui lòng nhập tài khoản hoặc email
             </p>
-            } @else if (
-            emailControl.touched &&
-            emailControl.hasError('email')
-            ) {
+            } @else if (emailControl.touched && emailControl.hasError('email')) {
             <p id="email-error" class="field-error">
               Email không đúng định dạng
             </p>
             }
           </div>
 
-          <div class="form-field">
+          <div class="login-form-field">
             <div class="label-row">
               <label for="password">Mật khẩu</label>
 
-              <a routerLink="/forgot-password">
-                Quên mật khẩu?
-              </a>
+              <a routerLink="/forgot-password">Quên mật khẩu?</a>
             </div>
 
-            <div class="input-control" [class.input-control--invalid]="
-                passwordControl.touched && passwordControl.invalid
-              ">
-              <svg class="input-control__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M7 10V8a5 5 0 0 1 10 0v2h1a2 2 0 0 1 2 2v7H4v-7a2 2 0 0 1 2-2h1Zm2 0h6V8a3 3 0 0 0-6 0v2Z" />
+            <div class="input-control"
+              [class.input-control--invalid]="passwordControl.touched && passwordControl.invalid">
+              <svg class="input-control__icon lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="18" height="11" x="3" y="11" rx="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
 
               <input id="password" [type]="isPasswordVisible ? 'text' : 'password'" formControlName="password"
                 placeholder="••••••••" autocomplete="current-password" aria-describedby="password-error" />
 
-              <button class="password-toggle" type="button" (click)="togglePasswordVisibility()" [attr.aria-label]="
-                  isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'
-                ">
+              <button class="password-toggle" type="button" (click)="togglePasswordVisibility()"
+                [attr.aria-label]="isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
                 @if (isPasswordVisible) {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M3 3 21 21l-1.4 1.4-3.1-3.1A10.7 10.7 0 0 1 12 20C6.7 20 2.7 16.6 1 12c.7-1.9 1.8-3.5 3.2-4.8L1.6 4.4 3 3Zm4.3 7.1A5 5 0 0 0 13.9 16l-1.7-1.7a2.5 2.5 0 0 1-2.5-2.5l-2.4-1.7ZM12 4c5.3 0 9.3 3.4 11 8a12 12 0 0 1-3 4.7l-2.3-2.3A5 5 0 0 0 9.6 6.3 10 10 0 0 1 12 4Z" />
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m2 2 20 20"></path>
+                  <path d="M6.71 6.71C4.9 7.97 3.56 9.77 3 12c1.19 4.78 4.62 8 9 8 1.37 0 2.63-.32 3.75-.88"></path>
+                  <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c4.38 0 7.81 3.22 9 7-.31 1.24-.85 2.35-1.57 3.3"></path>
+                  <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"></path>
                 </svg>
                 } @else {
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path
-                    d="M12 4c5.3 0 9.3 3.4 11 8-1.7 4.6-5.7 8-11 8S2.7 16.6 1 12c1.7-4.6 5.7-8 11-8Zm0 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z" />
+                    d="M2.06 12.35a1 1 0 0 1 0-.7C3.72 7.6 7.66 5 12 5c4.34 0 8.28 2.6 9.94 6.65a1 1 0 0 1 0 .7C20.28 16.4 16.34 19 12 19c-4.34 0-8.28-2.6-9.94-6.65">
+                  </path>
+                  <circle cx="12" cy="12" r="3"></circle>
                 </svg>
                 }
               </button>
             </div>
 
-            @if (
-            passwordControl.touched &&
-            passwordControl.hasError('required')
-            ) {
+            @if (passwordControl.touched && passwordControl.hasError('required')) {
             <p id="password-error" class="field-error">
               Vui lòng nhập mật khẩu
             </p>
-            } @else if (
-            passwordControl.touched &&
-            passwordControl.hasError('minlength')
-            ) {
+            } @else if (passwordControl.touched && passwordControl.hasError('minlength')) {
             <p id="password-error" class="field-error">
               Mật khẩu phải có ít nhất 6 ký tự
             </p>
@@ -125,13 +120,19 @@
 
           <label class="remember-control">
             <input type="checkbox" formControlName="rememberMe" />
-
             <span>Ghi nhớ đăng nhập</span>
           </label>
 
           @if (submitError) {
           <div class="form-alert" role="alert">
-            {{ submitError }}
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 8v4"></path>
+              <path d="M12 16h.01"></path>
+            </svg>
+
+            <span>{{ submitError }}</span>
           </div>
           }
 
@@ -142,8 +143,10 @@
             } @else {
             <span>Đăng nhập</span>
 
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M13 5 20 12l-7 7-1.4-1.4 4.6-4.6H4v-2h12.2l-4.6-4.6L13 5Z" />
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"></path>
+              <path d="m12 5 7 7-7 7"></path>
             </svg>
             }
           </button>
@@ -151,7 +154,7 @@
           <p class="demo-account">
             Tài khoản demo:
             <strong>admin&#64;hrm.com</strong>
-            /
+            <span>/</span>
             <strong>123456</strong>
           </p>
         </form>

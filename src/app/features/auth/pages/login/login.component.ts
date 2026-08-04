@@ -84,8 +84,4 @@ export class LoginComponent {
         },
       });
   }
-
-  continueWith(provider: 'Google' | 'Microsoft'): void {
-    this.submitError = `Đăng nhập bằng ${provider} sẽ được kết nối sau.`;
-  }
 }
