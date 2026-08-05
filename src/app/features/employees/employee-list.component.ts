@@ -455,13 +455,11 @@ export class EmployeeListComponent {
                 : employeeId;
     }
 
-    viewEmployee(
-        employee: Employee,
-    ): void {
-        this.openedMenuId = null;
-        this.showToast(
-            `Đang mở hồ sơ ${employee.fullName}.`,
-        );
+    viewEmployee(employee: Employee): void {
+        void this.router.navigate([
+            '/employees',
+            employee.id,
+        ]);
     }
 
     editEmployee(

@@ -43,7 +43,7 @@
 
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
           <div class="login-form-field">
-            <label for="email">Tài khoản hoặc Email</label>
+            <label for="email">Email</label>
 
             <div class="input-control" [class.input-control--invalid]="emailControl.touched && emailControl.invalid">
               <svg class="input-control__icon lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -58,7 +58,7 @@
 
             @if (emailControl.touched && emailControl.hasError('required')) {
             <p id="email-error" class="field-error">
-              Vui lòng nhập tài khoản hoặc email
+              Vui lòng nhập email
             </p>
             } @else if (emailControl.touched && emailControl.hasError('email')) {
             <p id="email-error" class="field-error">
