@@ -11,7 +11,7 @@
   background :
     linear-gradient(color-mix(in srgb, var(--color-primary) 25%, transparent),
       color-mix(in srgb, var(--color-primary) 25%, transparent)),
-    url('../../../../../../public/images/background-login.png') center / cover no-repeat;
+    url('/images/background-login.png') center / cover no-repeat;
 }
 
 .login-shell {
@@ -36,7 +36,7 @@
     linear-gradient(180deg,
       color-mix(in srgb, var(--color-primary) 20%, transparent),
       color-mix(in srgb, var(--color-text-primary) 60%, transparent)),
-    url('../../../../../../public/images/img-login.png') center / cover no-repeat;
+    url('/images/img-login.png') center / cover no-repeat;
 }
 
 .login-visual__overlay {

@@ -21,6 +21,16 @@ export const routes: Routes = [
             ),
     },
     {
+        path: 'employees',
+        loadComponent: () =>
+            import(
+                './features/employees/employee-list.component'
+            ).then(
+                (module) =>
+                    module.EmployeeListComponent,
+            ),
+    },
+    {
         path: 'employees/add',
         loadComponent: () =>
             import(
@@ -41,15 +51,13 @@ export const routes: Routes = [
             ),
     },
     {
-        path: 'employees',
+        path: 'employees/:id',
         loadComponent: () =>
             import(
-                './features/employees/employee-list.component'
-            ).then(
-                (module) =>
-                    module.EmployeeListComponent,
-            ),
+                './features/employees/employee-profile/employee-profile.component'
+            ).then((m) => m.EmployeeProfileComponent),
     },
+
     {
         path: '',
         pathMatch: 'full',

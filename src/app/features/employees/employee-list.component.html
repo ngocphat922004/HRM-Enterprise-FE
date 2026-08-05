@@ -1,4 +1,4 @@
-<div class="employee-page">
+<div class="dashboard-shell employee-page">
     <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="
       sidebarOpen
     " (click)="closeSidebar()" aria-hidden="true"></div>
@@ -383,12 +383,10 @@
                                         </span>
 
                                         <div>
-                                            <strong>
-                                                {{
-                                                employee.fullName
-                                                }}
-                                            </strong>
-
+                                            <button type="button" class="employee-name-button"
+                                                (click)="viewEmployee(employee)">
+                                                {{ employee.fullName }}
+                                            </button>
                                             <span>
                                                 {{ employee.email }}
                                             </span>
@@ -446,14 +444,9 @@
                                         employee.id
                                         ) {
                                         <div class="row-menu">
-                                            <button type="button" (click)="
-                              viewEmployee(
-                                employee
-                              )
-                            ">
+                                            <button type="button" (click)="viewEmployee(employee)">
                                                 Xem chi tiết
                                             </button>
-
                                             <button type="button" (click)="
                               editEmployee(
                                 employee
