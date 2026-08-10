@@ -1,0 +1,327 @@
+:host {
+    display   : block;
+    min-height: 100vh;
+}
+
+.department-edit-page {
+    background: var(--color-background);
+}
+
+.department-edit-heading {
+    margin-bottom : 22px;
+    padding-bottom: 20px;
+    border-bottom : 1px solid var(--color-border);
+}
+
+.breadcrumb {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    margin     : 0 0 18px;
+    color      : var(--color-text-secondary);
+    font-size  : 13px;
+}
+
+.breadcrumb a {
+    color          : var(--color-text-secondary);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary);
+}
+
+.department-edit-heading h1 {
+    margin     : 0;
+    color      : var(--color-text-primary);
+    font-size  : 28px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.department-edit-heading h1 span {
+    color: var(--color-text-primary);
+}
+
+.department-edit-heading>p:last-child {
+    margin   : 8px 0 0;
+    color    : var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.department-edit-card {
+    width        : min(100%, 980px);
+    margin       : 0 auto;
+    padding      : 28px;
+    border       : 1px solid var(--color-border);
+    border-radius: 14px;
+    background   : var(--color-surface);
+    box-shadow   : 0 10px 30px rgb(37 32 51 / 5%);
+}
+
+.form-section+.form-section {
+    margin-top: 30px;
+}
+
+.form-section__heading {
+    display       : flex;
+    align-items   : center;
+    gap           : 9px;
+    margin-bottom : 22px;
+    padding-bottom: 12px;
+    border-bottom : 1px solid var(--color-border);
+}
+
+.form-section__heading span {
+    width      : 24px;
+    height     : 24px;
+    display    : grid;
+    place-items: center;
+    color      : var(--color-primary);
+}
+
+.form-section__heading .lucide-icon {
+    width : 19px;
+    height: 19px;
+}
+
+.form-section__heading h2 {
+    margin     : 0;
+    color      : var(--color-primary);
+    font-size  : 16px;
+    font-weight: 700;
+}
+
+.form-grid {
+    display              : grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap                  : 20px 24px;
+}
+
+.form-field {
+    display       : flex;
+    flex-direction: column;
+    gap           : 8px;
+}
+
+.form-field--full {
+    grid-column: 1 / -1;
+}
+
+.form-field>span,
+.status-field legend {
+    color      : var(--color-text-primary);
+    font-size  : 13px;
+    font-weight: 600;
+}
+
+.form-field>span strong {
+    color: var(--color-danger);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    width        : 100%;
+    border       : 1px solid var(--color-border);
+    border-radius: 9px;
+    background   : var(--color-surface);
+    color        : var(--color-text-primary);
+    font         : inherit;
+    font-size    : 14px;
+    outline      : 0;
+    transition   : border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-field input,
+.form-field select {
+    min-height: 46px;
+    padding   : 0 13px;
+}
+
+.form-field textarea {
+    min-height : 112px;
+    padding    : 12px 13px;
+    resize     : vertical;
+    line-height: 1.5;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.input-with-icon:focus-within {
+    border-color: var(--color-primary);
+    box-shadow  : 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.form-field small {
+    color      : var(--color-text-secondary);
+    font-size  : 11px;
+    line-height: 1.4;
+}
+
+.input-with-icon {
+    min-height   : 46px;
+    display      : flex;
+    align-items  : center;
+    gap          : 10px;
+    padding      : 0 13px;
+    border       : 1px solid var(--color-border);
+    border-radius: 9px;
+    background   : var(--color-surface);
+}
+
+.input-with-icon .lucide-icon {
+    width : 18px;
+    height: 18px;
+    flex  : 0 0 18px;
+    color : var(--color-text-secondary);
+}
+
+.input-with-icon input {
+    min-height   : auto;
+    padding      : 0;
+    border       : 0;
+    border-radius: 0;
+    box-shadow   : none !important;
+}
+
+.status-field {
+    min-width: 0;
+    margin   : 0;
+    padding  : 0;
+    border   : 0;
+}
+
+.status-field legend {
+    margin-bottom: 12px;
+}
+
+.status-field label {
+    display     : inline-flex;
+    align-items : center;
+    gap         : 8px;
+    margin-right: 24px;
+    color       : var(--color-text-primary);
+    font-size   : 14px;
+    cursor      : pointer;
+}
+
+.status-field input {
+    width       : 16px;
+    height      : 16px;
+    accent-color: var(--color-primary);
+}
+
+.form-actions {
+    display        : flex;
+    justify-content: flex-end;
+    gap            : 12px;
+    margin-top     : 30px;
+    padding-top    : 22px;
+    border-top     : 1px solid var(--color-border);
+}
+
+.cancel-button,
+.save-button {
+    min-height     : 44px;
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 8px;
+    padding        : 0 18px;
+    border-radius  : 9px;
+    font-size      : 14px;
+    font-weight    : 600;
+    cursor         : pointer;
+}
+
+.cancel-button {
+    border    : 1px solid var(--color-border);
+    background: var(--color-surface);
+    color     : var(--color-text-primary);
+}
+
+.cancel-button:hover {
+    border-color: var(--color-primary);
+    color       : var(--color-primary);
+    background  : var(--color-primary-light);
+}
+
+.save-button {
+    border    : 1px solid var(--color-primary);
+    background: var(--color-primary);
+    color     : var(--color-surface);
+}
+
+.save-button:hover:not(:disabled) {
+    border-color: var(--color-primary-hover);
+    background  : var(--color-primary-hover);
+}
+
+.save-button:disabled {
+    cursor : not-allowed;
+    opacity: .65;
+}
+
+.save-button .lucide-icon {
+    width : 18px;
+    height: 18px;
+}
+
+.spinner {
+    width           : 17px;
+    height          : 17px;
+    border          : 2px solid rgb(255 255 255 / 40%);
+    border-top-color: var(--color-surface);
+    border-radius   : 50%;
+    animation       : department-spin .7s linear infinite;
+}
+
+.toast-message {
+    position     : fixed;
+    right        : 24px;
+    bottom       : 24px;
+    z-index      : 100;
+    max-width    : 360px;
+    padding      : 14px 18px;
+    border-radius: 10px;
+    color        : var(--color-surface);
+    background   : var(--color-text-primary);
+    box-shadow   : 0 12px 32px rgb(37 32 51 / 20%);
+    font-size    : 14px;
+    font-weight  : 600;
+}
+
+@keyframes department-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 760px) {
+    .department-edit-heading h1 {
+        font-size: 24px;
+    }
+
+    .department-edit-card {
+        padding: 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-field--full {
+        grid-column: auto;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .cancel-button,
+    .save-button {
+        width: 100%;
+    }
+}
