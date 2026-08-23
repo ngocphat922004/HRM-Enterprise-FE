@@ -1,0 +1,489 @@
+<div class="dashboard-shell leave-detail-page">
+    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
+        aria-hidden="true"></div>
+
+    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
+        <div class="sidebar__brand">
+            <div class="brand-mark" aria-hidden="true">HR</div>
+
+            <div>
+                <strong>HRM Admin</strong>
+                <span>Quản lý nhân sự</span>
+            </div>
+
+            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+                ×
+            </button>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Điều hướng chính">
+            @for (item of sidebarItems; track item.label) {
+            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
+                (click)="setActiveMenu(item.label)">
+                <span class="nav-item__icon" aria-hidden="true">
+                    @switch (item.icon) {
+                    @case ('dashboard') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                    </svg>
+                    }
+
+                    @case ('employees') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    }
+
+                    @case ('department') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+                        <path d="M10 6h4"></path>
+                        <path d="M10 10h4"></path>
+                        <path d="M10 14h4"></path>
+                    </svg>
+                    }
+
+                    @case ('contract') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
+                        <path d="M8 13h8"></path>
+                        <path d="M8 17h8"></path>
+                    </svg>
+                    }
+
+                    @case ('attendance') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                    }
+
+                    @case ('leave') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v4"></path>
+                        <path d="M16 2v4"></path>
+                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                        <path d="M3 10h18"></path>
+                        <path d="m9 16 2 2 4-4"></path>
+                    </svg>
+                    }
+
+                    @case ('payroll') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
+                        <path d="M16 14h2"></path>
+                    </svg>
+                    }
+
+                    @case ('report') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"></path>
+                        <path d="m7 16 4-4 3 3 5-6"></path>
+                    </svg>
+                    }
+
+                    @default {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    }
+                    }
+                </span>
+                <span>{{ item.label }}</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar__footer">
+            <button class="logout-button" type="button" (click)="logout()">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                </svg>
+                <span>Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <section class="workspace">
+        <header class="top-header">
+            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+            </button>
+
+            <label class="search-box">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm kiếm đơn, nhân viên..."
+                    aria-label="Tìm kiếm toàn hệ thống" />
+            </label>
+
+            <div class="top-header__actions">
+                <a class="header-add-button" routerLink="/leave">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 6h13"></path>
+                        <path d="M8 12h13"></path>
+                        <path d="M8 18h13"></path>
+                        <path d="M3 6h.01"></path>
+                        <path d="M3 12h.01"></path>
+                        <path d="M3 18h.01"></path>
+                    </svg>
+                    Danh sách đơn
+                </a>
+
+                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                        <path d="M4 17h16"></path>
+                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
+                    </svg>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+                    </svg>
+                </button>
+
+                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
+                    <div class="header-profile__info">
+                        <strong>Trần Hoàng Nam</strong>
+                        <span>Quản trị viên</span>
+                    </div>
+                    <span class="header-profile__avatar">TN</span>
+                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="leave-detail-heading">
+                <nav class="breadcrumb" aria-label="Điều hướng">
+                    <a routerLink="/leave">Nghỉ phép</a>
+                    <span>/</span>
+                    <strong>Chi tiết đơn</strong>
+                </nav>
+
+                <div class="leave-detail-heading__row">
+                    <div class="leave-detail-heading__title">
+                        <button class="back-button" type="button" (click)="goBack()" aria-label="Quay lại">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+
+                        <div>
+                            <span>Đơn nghỉ phép {{ leaveCode }}</span>
+                            <h1>Chi tiết yêu cầu nghỉ phép</h1>
+                            <p>Xem thông tin và xử lý yêu cầu theo quyền được cấp.</p>
+                        </div>
+                    </div>
+
+                    <button class="print-button" type="button" (click)="printRequest()">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 9V2h12v7"></path>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect width="12" height="8" x="6" y="14"></rect>
+                        </svg>
+                        In đơn
+                    </button>
+                </div>
+            </section>
+
+            @if (isLoading) {
+            <section class="detail-loading" aria-label="Đang tải dữ liệu">
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <strong>Đang tải thông tin đơn nghỉ phép</strong>
+                <p>Vui lòng chờ trong giây lát...</p>
+            </section>
+            } @else if (leaveRequest) {
+            <section class="leave-detail-layout">
+                <div class="leave-detail-main">
+                    <article class="employee-card">
+                        <div class="employee-card__profile">
+                            <span class="employee-avatar">
+                                {{ getInitials(leaveRequest.hoTen) }}
+                            </span>
+
+                            <div>
+                                <span>Người gửi đơn</span>
+                                <h2>{{ leaveRequest.hoTen }}</h2>
+                                <p>
+                                    Mã NV {{ leaveRequest.maNV }}
+                                    · {{ leaveRequest.tenPB || 'Chưa phân phòng' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <button class="employee-link" type="button" (click)="viewEmployee()">
+                            Xem hồ sơ
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </article>
+
+                    <article class="detail-card">
+                        <header class="detail-card__header">
+                            <span>
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                                    <path d="M8 2v4"></path>
+                                    <path d="M16 2v4"></path>
+                                    <path d="M3 10h18"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Thông tin nghỉ phép</h2>
+                                <p>Thông tin được lưu theo bảng NghiPhep.</p>
+                            </div>
+                        </header>
+
+                        <div class="detail-information-grid">
+                            <div class="information-item">
+                                <span>Mã đơn</span>
+                                <strong>{{ leaveCode }}</strong>
+                                <small>MaNP = {{ leaveRequest.maNP }}</small>
+                            </div>
+
+                            <div class="information-item">
+                                <span>Loại nghỉ</span>
+                                <strong>{{ leaveRequest.tenLoaiNP }}</strong>
+                                <small>MaLoaiNP = {{ leaveRequest.maLoaiNP }}</small>
+                            </div>
+
+                            <div class="information-item">
+                                <span>Ngày bắt đầu</span>
+                                <strong>{{ leaveRequest.tuNgay | date: 'dd/MM/yyyy' }}</strong>
+                            </div>
+
+                            <div class="information-item">
+                                <span>Ngày kết thúc</span>
+                                <strong>{{ leaveRequest.denNgay | date: 'dd/MM/yyyy' }}</strong>
+                            </div>
+
+                            <div class="information-item information-item--highlight">
+                                <span>Tổng thời gian nghỉ</span>
+                                <strong>
+                                    {{ leaveRequest.soNgay | number: '1.0-1' }} ngày
+                                </strong>
+                            </div>
+
+                            <div class="information-item">
+                                <span>Trạng thái</span>
+                                <strong class="status-badge" [ngClass]="'status-badge--' + getStatusClass()">
+                                    {{ leaveRequest.trangThai }}
+                                </strong>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="reason-card">
+                        <header>
+                            <span>
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <path d="M14 2v6h6"></path>
+                                    <path d="M8 13h8"></path>
+                                    <path d="M8 17h6"></path>
+                                </svg>
+                            </span>
+                            <h2>Lý do nghỉ phép</h2>
+                        </header>
+
+                        <p>{{ leaveRequest.lyDo || 'Nhân viên không cung cấp lý do.' }}</p>
+                    </article>
+
+                    <article class="database-note">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
+                        <div>
+                            <strong>Thông tin theo thiết kế DB</strong>
+                            <p>
+                                Mã đơn được hệ thống tự sinh. DB hiện chưa có trường
+                                file đính kèm, ngày tạo hoặc lý do từ chối nên các nội
+                                dung này không xuất hiện trên trang chi tiết.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+                <aside class="leave-detail-aside">
+                    <article class="decision-card">
+                        <header>
+                            <div>
+                                <span>Trạng thái hiện tại</span>
+                                <strong class="status-badge" [ngClass]="'status-badge--' + getStatusClass()">
+                                    {{ leaveRequest.trangThai }}
+                                </strong>
+                            </div>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M9 11 12 14 22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </header>
+
+                        @if (canProcess) {
+                        <p>Kiểm tra thông tin trước khi duyệt hoặc từ chối đơn.</p>
+
+                        <div class="decision-actions">
+                            <button class="approve-button" type="button" (click)="approveRequest()"
+                                [disabled]="isProcessing">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m5 12 4 4L19 6"></path>
+                                </svg>
+                                Duyệt đơn
+                            </button>
+
+                            <button class="reject-button" type="button" (click)="rejectRequest()"
+                                [disabled]="isProcessing">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M18 6 6 18"></path>
+                                    <path d="m6 6 12 12"></path>
+                                </svg>
+                                Từ chối
+                            </button>
+                        </div>
+                        } @else {
+                        <p>Đơn đã được xử lý và không còn thao tác phê duyệt.</p>
+                        }
+                    </article>
+
+                    <article class="process-card">
+                        <header>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M12 7v5l3 2"></path>
+                            </svg>
+                            <h2>Quy trình xử lý</h2>
+                        </header>
+
+                        <div class="process-timeline">
+                            @for (step of processSteps; track step.order) {
+                            <div class="process-step" [class.process-step--completed]="step.completed"
+                                [class.process-step--active]="step.active">
+                                <span class="process-step__number">
+                                    @if (step.completed) {
+                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                        aria-hidden="true">
+                                        <path d="m5 12 4 4L19 6"></path>
+                                    </svg>
+                                    } @else {
+                                    {{ step.order }}
+                                    }
+                                </span>
+                                <div>
+                                    <strong>{{ step.title }}</strong>
+                                    <p>{{ step.description }}</p>
+                                </div>
+                            </div>
+                            }
+                        </div>
+                    </article>
+
+                    <article class="approver-card">
+                        <span>Người xử lý đơn</span>
+
+                        @if (leaveRequest.nguoiDuyet && leaveRequest.tenNguoiDuyet) {
+                        <div class="approver-info">
+                            <span class="approver-avatar">
+                                {{ getInitials(leaveRequest.tenNguoiDuyet) }}
+                            </span>
+                            <div>
+                                <strong>{{ leaveRequest.tenNguoiDuyet }}</strong>
+                                <p>{{ leaveRequest.chucVuNguoiDuyet || 'Người phê duyệt' }}</p>
+                                <small>MaNV = {{ leaveRequest.nguoiDuyet }}</small>
+                            </div>
+                        </div>
+                        } @else {
+                        <div class="approver-empty">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="8" r="4"></circle>
+                                <path d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                            <p>Đơn chưa có người xử lý.</p>
+                        </div>
+                        }
+                    </article>
+                </aside>
+            </section>
+            } @else {
+            <section class="detail-empty">
+                <span class="detail-empty__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
+                        <path d="M9 15h6"></path>
+                    </svg>
+                </span>
+                <strong>Chưa có dữ liệu đơn {{ leaveCode }}</strong>
+                <p>
+                    Giao diện đã sẵn sàng. Thông tin chi tiết sẽ xuất hiện
+                    sau khi kết nối API nghỉ phép.
+                </p>
+                <button type="button" (click)="goBack()">Quay lại danh sách</button>
+            </section>
+            }
+        </main>
+    </section>
+
+    @if (toastMessage) {
+    <div class="page-toast" role="status">
+        {{ toastMessage }}
+    </div>
+    }
+</div>

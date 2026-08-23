@@ -1,0 +1,359 @@
+<div class="dashboard-shell add-role-page">
+    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
+        aria-hidden="true"></div>
+
+    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
+        <div class="sidebar__brand">
+            <div class="brand-mark" aria-hidden="true">HR</div>
+
+            <div>
+                <strong>HRM Admin</strong>
+                <span>Quản lý nhân sự</span>
+            </div>
+
+            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+                ×
+            </button>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Điều hướng chính">
+            @for (item of sidebarItems; track item.label) {
+            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
+                (click)="closeSidebar()">
+                <span class="nav-item__icon" aria-hidden="true">
+                    @switch (item.icon) {
+                    @case ('layout-dashboard') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                    </svg>
+                    }
+
+                    @case ('users') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    }
+
+                    @case ('building-2') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+                        <path d="M10 6h4M10 10h4M10 14h4"></path>
+                    </svg>
+                    }
+
+                    @case ('file-text') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6M8 13h8M8 17h8"></path>
+                    </svg>
+                    }
+
+                    @case ('clock-3') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                    }
+
+                    @case ('calendar-days') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v4M16 2v4"></path>
+                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                        <path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01"></path>
+                    </svg>
+                    }
+
+                    @case ('banknote') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <path d="M6 9h.01M18 15h.01"></path>
+                    </svg>
+                    }
+
+                    @case ('award') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="6"></circle>
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                    </svg>
+                    }
+
+                    @case ('chart-no-axes-combined') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18M7 16l4-4 3 3 5-6"></path>
+                    </svg>
+                    }
+
+                    @default {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    }
+                    }
+                </span>
+
+                <span>{{ item.label }}</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar__footer">
+            <button class="logout-button" type="button" (click)="logout()">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                </svg>
+                <span>Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <section class="workspace">
+        <header class="top-header">
+            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+
+            <label class="search-box">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm nhân viên, tài khoản..."
+                    aria-label="Tìm kiếm toàn hệ thống" />
+            </label>
+
+            <div class="top-header__actions">
+                <a class="header-add-button" routerLink="/settings/roles">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path>
+                    </svg>
+                    Danh sách quyền
+                </a>
+
+                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0M4 17h16M6 17V9a6 6 0 0 1 12 0v8"></path>
+                    </svg>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+                    </svg>
+                </button>
+
+                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
+                    <div class="header-profile__info">
+                        <strong>Trần Hoàng Nam</strong>
+                        <span>Quản trị viên</span>
+                    </div>
+                    <span class="header-profile__avatar">TN</span>
+                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="add-role-heading">
+                <nav class="breadcrumb" aria-label="Điều hướng">
+                    <a routerLink="/settings">Cài đặt</a>
+                    <span>/</span>
+                    <a routerLink="/settings/roles">Quản lý quyền</a>
+                    <span>/</span>
+                    <strong>Thêm quyền</strong>
+                </nav>
+
+                <div class="add-role-heading__title">
+                    <div>
+                        <h1>Thêm quyền mới</h1>
+                        <p>Tạo tên và mô tả cho một nhóm quyền sử dụng trong hệ thống.</p>
+                    </div>
+
+                    <span class="identity-note">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4M12 8h.01"></path>
+                        </svg>
+                        Mã quyền do hệ thống tự sinh
+                    </span>
+                </div>
+            </section>
+
+            <form class="add-role-layout" (ngSubmit)="saveRole()" novalidate>
+                <div class="add-role-main">
+                    <section class="form-card">
+                        <header class="form-card__header">
+                            <span class="form-card__icon">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+                                    <path d="M9 12l2 2 4-4"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Thông tin quyền</h2>
+                                <p>Các trường dưới đây được lưu vào bảng <code>Quyen</code>.</p>
+                            </div>
+                        </header>
+
+                        <div class="form-grid">
+                            <label class="form-field">
+                                <span>Tên quyền <b>*</b></span>
+                                <input name="tenQuyen" type="text" maxlength="100" [(ngModel)]="form.tenQuyen"
+                                    [class.form-control--invalid]="roleNameInvalid"
+                                    placeholder="Ví dụ: Quản lý tuyển dụng" autocomplete="off" />
+
+                                <div class="field-meta">
+                                    @if (roleNameInvalid) {
+                                    <small class="field-error">Tên quyền phải có từ 2–100 ký tự.</small>
+                                    } @else {
+                                    <small class="field-hint">Backend phải kiểm tra tên quyền không bị trùng.</small>
+                                    }
+                                    <small>{{ form.tenQuyen.length }}/100</small>
+                                </div>
+                            </label>
+
+                            <label class="form-field">
+                                <span>Mô tả</span>
+                                <textarea name="moTa" maxlength="500" rows="7" [(ngModel)]="form.moTa"
+                                    [class.form-control--invalid]="descriptionInvalid"
+                                    placeholder="Mô tả phạm vi hoặc mục đích sử dụng của quyền..."></textarea>
+
+                                <div class="field-meta">
+                                    @if (descriptionInvalid) {
+                                    <small class="field-error">Mô tả không được vượt quá 500 ký tự.</small>
+                                    } @else {
+                                    <small class="field-hint">Có thể để trống nếu chưa có mô tả.</small>
+                                    }
+                                    <small>{{ descriptionLength }}/500</small>
+                                </div>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="schema-note">
+                        <span>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
+                            </svg>
+                        </span>
+                        <div>
+                            <strong>Phạm vi dữ liệu hiện tại</strong>
+                            <p>
+                                Bảng <code>Quyen</code> hiện chỉ có mã, tên và mô tả. Vì vậy trang chưa cấu hình ma trận
+                                chức năng hoặc trạng thái quyền.
+                            </p>
+                        </div>
+                    </section>
+
+                    <footer class="form-actions">
+                        <button class="cancel-button" type="button" (click)="cancel()">Hủy bỏ</button>
+
+                        <button class="submit-button" type="submit" [disabled]="isSaving">
+                            @if (isSaving) {
+                            <span class="button-spinner" aria-hidden="true"></span>
+                            Đang tạo quyền...
+                            } @else {
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Tạo quyền
+                            }
+                        </button>
+                    </footer>
+                </div>
+
+                <aside class="add-role-aside">
+                    <section class="role-preview-card">
+                        <header>
+                            <span>
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Xem trước quyền</h2>
+                                <p>Thông tin sẽ được tạo</p>
+                            </div>
+                        </header>
+
+                        <div class="role-preview-card__body">
+                            <span class="preview-code">Q—</span>
+                            <h3>{{ previewName }}</h3>
+                            <p>{{ previewDescription }}</p>
+                        </div>
+
+                        <footer>
+                            <span>
+                                <i aria-hidden="true"></i>
+                                Chưa có tài khoản sử dụng
+                            </span>
+                        </footer>
+                    </section>
+
+                    <section class="data-source-card">
+                        <header>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 16v-4M12 8h.01"></path>
+                            </svg>
+                            <h2>Khi kết nối Backend</h2>
+                        </header>
+
+                        <ul>
+                            <li>Kiểm tra tên quyền không bị trùng.</li>
+                            <li>Không nhận <code>maQuyen</code> từ form.</li>
+                            <li>Chuẩn hóa mô tả rỗng thành <code>null</code>.</li>
+                            <li>Trả về quyền vừa tạo để điều hướng chi tiết.</li>
+                        </ul>
+                    </section>
+                </aside>
+            </form>
+        </main>
+    </section>
+
+    @if (toastMessage) {
+    <div class="page-toast" role="status">
+        {{ toastMessage }}
+    </div>
+    }
+</div>

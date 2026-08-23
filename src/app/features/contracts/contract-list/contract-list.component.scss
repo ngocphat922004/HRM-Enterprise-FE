@@ -1,0 +1,685 @@
+:host {
+    display   : block;
+    min-height: 100vh;
+}
+
+.contract-page {
+    background: var(--color-background);
+}
+
+.page-breadcrumb {
+    margin   : 0 0 8px !important;
+    color    : var(--color-text-secondary);
+    font-size: 13px !important;
+}
+
+.page-breadcrumb span {
+    margin: 0 7px;
+    color :
+        var(--color-border-strong,
+            #c7c2d3);
+}
+
+/* ================================
+   ACTION BUTTON
+================================ */
+
+.export-button {
+    min-height     : 48px;
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 8px;
+    padding        : 0 18px;
+    border         :
+        1px solid var(--color-border);
+    border-radius: 9px;
+    color        : var(--color-text-primary);
+    background   : var(--color-surface);
+    font-size    : 14px;
+    font-weight  : 650;
+    cursor       : pointer;
+    transition   :
+        border-color 150ms ease,
+        color 150ms ease,
+        background 150ms ease;
+}
+
+.export-button:hover {
+    border-color: var(--color-primary);
+    color       : var(--color-primary);
+    background  :
+        var(--color-primary-light);
+}
+
+.export-button .lucide-icon {
+    width : 18px;
+    height: 18px;
+}
+
+/* ================================
+   STATISTIC CARDS
+================================ */
+
+.contract-stats {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap          : 18px;
+    margin-bottom: 20px;
+}
+
+.contract-stat-card {
+    min-height : 124px;
+    display    : flex;
+    align-items: center;
+    gap        : 18px;
+    padding    : 22px 24px;
+    border     :
+        1px solid var(--color-border);
+    border-radius: 14px;
+    background   : var(--color-surface);
+    box-shadow   :
+        0 8px 24px rgb(37 32 51 / 4%);
+}
+
+.contract-stat-card__icon {
+    width        : 50px;
+    height       : 50px;
+    display      : grid;
+    place-items  : center;
+    flex         : 0 0 50px;
+    border-radius: 13px;
+}
+
+.contract-stat-card__icon .lucide-icon {
+    width : 24px;
+    height: 24px;
+}
+
+.contract-stat-card--primary .contract-stat-card__icon {
+    color: var(--color-primary);
+    background:
+        var(--color-primary-light);
+}
+
+.contract-stat-card--warning .contract-stat-card__icon {
+    color: var(--color-warning);
+    background:
+        color-mix(in srgb,
+            var(--color-warning) 11%,
+            var(--color-surface));
+}
+
+.contract-stat-card--danger .contract-stat-card__icon {
+    color: var(--color-danger);
+    background:
+        color-mix(in srgb,
+            var(--color-danger) 9%,
+            var(--color-surface));
+}
+
+.contract-stat-card>div {
+    min-width: 0;
+}
+
+.contract-stat-card small {
+    display      : block;
+    margin-bottom: 8px;
+    color        : var(--color-text-secondary);
+    font-size    : 13px;
+    font-weight  : 550;
+}
+
+.contract-stat-card strong {
+    display    : block;
+    color      : var(--color-text-primary);
+    font-size  : 30px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.contract-stat-card span:not(.contract-stat-card__icon) {
+    display    : block;
+    margin-top : 8px;
+    color      : var(--color-text-secondary);
+    font-size  : 12px;
+    font-weight: 600;
+}
+
+/* ================================
+   FILTER
+================================ */
+
+.contract-filter-card {
+    display: grid;
+    grid-template-columns:
+        minmax(280px, 1fr) 210px 200px auto;
+    gap          : 12px;
+    align-items  : center;
+    margin-bottom: 16px;
+    padding      : 14px;
+    border       :
+        1px solid var(--color-border);
+    border-radius: 12px;
+    background   : var(--color-surface);
+    box-shadow   :
+        0 6px 20px rgb(37 32 51 / 3%);
+}
+
+.contract-search {
+    min-height : 48px;
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+    padding    : 0 14px;
+    border     :
+        1px solid var(--color-border);
+    border-radius: 9px;
+    background   : var(--color-surface);
+    transition   :
+        border-color 150ms ease,
+        box-shadow 150ms ease;
+}
+
+.contract-search:focus-within {
+    border-color: var(--color-primary);
+    box-shadow  :
+        0 0 0 3px color-mix(in srgb,
+            var(--color-primary) 10%,
+            transparent);
+}
+
+.contract-search .lucide-icon {
+    width : 18px;
+    height: 18px;
+    flex  : 0 0 18px;
+    color : var(--color-text-secondary);
+}
+
+.contract-search input {
+    width     : 100%;
+    min-width : 0;
+    border    : 0;
+    outline   : 0;
+    color     : var(--color-text-primary);
+    background: transparent;
+    font      : inherit;
+    font-size : 14px;
+}
+
+.contract-search input::placeholder {
+    color: var(--color-text-secondary);
+}
+
+.contract-filter-card select,
+.reset-filter-button {
+    min-height: 48px;
+    border    :
+        1px solid var(--color-border);
+    border-radius: 9px;
+    color        : var(--color-text-primary);
+    background   : var(--color-surface);
+    font         : inherit;
+    font-size    : 14px;
+}
+
+.contract-filter-card select {
+    width  : 100%;
+    padding: 0 38px 0 14px;
+    outline: 0;
+    cursor : pointer;
+}
+
+.contract-filter-card select:focus {
+    border-color: var(--color-primary);
+    box-shadow  :
+        0 0 0 3px color-mix(in srgb,
+            var(--color-primary) 10%,
+            transparent);
+}
+
+.reset-filter-button {
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 8px;
+    padding        : 0 17px;
+    font-weight    : 650;
+    white-space    : nowrap;
+    cursor         : pointer;
+    transition     :
+        border-color 150ms ease,
+        color 150ms ease,
+        background 150ms ease;
+}
+
+.reset-filter-button:hover {
+    border-color: var(--color-primary);
+    color       : var(--color-primary);
+    background  :
+        var(--color-primary-light);
+}
+
+.reset-filter-button .lucide-icon {
+    width : 18px;
+    height: 18px;
+}
+
+/* ================================
+   TABLE
+================================ */
+
+.contract-table-card {
+    overflow: visible;
+    border  :
+        1px solid var(--color-border);
+    border-radius: 14px;
+    background   : var(--color-surface);
+    box-shadow   :
+        0 8px 24px rgb(37 32 51 / 4%);
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width          : 100%;
+    min-width      : 1260px;
+    border-collapse: collapse;
+}
+
+thead {
+    background:
+        color-mix(in srgb,
+            var(--color-primary-light) 55%,
+            var(--color-surface));
+}
+
+th,
+td {
+    padding: 17px 16px;
+    border-bottom:
+        1px solid var(--color-border);
+    color         : var(--color-text-primary);
+    font-size     : 14px;
+    text-align    : left;
+    vertical-align: middle;
+}
+
+th {
+    color         : var(--color-text-secondary);
+    font-size     : 12px;
+    font-weight   : 750;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    white-space   : nowrap;
+}
+
+tbody tr {
+    transition: background 150ms ease;
+}
+
+tbody tr:hover {
+    background:
+        color-mix(in srgb,
+            var(--color-primary-light) 32%,
+            var(--color-surface));
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* ================================
+   CONTRACT INFORMATION
+================================ */
+
+.contract-code {
+    display    : block;
+    color      : var(--color-primary);
+    font-size  : 13px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.system-id {
+    display    : block;
+    margin-top : 5px;
+    color      : var(--color-text-secondary);
+    font-size  : 11px;
+    white-space: nowrap;
+}
+
+.employee-info {
+    min-width  : 190px;
+    display    : flex;
+    align-items: center;
+    gap        : 11px;
+}
+
+.employee-avatar {
+    width        : 40px;
+    height       : 40px;
+    display      : grid;
+    place-items  : center;
+    flex         : 0 0 40px;
+    border-radius: 50%;
+    color        : var(--color-primary);
+    background   :
+        var(--color-primary-light);
+    font-size  : 13px;
+    font-weight: 750;
+}
+
+.employee-info>div {
+    min-width: 0;
+}
+
+.employee-info strong {
+    display      : block;
+    overflow     : hidden;
+    color        : var(--color-text-primary);
+    font-size    : 14px;
+    font-weight  : 700;
+    text-overflow: ellipsis;
+    white-space  : nowrap;
+}
+
+.employee-info span:not(.employee-avatar) {
+    display   : block;
+    margin-top: 4px;
+    color     : var(--color-text-secondary);
+    font-size : 11px;
+}
+
+.contract-type {
+    min-width: 150px;
+}
+
+.contract-type strong {
+    display    : block;
+    color      : var(--color-text-primary);
+    font-size  : 13px;
+    font-weight: 650;
+}
+
+.contract-type span {
+    display   : block;
+    margin-top: 4px;
+    color     : var(--color-text-secondary);
+    font-size : 11px;
+}
+
+.salary-value {
+    color      : var(--color-text-primary);
+    font-size  : 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.no-end-date {
+    color      : var(--color-text-secondary);
+    font-size  : 12px;
+    font-style : italic;
+    white-space: nowrap;
+}
+
+.expiring-date {
+    color      : var(--color-warning);
+    font-weight: 700;
+}
+
+/* ================================
+   STATUS
+================================ */
+
+.status-badge {
+    min-height     : 30px;
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    padding        : 5px 11px;
+    border-radius  : 999px;
+    font-size      : 12px;
+    font-weight    : 700;
+    line-height    : 1.2;
+    white-space    : nowrap;
+}
+
+.status-badge::before {
+    content      : '';
+    width        : 6px;
+    height       : 6px;
+    flex         : 0 0 6px;
+    margin-right : 6px;
+    border-radius: 50%;
+    background   : currentColor;
+}
+
+.status-badge--success {
+    color: var(--color-success);
+    background:
+        color-mix(in srgb,
+            var(--color-success) 11%,
+            var(--color-surface));
+}
+
+.status-badge--warning {
+    color:
+        color-mix(in srgb,
+            var(--color-warning) 82%,
+            #7c4200);
+    background:
+        color-mix(in srgb,
+            var(--color-warning) 13%,
+            var(--color-surface));
+}
+
+.status-badge--danger {
+    color: var(--color-danger);
+    background:
+        color-mix(in srgb,
+            var(--color-danger) 9%,
+            var(--color-surface));
+}
+
+/* ================================
+   ACTIONS
+================================ */
+
+.action-column {
+    text-align: right;
+}
+
+.contract-actions {
+    display    : inline-flex;
+    align-items: center;
+    gap        : 4px;
+}
+
+.contract-actions button {
+    width        : 35px;
+    height       : 35px;
+    display      : grid;
+    place-items  : center;
+    border       : 0;
+    border-radius: 8px;
+    color        : var(--color-text-secondary);
+    background   : transparent;
+    cursor       : pointer;
+    transition   :
+        color 150ms ease,
+        background 150ms ease;
+}
+
+.contract-actions button:hover {
+    color: var(--color-primary);
+    background:
+        var(--color-primary-light);
+}
+
+.contract-actions .lucide-icon {
+    width : 17px;
+    height: 17px;
+}
+
+/* ================================
+   EMPTY STATE
+================================ */
+
+.empty-table {
+    height    : 250px;
+    text-align: center;
+}
+
+.empty-contracts {
+    display        : flex;
+    flex-direction : column;
+    align-items    : center;
+    justify-content: center;
+}
+
+.empty-contracts .lucide-icon {
+    width        : 42px;
+    height       : 42px;
+    margin-bottom: 12px;
+    color        : var(--color-primary);
+}
+
+.empty-contracts strong {
+    color    : var(--color-text-primary);
+    font-size: 15px;
+}
+
+.empty-contracts p {
+    margin   : 7px 0 0;
+    color    : var(--color-text-secondary);
+    font-size: 13px;
+}
+
+/* ================================
+   TABLE FOOTER
+================================ */
+
+.table-footer {
+    min-height           : 72px;
+    display              : grid;
+    grid-template-columns: 1fr auto;
+    align-items          : center;
+    gap                  : 16px;
+    padding              : 14px 18px;
+    border-top           :
+        1px solid var(--color-border);
+}
+
+.table-footer p {
+    margin   : 0;
+    color    : var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.pagination {
+    display    : flex;
+    align-items: center;
+    gap        : 7px;
+}
+
+.pagination button {
+    min-width  : 36px;
+    height     : 36px;
+    display    : grid;
+    place-items: center;
+    border     :
+        1px solid var(--color-border);
+    border-radius: 8px;
+    color        : var(--color-text-secondary);
+    background   : var(--color-surface);
+    font-size    : 13px;
+    font-weight  : 650;
+    cursor       : pointer;
+}
+
+.pagination button:hover:not( :disabled),
+.pagination__active {
+    border-color:
+        var(--color-primary) !important;
+    color:
+        var(--color-surface) !important;
+    background:
+        var(--color-primary) !important;
+}
+
+.pagination button:disabled {
+    cursor : not-allowed;
+    opacity: 0.45;
+}
+
+.pagination .lucide-icon {
+    width : 16px;
+    height: 16px;
+}
+
+/* ================================
+   TOAST
+================================ */
+
+.toast-message {
+    position     : fixed;
+    right        : 24px;
+    bottom       : 24px;
+    z-index      : 100;
+    max-width    : 380px;
+    padding      : 14px 18px;
+    border-radius: 10px;
+    color        : var(--color-surface);
+    background   : var(--color-text-primary);
+    box-shadow   :
+        0 12px 32px rgb(37 32 51 / 20%);
+    font-size  : 14px;
+    font-weight: 650;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+
+@media (max-width: 1200px) {
+    .contract-filter-card {
+        grid-template-columns:
+            minmax(260px, 1fr) 200px;
+    }
+
+    .reset-filter-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 1100px) {
+    .contract-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .contract-stat-card {
+        min-height: 112px;
+    }
+}
+
+@media (max-width: 720px) {
+    .contract-filter-card {
+        grid-template-columns: 1fr;
+    }
+
+    .table-footer {
+        grid-template-columns: 1fr;
+    }
+
+    .pagination {
+        justify-content: flex-start;
+    }
+
+    .contract-stat-card {
+        padding: 20px;
+    }
+}

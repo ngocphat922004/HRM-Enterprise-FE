@@ -36,16 +36,57 @@ export class DepartmentDetailComponent {
     searchTerm = '';
     toastMessage = '';
 
+    openEmployeeMenuId: number | null = null;
+    showAddEmployeeModal = false;
+    employeeSearchTerm = '';
+    selectedEmployeeIds: number[] = [];
+
     readonly sidebarItems: SidebarItem[] = [
-        { label: 'Bảng điều khiển', icon: 'dashboard', route: '/dashboard' },
-        { label: 'Nhân viên', icon: 'employees', route: '/employees' },
-        { label: 'Phòng ban', icon: 'department', route: '/departments' },
-        { label: 'Hợp đồng', icon: 'contract', route: '/contracts' },
-        { label: 'Chấm công', icon: 'attendance', route: '/attendance' },
-        { label: 'Nghỉ phép', icon: 'leave', route: '/leave' },
-        { label: 'Bảng lương', icon: 'payroll', route: '/payroll' },
-        { label: 'Báo cáo', icon: 'report', route: '/reports' },
-        { label: 'Cài đặt', icon: 'settings', route: '/settings' },
+        {
+            label: 'Bảng điều khiển',
+            icon: 'dashboard',
+            route: '/dashboard',
+        },
+        {
+            label: 'Nhân viên',
+            icon: 'employees',
+            route: '/employees',
+        },
+        {
+            label: 'Phòng ban',
+            icon: 'department',
+            route: '/departments',
+        },
+        {
+            label: 'Hợp đồng',
+            icon: 'contract',
+            route: '/contracts',
+        },
+        {
+            label: 'Chấm công',
+            icon: 'attendance',
+            route: '/attendance',
+        },
+        {
+            label: 'Nghỉ phép',
+            icon: 'leave',
+            route: '/leave',
+        },
+        {
+            label: 'Bảng lương',
+            icon: 'payroll',
+            route: '/payroll',
+        },
+        {
+            label: 'Báo cáo',
+            icon: 'report',
+            route: '/reports',
+        },
+        {
+            label: 'Cài đặt',
+            icon: 'settings',
+            route: '/settings',
+        },
     ];
 
     department: DepartmentDetail = {
@@ -59,7 +100,7 @@ export class DepartmentDetailComponent {
             'Chịu trách nhiệm phát triển, bảo trì các hệ thống công nghệ lõi của tập đoàn. Nghiên cứu và triển khai các giải pháp chuyển đổi số, tự động hóa quy trình nghiệp vụ và đảm bảo an toàn thông tin toàn hệ thống.',
     };
 
-    readonly employees: DepartmentEmployee[] = [
+    employees: DepartmentEmployee[] = [
         {
             id: 1,
             fullName: 'Trần Hoàng Nam',
@@ -86,6 +127,36 @@ export class DepartmentDetailComponent {
             joinDate: '15/08/2020',
             status: 'probation',
             initials: 'LA',
+        },
+    ];
+
+    readonly availableEmployees: DepartmentEmployee[] = [
+        {
+            id: 4,
+            fullName: 'Phạm Minh Đức',
+            email: 'duc.pm@company.com',
+            position: 'Backend Developer',
+            joinDate: '10/01/2024',
+            status: 'working',
+            initials: 'PD',
+        },
+        {
+            id: 5,
+            fullName: 'Nguyễn Thảo Vy',
+            email: 'vy.nt@company.com',
+            position: 'Frontend Developer',
+            joinDate: '20/03/2024',
+            status: 'working',
+            initials: 'NV',
+        },
+        {
+            id: 6,
+            fullName: 'Hoàng Gia Huy',
+            email: 'huy.hg@company.com',
+            position: 'QA Engineer',
+            joinDate: '01/06/2024',
+            status: 'probation',
+            initials: 'HH',
         },
     ];
 
@@ -139,11 +210,124 @@ export class DepartmentDetailComponent {
         ]);
     }
 
-    viewEmployee(employee: DepartmentEmployee): void {
-        void this.router.navigate([
-            '/employees',
-            employee.id,
-        ]);
+    openAddEmployeeModal(): void {
+        this.showAddEmployeeModal = true;
+        this.employeeSearchTerm = '';
+        this.selectedEmployeeIds = [];
+        this.openEmployeeMenuId = null;
+    }
+
+    closeAddEmployeeModal(): void {
+        this.showAddEmployeeModal = false;
+        this.employeeSearchTerm = '';
+        this.selectedEmployeeIds = [];
+    }
+
+    toggleEmployeeSelection(employeeId: number): void {
+        const index = this.selectedEmployeeIds.indexOf(employeeId);
+
+        if (index >= 0) {
+            this.selectedEmployeeIds.splice(index, 1);
+            return;
+        }
+
+        this.selectedEmployeeIds.push(employeeId);
+    }
+
+    isEmployeeSelected(employeeId: number): boolean {
+        return this.selectedEmployeeIds.includes(employeeId);
+    }
+
+    get filteredAvailableEmployees(): DepartmentEmployee[] {
+        const keyword = this.employeeSearchTerm
+            .trim()
+            .toLowerCase();
+
+        if (!keyword) {
+            return this.availableEmployees;
+        }
+
+        return this.availableEmployees.filter((employee) =>
+            employee.fullName.toLowerCase().includes(keyword) ||
+            employee.email.toLowerCase().includes(keyword) ||
+            employee.position.toLowerCase().includes(keyword),
+        );
+    }
+
+    addSelectedEmployees(): void {
+        if (this.selectedEmployeeIds.length === 0) {
+            this.showToast('Vui lòng chọn ít nhất một nhân sự.');
+            return;
+        }
+
+        const employeesToAdd = this.availableEmployees.filter(
+            (employee) =>
+                this.selectedEmployeeIds.includes(employee.id),
+        );
+
+        this.employees = [
+            ...this.employees,
+            ...employeesToAdd,
+        ];
+
+        this.closeAddEmployeeModal();
+
+        this.showToast(
+            `Đã thêm ${employeesToAdd.length} nhân sự vào phòng ban.`,
+        );
+    }
+
+    toggleEmployeeMenu(employeeId: number): void {
+        this.openEmployeeMenuId =
+            this.openEmployeeMenuId === employeeId
+                ? null
+                : employeeId;
+    }
+
+    closeEmployeeMenu(): void {
+        this.openEmployeeMenuId = null;
+    }
+
+    viewEmployeeInfo(employee: DepartmentEmployee): void {
+        this.closeEmployeeMenu();
+
+        this.showToast(
+            `Đang xem thông tin ${employee.fullName}.`,
+        );
+    }
+
+    moveEmployee(employee: DepartmentEmployee): void {
+        this.closeEmployeeMenu();
+
+        this.showToast(
+            `Chức năng chuyển ${employee.fullName} sang phòng ban khác.`,
+        );
+    }
+
+    removeEmployee(employee: DepartmentEmployee): void {
+        this.closeEmployeeMenu();
+
+        const confirmed = window.confirm(
+            `Bạn có chắc muốn xóa ${employee.fullName} khỏi phòng ban này?`,
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        this.employees = this.employees.filter(
+            (item) => item.id !== employee.id,
+        );
+
+        this.showToast(
+            `Đã xóa ${employee.fullName} khỏi phòng ban.`,
+        );
+    }
+
+    viewAllDepartmentEmployees(): void {
+        this.showToast(
+            `Phòng ban hiện có ${this.employees.length} nhân sự.`,
+        );
     }
 
     exportEmployees(): void {
@@ -161,7 +345,10 @@ export class DepartmentDetailComponent {
     getEmployeeStatusLabel(
         status: DepartmentEmployeeStatus,
     ): string {
-        const labels: Record<DepartmentEmployeeStatus, string> = {
+        const labels: Record<
+            DepartmentEmployeeStatus,
+            string
+        > = {
             working: 'Đang làm việc',
             probation: 'Thử việc',
             leave: 'Nghỉ phép',

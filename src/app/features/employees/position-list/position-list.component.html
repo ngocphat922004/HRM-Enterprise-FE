@@ -1,0 +1,604 @@
+<div class="dashboard-shell position-page">
+    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
+        aria-hidden="true">
+    </div>
+
+    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
+        <div class="sidebar__brand">
+            <div class="brand-mark" aria-hidden="true">HR</div>
+
+            <div>
+                <strong>HRM Admin</strong>
+                <span>Quản lý nhân sự</span>
+            </div>
+
+            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+                ×
+            </button>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Điều hướng chính">
+            @for (item of sidebarItems; track item.label) {
+            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="activeMenu === item.label"
+                (click)="setActiveMenu(item.label)">
+                <span class="nav-item__icon" aria-hidden="true">
+                    @switch (item.icon) {
+                    @case ('dashboard') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                    </svg>
+                    }
+
+                    @case ('employees') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    }
+
+                    @case ('department') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+                        <path d="M10 6h4"></path>
+                        <path d="M10 10h4"></path>
+                        <path d="M10 14h4"></path>
+                        <path d="M10 18h4"></path>
+                    </svg>
+                    }
+
+                    @case ('contract') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
+                        <path d="M8 13h8"></path>
+                        <path d="M8 17h8"></path>
+                    </svg>
+                    }
+
+                    @case ('attendance') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                    }
+
+                    @case ('leave') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v4"></path>
+                        <path d="M16 2v4"></path>
+                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                        <path d="M3 10h18"></path>
+                        <path d="m9 16 2 2 4-4"></path>
+                    </svg>
+                    }
+
+                    @case ('payroll') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
+                        <path d="M16 14h2"></path>
+                    </svg>
+                    }
+
+                    @case ('report') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"></path>
+                        <path d="m7 16 4-4 3 3 5-6"></path>
+                    </svg>
+                    }
+
+                    @default {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    }
+                    }
+                </span>
+
+                <span>{{ item.label }}</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar__footer">
+            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                </svg>
+
+                <span>Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <section class="workspace">
+        <header class="top-header">
+            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+            </button>
+
+            <label class="search-box">
+                <span aria-hidden="true">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+                </span>
+
+                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
+                    aria-label="Tìm kiếm toàn hệ thống" />
+            </label>
+
+            <div class="top-header__actions">
+                <a class="header-add-button" routerLink="/positions/add">
+                    <span aria-hidden="true">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5v14"></path>
+                        </svg>
+                    </span>
+                    Thêm mới
+                </a>
+
+                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                        <path d="M4 17h16"></path>
+                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
+                    </svg>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+                    </svg>
+                </button>
+
+                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
+                    <div class="header-profile__info">
+                        <strong>Trần Hoàng Nam</strong>
+                        <span>Quản trị viên</span>
+                    </div>
+
+                    <span class="header-profile__avatar">TN</span>
+
+                    <span class="header-profile__arrow" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"></path>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="page-heading">
+                <div>
+                    <p class="page-breadcrumb">
+                        Quản lý nhân sự
+                        <span>/</span>
+                        Danh sách chức vụ
+                    </p>
+
+                    <h1>Danh sách chức vụ</h1>
+
+                    <p>
+                        Quản lý chức danh, mô tả
+                        công việc và hệ số phụ cấp
+                    </p>
+                </div>
+
+                <div class="page-actions">
+                    <button class="export-button" type="button" (click)="exportReport()">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v12"></path>
+
+                            <path d="m7 10 5 5 5-5"></path>
+
+                            <path d="M5 21h14"></path>
+                        </svg>
+
+                        Xuất danh sách
+                    </button>
+                </div>
+            </section>
+
+            <section class="position-stats" aria-label="Thống kê chức vụ">
+                <article class="position-stat-card position-stat-card--primary">
+                    <span class="position-stat-card__icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="14" x="3" y="7" rx="2"></rect>
+
+                            <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+
+                            <path d="M12 12h.01"></path>
+
+                            <path d="M3 13a18 18 0 0 0 18 0"></path>
+                        </svg>
+                    </span>
+
+                    <div>
+                        <small>
+                            Tổng số chức vụ
+                        </small>
+
+                        <strong>
+                            {{ positions.length }}
+                        </strong>
+
+                        <span>
+                            Danh mục hiện có
+                        </span>
+                    </div>
+                </article>
+
+                <article class="position-stat-card position-stat-card--danger">
+                    <span class="position-stat-card__icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+
+                            <circle cx="9" cy="7" r="4"></circle>
+
+                            <path d="m19 8 3 3"></path>
+
+                            <path d="m22 8-3 3"></path>
+                        </svg>
+                    </span>
+
+                    <div>
+                        <small>
+                            Chức vụ chưa có nhân sự
+                        </small>
+
+                        <strong>
+                            {{ vacantPositionCount }}
+                        </strong>
+
+                        <span>
+                            Cần được phân công
+                        </span>
+                    </div>
+                </article>
+
+                <article class="position-stat-card position-stat-card--warning">
+                    <span class="position-stat-card__icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18"></path>
+
+                            <path d="m7 16 4-4 3 3 5-6"></path>
+                        </svg>
+                    </span>
+
+                    <div>
+                        <small>
+                            Tỷ lệ chức vụ có nhân sự
+                        </small>
+
+                        <strong>
+                            {{ staffedPositionRate }}%
+                        </strong>
+
+                        <span>
+                            Trên tổng số chức vụ
+                        </span>
+                    </div>
+                </article>
+            </section>
+
+            <section class="position-filter-card" aria-label="Bộ lọc chức vụ">
+                <div class="position-search">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+
+                        <path d="m21 21-4.3-4.3"></path>
+                    </svg>
+
+                    <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="
+                    applyFilters()
+                " placeholder="Tìm theo mã, tên hoặc mô tả chức vụ..." aria-label="Tìm kiếm chức vụ" />
+                </div>
+
+                <select [(ngModel)]="
+                selectedStaffing
+            " (ngModelChange)="
+                applyFilters()
+            " aria-label="Lọc tình trạng nhân sự">
+                    <option value="">
+                        Tất cả nhân sự
+                    </option>
+
+                    <option value="filled">
+                        Đã có nhân sự
+                    </option>
+
+                    <option value="vacant">
+                        Chưa có nhân sự
+                    </option>
+                </select>
+
+                <select [(ngModel)]="
+                selectedAllowance
+            " (ngModelChange)="
+                applyFilters()
+            " aria-label="Lọc hệ số phụ cấp">
+                    <option value="">
+                        Tất cả phụ cấp
+                    </option>
+
+                    <option value="with">
+                        Có phụ cấp
+                    </option>
+
+                    <option value="without">
+                        Không có phụ cấp
+                    </option>
+                </select>
+
+                <button type="button" class="reset-filter-button" (click)="resetFilters()">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+
+                    Đặt lại lọc
+                </button>
+            </section>
+
+            <section class="position-table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã chức vụ</th>
+                                <th>Tên chức vụ</th>
+                                <th>Mô tả</th>
+                                <th>
+                                    Hệ số phụ cấp
+                                </th>
+                                <th>Số nhân viên</th>
+                                <th class="action-column">
+                                    Thao tác
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @for (
+                            position of
+                            paginatedPositions;
+                            track position.maCV
+                            ) {
+                            <tr>
+                                <td>
+                                    <span class="position-code">
+                                        {{
+                                        formatPositionCode(
+                                        position.maCV
+                                        )
+                                        }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="position-name">
+                                        <strong>
+                                            {{
+                                            position.tenCV
+                                            }}
+                                        </strong>
+
+                                        <span>
+                                            ID hệ thống:
+                                            {{
+                                            position.maCV
+                                            }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <p class="position-description">
+                                        {{
+                                        position.moTa ||
+                                        'Chưa có mô tả'
+                                        }}
+                                    </p>
+                                </td>
+
+                                <td>
+                                    <span class="allowance-value" [class.allowance-value--none]="
+                                        position.heSoPhuCap ===
+                                        0
+                                    ">
+                                        {{
+                                        position.heSoPhuCap
+                                        | number:
+                                        '1.2-2'
+                                        }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="employee-total" [class.employee-total--empty]="
+                                        position.employeeCount ===
+                                        0
+                                    ">
+                                        <strong>
+                                            {{
+                                            position.employeeCount
+                                            }}
+                                        </strong>
+
+                                        <span>
+                                            {{
+                                            position.employeeCount ===
+                                            0
+                                            ? 'Chưa có nhân sự'
+                                            : 'nhân viên'
+                                            }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="action-column">
+                                    <div class="position-actions">
+                                        <button type="button" (click)="
+                                            viewPosition(
+                                                position
+                                            )
+                                        " aria-label="Xem chức vụ">
+                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12"></path>
+
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </button>
+
+                                        <button type="button" (click)="
+                                            editPosition(
+                                                position
+                                            )
+                                        " aria-label="Chỉnh sửa chức vụ">
+                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M12 20h9"></path>
+
+                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                            </svg>
+                                        </button>
+
+                                        <button type="button" class="delete-action" [class.delete-action--locked]="
+                                            position.employeeCount >
+                                            0
+                                        " (click)="
+                                            deletePosition(
+                                                position
+                                            )
+                                        " aria-label="Xóa chức vụ">
+                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M3 6h18"></path>
+
+                                                <path d="M8 6V4h8v2"></path>
+
+                                                <path d="M19 6l-1 14H6L5 6"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            } @empty {
+                            <tr>
+                                <td colspan="6" class="empty-table">
+                                    Không tìm thấy chức
+                                    vụ phù hợp.
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <footer class="table-footer">
+                    <p>
+                        Hiển thị
+                        {{ firstDisplayedRow }} -
+                        {{ lastDisplayedRow }}
+                        trên tổng số
+                        {{ filteredPositions.length }}
+                        chức vụ
+                    </p>
+
+                    <div class="pagination">
+                        <button type="button" [disabled]="
+                        currentPage === 1
+                    " (click)="
+                        goToPage(
+                            currentPage - 1
+                        )
+                    " aria-label="Trang trước">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+
+                        @for (
+                        page of visiblePages;
+                        track page
+                        ) {
+                        <button type="button" [class.pagination__active]="
+                            currentPage ===
+                            page
+                        " (click)="
+                            goToPage(page)
+                        ">
+                            {{ page }}
+                        </button>
+                        }
+
+                        <button type="button" [disabled]="
+                        currentPage ===
+                        totalPages
+                    " (click)="
+                        goToPage(
+                            currentPage + 1
+                        )
+                    " aria-label="Trang sau">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m9 18 6-6-6-6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </footer>
+            </section>
+        </main>
+    </section>
+
+    @if (toastMessage) {
+    <div class="toast-message" role="status">{{ toastMessage }}</div>
+    }
+</div>

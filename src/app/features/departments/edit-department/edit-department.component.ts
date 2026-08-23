@@ -12,9 +12,9 @@ import {
 
 import {
     DepartmentEditForm,
-    DepartmentManager,
     SidebarItem,
 } from './edit-department.model';
+import { PHONG_BAN_TRANG_THAI } from '../../../core/constants/status.constants';
 
 @Component({
     selector: 'app-edit-department',
@@ -35,6 +35,8 @@ export class EditDepartmentComponent {
     isSaving = false;
     toastMessage = '';
 
+    readonly phongBanTrangThai = PHONG_BAN_TRANG_THAI;
+
     readonly sidebarItems: SidebarItem[] = [
         { label: 'Bảng điều khiển', icon: 'dashboard', route: '/dashboard' },
         { label: 'Nhân viên', icon: 'employees', route: '/employees' },
@@ -47,23 +49,12 @@ export class EditDepartmentComponent {
         { label: 'Cài đặt', icon: 'settings', route: '/settings' },
     ];
 
-    readonly managers: DepartmentManager[] = [
-        { id: 1, name: 'Nguyễn Văn A' },
-        { id: 2, name: 'Trần Minh Quân' },
-        { id: 3, name: 'Lê Thị Mai' },
-        { id: 4, name: 'Phạm Hoàng Nam' },
-    ];
-
     form: DepartmentEditForm = {
-        id: 1,
-        name: 'Phòng Công nghệ Thông tin',
-        code: 'PB-TECH-01',
-        managerId: 1,
-        establishedDate: '2018-05-15',
-        description:
+        maPB: 1,
+        tenPB: 'Phòng Công nghệ Thông tin',
+        moTa:
             'Quản lý và vận hành hệ thống công nghệ thông tin của công ty. Hỗ trợ kỹ thuật, phát triển phần mềm nội bộ và đảm bảo an toàn thông tin mạng.',
-        location: 'Tầng 4, Tòa nhà A',
-        status: 'active',
+        trangThai: PHONG_BAN_TRANG_THAI.DANG_HOAT_DONG,
     };
 
     constructor(
@@ -77,7 +68,7 @@ export class EditDepartmentComponent {
         if (departmentId) {
             this.form = {
                 ...this.form,
-                id: departmentId,
+                maPB: departmentId,
             };
         }
     }
@@ -100,13 +91,8 @@ export class EditDepartmentComponent {
     }
 
     saveChanges(): void {
-        if (!this.form.name.trim()) {
+        if (!this.form.tenPB.trim()) {
             this.showToast('Vui lòng nhập tên phòng ban.');
-            return;
-        }
-
-        if (!this.form.code.trim()) {
-            this.showToast('Vui lòng nhập mã phòng ban.');
             return;
         }
 
