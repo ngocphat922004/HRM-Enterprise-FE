@@ -203,7 +203,7 @@
 
                 <h1>
                     Chỉnh sửa phòng ban:
-                    <span>{{ form.name }}</span>
+                    <span>{{ form.tenPB }}</span>
                 </h1>
 
                 <p>Cập nhật thông tin chi tiết của phòng ban.</p>
@@ -225,33 +225,10 @@
                         </header>
 
                         <div class="form-grid">
-                            <label class="form-field">
+                            <label class="form-field form-field--full">
                                 <span>Tên phòng ban <strong>*</strong></span>
-                                <input type="text" [(ngModel)]="form.name" name="name"
+                                <input type="text" [(ngModel)]="form.tenPB" name="tenPB"
                                     placeholder="Nhập tên phòng ban" />
-                            </label>
-
-                            <label class="form-field">
-                                <span>Mã phòng ban <strong>*</strong></span>
-                                <input type="text" [(ngModel)]="form.code" name="code"
-                                    placeholder="Nhập mã phòng ban" />
-                                <small>Mã phòng ban không thể thay đổi.</small>
-                            </label>
-
-                            <label class="form-field">
-                                <span>Trưởng phòng</span>
-                                <select [(ngModel)]="form.managerId" name="managerId">
-                                    @for (manager of managers; track manager.id) {
-                                    <option [ngValue]="manager.id">
-                                        {{ manager.name }}
-                                    </option>
-                                    }
-                                </select>
-                            </label>
-
-                            <label class="form-field">
-                                <span>Ngày thành lập</span>
-                                <input type="date" [(ngModel)]="form.establishedDate" name="establishedDate" />
                             </label>
                         </div>
                     </section>
@@ -272,36 +249,23 @@
                         <div class="form-grid">
                             <label class="form-field form-field--full">
                                 <span>Chức năng / Nhiệm vụ</span>
-                                <textarea [(ngModel)]="form.description" name="description" rows="4"
+                                <textarea [(ngModel)]="form.moTa" name="moTa" rows="4"
                                     placeholder="Mô tả chức năng, nhiệm vụ của phòng ban"></textarea>
-                            </label>
-
-                            <label class="form-field">
-                                <span>Vị trí</span>
-
-                                <div class="input-with-icon">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0"></path>
-                                        <circle cx="12" cy="10" r="3"></circle>
-                                    </svg>
-
-                                    <input type="text" [(ngModel)]="form.location" name="location"
-                                        placeholder="Nhập vị trí phòng ban" />
-                                </div>
                             </label>
 
                             <fieldset class="status-field">
                                 <legend>Trạng thái</legend>
 
                                 <label>
-                                    <input type="radio" name="status" value="active" [(ngModel)]="form.status" />
-                                    <span>Hoạt động</span>
+                                    <input type="radio" name="trangThai" [value]="phongBanTrangThai.DANG_HOAT_DONG"
+                                        [(ngModel)]="form.trangThai" />
+                                    <span>Đang hoạt động</span>
                                 </label>
 
                                 <label>
-                                    <input type="radio" name="status" value="paused" [(ngModel)]="form.status" />
-                                    <span>Tạm ngừng</span>
+                                    <input type="radio" name="trangThai" [value]="phongBanTrangThai.NGUNG_HOAT_DONG"
+                                        [(ngModel)]="form.trangThai" />
+                                    <span>Ngừng hoạt động</span>
                                 </label>
                             </fieldset>
                         </div>

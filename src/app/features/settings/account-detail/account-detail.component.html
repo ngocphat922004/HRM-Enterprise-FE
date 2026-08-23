@@ -1,0 +1,468 @@
+<div class="dashboard-shell account-detail-page">
+    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
+        aria-hidden="true"></div>
+
+    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
+        <div class="sidebar__brand">
+            <div class="brand-mark" aria-hidden="true">HR</div>
+
+            <div>
+                <strong>HRM Admin</strong>
+                <span>Quản lý nhân sự</span>
+            </div>
+
+            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+                ×
+            </button>
+        </div>
+
+        <nav class="sidebar__nav" aria-label="Điều hướng chính">
+            @for (item of sidebarItems; track item.label) {
+            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
+                (click)="closeSidebar()">
+                <span class="nav-item__icon" aria-hidden="true">
+                    @switch (item.icon) {
+                    @case ('layout-dashboard') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                    </svg>
+                    }
+
+                    @case ('users') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    }
+
+                    @case ('building-2') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+                        <path d="M10 6h4"></path>
+                        <path d="M10 10h4"></path>
+                        <path d="M10 14h4"></path>
+                    </svg>
+                    }
+
+                    @case ('file-text') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <path d="M14 2v6h6"></path>
+                        <path d="M8 13h8"></path>
+                        <path d="M8 17h8"></path>
+                    </svg>
+                    }
+
+                    @case ('clock-3') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                    }
+
+                    @case ('calendar-days') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v4"></path>
+                        <path d="M16 2v4"></path>
+                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                        <path d="M3 10h18"></path>
+                        <path d="M8 14h.01"></path>
+                        <path d="M12 14h.01"></path>
+                        <path d="M16 14h.01"></path>
+                    </svg>
+                    }
+
+                    @case ('banknote') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <path d="M6 9h.01"></path>
+                        <path d="M18 15h.01"></path>
+                    </svg>
+                    }
+
+                    @case ('award') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="6"></circle>
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                    </svg>
+                    }
+
+                    @case ('chart-no-axes-combined') {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"></path>
+                        <path d="m7 16 4-4 3 3 5-6"></path>
+                    </svg>
+                    }
+
+                    @default {
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 0-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    }
+                    }
+                </span>
+
+                <span>{{ item.label }}</span>
+            </a>
+            }
+        </nav>
+
+        <div class="sidebar__footer">
+            <button class="logout-button" type="button" (click)="logout()">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                </svg>
+                <span>Đăng xuất</span>
+            </button>
+        </div>
+    </aside>
+
+    <section class="workspace">
+        <header class="top-header">
+            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 18h16"></path>
+                </svg>
+            </button>
+
+            <label class="search-box">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+
+                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm quyết định, nhân viên..."
+                    aria-label="Tìm kiếm toàn hệ thống" />
+            </label>
+
+            <div class="top-header__actions">
+                <a class="header-add-button" routerLink="/settings">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 6h13"></path>
+                        <path d="M8 12h13"></path>
+                        <path d="M8 18h13"></path>
+                        <path d="M3 6h.01"></path>
+                        <path d="M3 12h.01"></path>
+                        <path d="M3 18h.01"></path>
+                    </svg>
+                    Danh sách tài khoản
+                </a>
+
+                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                        <path d="M4 17h16"></path>
+                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
+                    </svg>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
+                    </svg>
+                </button>
+
+                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
+                    <div class="header-profile__info">
+                        <strong>Trần Hoàng Nam</strong>
+                        <span>Quản trị viên</span>
+                    </div>
+                    <span class="header-profile__avatar">TN</span>
+                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="account-detail-heading">
+                <nav class="breadcrumb" aria-label="Điều hướng">
+                    <a routerLink="/settings">Cài đặt</a>
+                    <span>/</span>
+                    <strong>Chi tiết tài khoản</strong>
+                </nav>
+
+                <div class="account-detail-heading__row">
+                    <div>
+                        <h1>Chi tiết tài khoản</h1>
+                        <p>Thông tin đăng nhập, quyền và nhân viên đang được liên kết.</p>
+                    </div>
+
+                    <div class="heading-actions">
+                        <button class="secondary-button" type="button" (click)="backToList()">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                            </svg>
+                            Quay lại
+                        </button>
+
+                        <button class="primary-button" type="button" (click)="editAccount()">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                            </svg>
+                            Chỉnh sửa
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            @if (isLoading) {
+            <section class="account-state-card" aria-live="polite">
+                <span class="state-spinner" aria-hidden="true"></span>
+                <h2>Đang tải tài khoản</h2>
+                <p>Vui lòng chờ trong giây lát.</p>
+            </section>
+            } @else if (errorMessage) {
+            <section class="account-state-card account-state-card--error">
+                <span class="account-state-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 8v4M12 16h.01"></path>
+                    </svg>
+                </span>
+                <h2>Không thể mở tài khoản</h2>
+                <p>{{ errorMessage }}</p>
+                <div class="account-state-card__actions">
+                    <button class="secondary-button" type="button" (click)="backToList()">Quay lại</button>
+                    @if (accountId !== null) {
+                    <button class="primary-button" type="button" (click)="retry()">Thử lại</button>
+                    }
+                </div>
+            </section>
+            } @else if (!account) {
+            <section class="account-state-card">
+                <span class="account-state-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4 21a8 8 0 0 1 16 0M16 3h5v5"></path>
+                    </svg>
+                </span>
+                <h2>Chưa có dữ liệu tài khoản</h2>
+                <p>Tài khoản {{ accountCode }} sẽ được tải khi kết nối API.</p>
+                <div class="account-state-card__actions">
+                    <button class="secondary-button" type="button" (click)="backToList()">Quay lại danh sách</button>
+                </div>
+            </section>
+            } @else {
+            <section class="account-profile-card" [class.account-profile-card--active]="isActive"
+                [class.account-profile-card--locked]="isLocked" [class.account-profile-card--inactive]="isInactive">
+                <div class="account-profile-card__identity">
+                    @if (account.hinhAnh) {
+                    <img [src]="account.hinhAnh" [alt]="account.hoTen" />
+                    } @else {
+                    <span class="account-profile-card__avatar">
+                        {{ getInitials(account.hoTen) }}
+                    </span>
+                    }
+
+                    <div>
+                        <span class="account-code">{{ accountCode }}</span>
+                        <h2>{{ account.tenDangNhap }}</h2>
+                        <p>Tài khoản của {{ account.hoTen }}</p>
+                    </div>
+                </div>
+
+                <span class="account-status" [class.account-status--active]="isActive"
+                    [class.account-status--locked]="isLocked" [class.account-status--inactive]="isInactive">
+                    <i aria-hidden="true"></i>
+                    {{ account.trangThai }}
+                </span>
+            </section>
+
+            <section class="account-detail-layout">
+                <div class="account-detail-main">
+                    <article class="detail-card">
+                        <header class="detail-card__header">
+                            <span class="detail-card__icon">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="8" r="4"></circle>
+                                    <path d="M4 21a8 8 0 0 1 16 0"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Thông tin tài khoản</h2>
+                                <p>Dữ liệu được lưu trong bảng Tài khoản.</p>
+                            </div>
+                        </header>
+
+                        <dl class="detail-list">
+                            <div>
+                                <dt>Mã tài khoản</dt>
+                                <dd>{{ account.maTK }}</dd>
+                            </div>
+                            <div>
+                                <dt>Tên đăng nhập</dt>
+                                <dd>{{ account.tenDangNhap }}</dd>
+                            </div>
+                            <div>
+                                <dt>Mã nhân viên</dt>
+                                <dd>{{ account.maNV }}</dd>
+                            </div>
+                            <div>
+                                <dt>Trạng thái</dt>
+                                <dd>{{ account.trangThai }}</dd>
+                            </div>
+                        </dl>
+                    </article>
+
+                    <article class="detail-card">
+                        <header class="detail-card__header">
+                            <span class="detail-card__icon detail-card__icon--employee">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Nhân viên liên kết</h2>
+                                <p>Thông tin JOIN từ hồ sơ nhân viên.</p>
+                            </div>
+                        </header>
+
+                        <div class="linked-employee">
+                            @if (account.hinhAnh) {
+                            <img [src]="account.hinhAnh" [alt]="account.hoTen" />
+                            } @else {
+                            <span class="linked-employee__avatar">{{ getInitials(account.hoTen) }}</span>
+                            }
+
+                            <div>
+                                <strong>{{ account.hoTen }}</strong>
+                                <span>{{ account.tenCV || 'Chưa có chức vụ' }}</span>
+                                <small>{{ account.tenPB || 'Chưa phân phòng' }}</small>
+                            </div>
+
+                            <button type="button" (click)="viewEmployee()">Xem hồ sơ</button>
+                        </div>
+
+                        <dl class="detail-list detail-list--employee">
+                            <div>
+                                <dt>Email</dt>
+                                <dd>{{ account.email || 'Chưa cập nhật' }}</dd>
+                            </div>
+                            <div>
+                                <dt>Số điện thoại</dt>
+                                <dd>{{ account.sdt || 'Chưa cập nhật' }}</dd>
+                            </div>
+                        </dl>
+                    </article>
+
+                    <section class="security-note">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect width="18" height="11" x="3" y="11" rx="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <div>
+                            <strong>Thông tin bảo mật được bảo vệ</strong>
+                            <p>Mật khẩu không được trả về hoặc hiển thị trên trang chi tiết tài khoản.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="account-detail-aside">
+                    <article class="permission-card">
+                        <header>
+                            <span>
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+                                    <path d="M9 12l2 2 4-4"></path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h2>Quyền tài khoản</h2>
+                                <p>Vai trò đang được cấp</p>
+                            </div>
+                        </header>
+
+                        <span class="permission-card__code">Mã quyền: {{ account.maQuyen }}</span>
+                        <strong>{{ account.tenQuyen }}</strong>
+                    </article>
+
+                    <article class="status-info-card">
+                        <header>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"></circle>
+                                <path d="M12 7v5l3 2"></path>
+                            </svg>
+                            <h2>Trạng thái sử dụng</h2>
+                        </header>
+
+                        @if (isActive) {
+                        <p>Tài khoản đang hoạt động và có thể đăng nhập hệ thống.</p>
+                        } @else if (isLocked) {
+                        <p>Tài khoản đang bị khóa và không thể đăng nhập.</p>
+                        } @else {
+                        <p>Tài khoản đã ngừng hoạt động.</p>
+                        }
+                    </article>
+
+                    <article class="data-source-card">
+                        <header>
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
+                            </svg>
+                            <h2>Nguồn dữ liệu</h2>
+                        </header>
+                        <ul>
+                            <li><span>Tài khoản và quyền</span><strong>Chờ kết nối API</strong></li>
+                            <li><span>Hồ sơ nhân viên</span><strong>Chờ kết nối API</strong></li>
+                        </ul>
+                    </article>
+                </aside>
+            </section>
+            }
+        </main>
+
+    </section>
+
+    @if (toastMessage) {
+    <div class="page-toast" role="status">
+        {{ toastMessage }}
+    </div>
+    }
+</div>

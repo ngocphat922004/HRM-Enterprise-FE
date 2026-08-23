@@ -1,0 +1,661 @@
+:host {
+    display: block;
+}
+
+.role-list-page {
+    min-height: 100vh;
+}
+
+.role-list-heading {
+    margin-bottom: 22px;
+}
+
+.breadcrumb {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    margin     : 0 0 10px;
+    color      : var(--color-text-secondary);
+    font-size  : 12px;
+}
+
+.breadcrumb a {
+    transition: color 160ms ease;
+}
+
+.breadcrumb a:hover,
+.breadcrumb strong {
+    color: var(--color-primary);
+}
+
+.breadcrumb strong {
+    font-weight: 600;
+}
+
+.role-list-heading h1 {
+    margin     : 0;
+    font-size  : var(--font-size-page-title);
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.role-list-heading p {
+    max-width  : 760px;
+    margin     : 7px 0 0;
+    color      : var(--color-text-secondary);
+    font-size  : 14px;
+    line-height: 1.55;
+}
+
+.role-stats {
+    display              : grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap                  : 16px;
+    margin-bottom        : 20px;
+}
+
+.stat-card {
+    min-width    : 0;
+    display      : flex;
+    align-items  : center;
+    gap          : 14px;
+    padding      : 20px;
+    overflow     : hidden;
+    border       : 1px solid var(--color-border);
+    border-radius: var(--radius-large);
+    background   : var(--color-surface);
+    box-shadow   : var(--shadow-card);
+}
+
+.stat-card__icon {
+    width        : 48px;
+    height       : 48px;
+    display      : grid;
+    flex         : 0 0 auto;
+    place-items  : center;
+    border-radius: 13px;
+}
+
+.stat-card__icon .lucide-icon {
+    width : 23px;
+    height: 23px;
+}
+
+.stat-card>div {
+    min-width: 0;
+}
+
+.stat-card span,
+.stat-card strong,
+.stat-card small {
+    display: block;
+}
+
+.stat-card>div>span {
+    overflow     : hidden;
+    color        : var(--color-text-secondary);
+    font-size    : 11px;
+    font-weight  : 600;
+    text-overflow: ellipsis;
+    white-space  : nowrap;
+}
+
+.stat-card strong {
+    margin-top : 3px;
+    color      : var(--color-text-primary);
+    font-size  : 25px;
+    font-weight: 760;
+    line-height: 1.15;
+}
+
+.stat-card small {
+    margin-top   : 4px;
+    overflow     : hidden;
+    color        : var(--color-text-secondary);
+    font-size    : 9px;
+    text-overflow: ellipsis;
+    white-space  : nowrap;
+}
+
+.stat-card--primary .stat-card__icon {
+    color     : var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.stat-card--info .stat-card__icon {
+    color     : var(--color-info);
+    background: rgb(14 165 233 / 9%);
+}
+
+.stat-card--success .stat-card__icon {
+    color     : var(--color-success);
+    background: rgb(22 163 74 / 9%);
+}
+
+.stat-card--warning .stat-card__icon {
+    color     : var(--color-warning);
+    background: rgb(245 158 11 / 10%);
+}
+
+.role-list-card {
+    overflow     : hidden;
+    border       : 1px solid var(--color-border);
+    border-radius: var(--radius-large);
+    background   : var(--color-surface);
+    box-shadow   : var(--shadow-card);
+}
+
+.role-list-toolbar {
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    gap            : 18px;
+    padding        : 20px 22px;
+    border-bottom  : 1px solid var(--color-border);
+}
+
+.role-list-toolbar h2 {
+    margin     : 0;
+    font-size  : 17px;
+    font-weight: 700;
+}
+
+.role-list-toolbar p {
+    margin   : 4px 0 0;
+    color    : var(--color-text-secondary);
+    font-size: 11px;
+}
+
+.role-list-toolbar code {
+    padding      : 2px 5px;
+    border-radius: 4px;
+    color        : var(--color-primary);
+    background   : var(--color-primary-light);
+    font-family  : inherit;
+    font-size    : 10px;
+    font-weight  : 650;
+}
+
+.role-search {
+    width        : min(360px, 100%);
+    min-height   : 46px;
+    display      : flex;
+    align-items  : center;
+    gap          : 9px;
+    flex         : 0 0 auto;
+    padding      : 0 12px;
+    border       : 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background   : var(--color-background);
+    transition   : border-color 160ms ease,
+        box-shadow 160ms ease,
+        background 160ms ease;
+}
+
+.role-search:focus-within {
+    border-color: var(--color-primary);
+    background  : var(--color-surface);
+    box-shadow  : 0 0 0 3px rgb(63 43 217 / 10%);
+}
+
+.role-search>.lucide-icon {
+    width : 18px;
+    height: 18px;
+    flex  : 0 0 auto;
+    color : var(--color-text-secondary);
+}
+
+.role-search input {
+    min-width : 0;
+    flex      : 1;
+    border    : 0;
+    outline   : 0;
+    color     : var(--color-text-primary);
+    background: transparent;
+    font-size : 12px;
+}
+
+.role-search input::placeholder {
+    color: var(--color-neutral);
+}
+
+.role-search button {
+    width        : 28px;
+    height       : 28px;
+    display      : grid;
+    flex         : 0 0 auto;
+    place-items  : center;
+    border       : 0;
+    border-radius: 7px;
+    color        : var(--color-text-secondary);
+    background   : transparent;
+    cursor       : pointer;
+}
+
+.role-search button:hover {
+    color     : var(--color-danger);
+    background: rgb(220 38 38 / 7%);
+}
+
+.role-search button .lucide-icon {
+    width : 15px;
+    height: 15px;
+}
+
+.role-table-wrap {
+    overflow-x: auto;
+}
+
+.role-table {
+    width          : 100%;
+    min-width      : 1040px;
+    border-collapse: collapse;
+}
+
+.role-table th {
+    height        : 49px;
+    padding       : 0 16px;
+    border-bottom : 1px solid var(--color-border);
+    color         : var(--color-text-secondary);
+    background    : var(--color-background);
+    font-size     : 11px;
+    font-weight   : 700;
+    text-align    : left;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    white-space   : nowrap;
+}
+
+.role-table td {
+    min-height    : 76px;
+    padding       : 14px 16px;
+    border-bottom : 1px solid var(--color-border);
+    color         : var(--color-text-primary);
+    font-size     : 12px;
+    vertical-align: middle;
+}
+
+.role-table tbody tr {
+    transition: background 150ms ease;
+}
+
+.role-table tbody tr:hover {
+    background: rgb(79 70 229 / 2.5%);
+}
+
+.role-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.role-code {
+    padding      : 6px 9px;
+    border       : 0;
+    border-radius: 7px;
+    color        : var(--color-primary);
+    background   : var(--color-primary-light);
+    font-size    : 11px;
+    font-weight  : 700;
+    cursor       : pointer;
+}
+
+.role-code:hover {
+    color     : #fff;
+    background: var(--color-primary);
+}
+
+.role-name-cell {
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+}
+
+.role-avatar {
+    width        : 38px;
+    height       : 38px;
+    display      : grid;
+    flex         : 0 0 auto;
+    place-items  : center;
+    border-radius: 10px;
+    color        : var(--color-primary);
+    background   : var(--color-primary-light);
+}
+
+.role-avatar .lucide-icon {
+    width : 19px;
+    height: 19px;
+}
+
+.role-name-cell button {
+    padding    : 0;
+    border     : 0;
+    color      : var(--color-text-primary);
+    background : transparent;
+    font-size  : 13px;
+    font-weight: 700;
+    text-align : left;
+    cursor     : pointer;
+}
+
+.role-name-cell button:hover {
+    color: var(--color-primary);
+}
+
+.role-description {
+    max-width  : 340px;
+    margin     : 0;
+    color      : var(--color-text-secondary);
+    font-size  : 11px;
+    line-height: 1.55;
+}
+
+.table-number,
+.table-status,
+.table-actions {
+    text-align: center !important;
+}
+
+.table-number strong,
+.table-number span {
+    display: block;
+}
+
+.table-number strong {
+    font-size  : 15px;
+    font-weight: 750;
+}
+
+.table-number span {
+    margin-top: 2px;
+    color     : var(--color-text-secondary);
+    font-size : 9px;
+}
+
+.usage-badge {
+    min-height     : 29px;
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 6px;
+    padding        : 0 10px;
+    border-radius  : 999px;
+    font-size      : 10px;
+    font-weight    : 650;
+    white-space    : nowrap;
+}
+
+.usage-badge i {
+    width        : 6px;
+    height       : 6px;
+    border-radius: 50%;
+}
+
+.usage-badge--used {
+    color     : var(--color-success);
+    background: rgb(22 163 74 / 9%);
+}
+
+.usage-badge--used i {
+    background: var(--color-success);
+}
+
+.usage-badge--unused {
+    color     : var(--color-text-secondary);
+    background: rgb(100 116 139 / 9%);
+}
+
+.usage-badge--unused i {
+    background: var(--color-text-secondary);
+}
+
+.action-buttons {
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 6px;
+}
+
+.action-buttons button {
+    width        : 34px;
+    height       : 34px;
+    display      : grid;
+    place-items  : center;
+    border       : 1px solid var(--color-border);
+    border-radius: 8px;
+    color        : var(--color-text-secondary);
+    background   : var(--color-surface);
+    cursor       : pointer;
+    transition   : border-color 150ms ease,
+        color 150ms ease,
+        background 150ms ease;
+}
+
+.action-buttons button:hover {
+    border-color: rgb(79 70 229 / 25%);
+    color       : var(--color-primary);
+    background  : var(--color-primary-light);
+}
+
+.action-buttons .action-button--danger:hover {
+    border-color: rgb(220 38 38 / 22%);
+    color       : var(--color-danger);
+    background  : rgb(220 38 38 / 7%);
+}
+
+.action-buttons .lucide-icon {
+    width : 16px;
+    height: 16px;
+}
+
+.table-state {
+    min-height     : 350px;
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    flex-direction : column;
+    padding        : 42px 24px;
+    text-align     : center;
+}
+
+.table-state__icon {
+    width        : 62px;
+    height       : 62px;
+    display      : grid;
+    place-items  : center;
+    margin-bottom: 16px;
+    border-radius: 17px;
+    color        : var(--color-primary);
+    background   : var(--color-primary-light);
+}
+
+.table-state--error .table-state__icon {
+    color     : var(--color-danger);
+    background: rgb(220 38 38 / 8%);
+}
+
+.table-state__icon .lucide-icon {
+    width : 29px;
+    height: 29px;
+}
+
+.table-state h3 {
+    margin     : 0;
+    color      : var(--color-text-primary);
+    font-size  : 18px;
+    font-weight: 730;
+}
+
+.table-state p {
+    max-width  : 540px;
+    margin     : 8px auto 0;
+    color      : var(--color-text-secondary);
+    font-size  : 12px;
+    line-height: 1.6;
+}
+
+.retry-button {
+    min-height   : 42px;
+    margin-top   : 18px;
+    padding      : 0 17px;
+    border       : 1px solid var(--color-primary);
+    border-radius: var(--radius-small);
+    color        : #fff;
+    background   : var(--color-primary);
+    font-size    : 12px;
+    font-weight  : 650;
+    cursor       : pointer;
+}
+
+.retry-button:hover {
+    background: var(--color-primary-hover);
+}
+
+.role-pagination {
+    min-height     : 67px;
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    gap            : 18px;
+    padding        : 12px 20px;
+    border-top     : 1px solid var(--color-border);
+}
+
+.role-pagination p {
+    margin   : 0;
+    color    : var(--color-text-secondary);
+    font-size: 11px;
+}
+
+.role-pagination p strong {
+    color      : var(--color-text-primary);
+    font-weight: 700;
+}
+
+.role-pagination nav {
+    display    : flex;
+    align-items: center;
+    gap        : 6px;
+}
+
+.role-pagination button {
+    min-width    : 35px;
+    height       : 35px;
+    display      : grid;
+    place-items  : center;
+    padding      : 0 7px;
+    border       : 1px solid var(--color-border);
+    border-radius: 8px;
+    color        : var(--color-text-secondary);
+    background   : var(--color-surface);
+    font-size    : 11px;
+    font-weight  : 650;
+    cursor       : pointer;
+}
+
+.role-pagination button:hover:not(:disabled),
+.role-pagination .pagination-button--active {
+    border-color: var(--color-primary);
+    color       : #fff;
+    background  : var(--color-primary);
+}
+
+.role-pagination button:disabled {
+    cursor : not-allowed;
+    opacity: .45;
+}
+
+.role-pagination .lucide-icon {
+    width : 16px;
+    height: 16px;
+}
+
+.page-spinner {
+    width           : 38px;
+    height          : 38px;
+    display         : inline-block;
+    margin-bottom   : 17px;
+    border          : 3px solid rgb(79 70 229 / 15%);
+    border-top-color: var(--color-primary);
+    border-radius   : 50%;
+    animation       : role-spin 750ms linear infinite;
+}
+
+.page-toast {
+    position     : fixed;
+    right        : 24px;
+    bottom       : 24px;
+    z-index      : 1200;
+    max-width    : min(440px, calc(100vw - 32px));
+    padding      : 13px 17px;
+    border       : 1px solid rgb(79 70 229 / 17%);
+    border-radius: 10px;
+    color        : var(--color-text-primary);
+    background   : var(--color-surface);
+    box-shadow   : 0 14px 35px rgb(38 31 65 / 16%);
+    font-size    : 12px;
+    font-weight  : 600;
+}
+
+@keyframes role-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1180px) {
+    .role-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .role-list-toolbar {
+        align-items   : stretch;
+        flex-direction: column;
+    }
+
+    .role-search {
+        width: 100%;
+    }
+
+    .role-pagination {
+        align-items   : flex-start;
+        flex-direction: column;
+    }
+
+    .role-pagination nav {
+        max-width : 100%;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 560px) {
+    .role-list-heading h1 {
+        font-size: 26px;
+    }
+
+    .role-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 18px;
+    }
+
+    .role-list-toolbar {
+        padding: 18px;
+    }
+
+    .table-state {
+        min-height: 320px;
+        padding   : 34px 18px;
+    }
+
+    .role-pagination {
+        padding: 14px 18px;
+    }
+
+    .page-toast {
+        right : 16px;
+        bottom: 16px;
+    }
+}

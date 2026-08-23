@@ -1,9 +1,12 @@
-export interface LoginResponse {
+import { ApiResponse } from './api-response.model';
+
+export interface LoginData {
     accessToken: string;
-    user: {
-        id: number;
-        fullName: string;
-        email: string;
-        role: 'Admin' | 'HR' | 'Manager' | 'Employee';
-    };
+    maTK: number;
+    tenDangNhap: string;
+    maNV: number;
+    maQuyen: number;
+    tenQuyen: string;
 }
+
+export type LoginResponse = ApiResponse<LoginData>;

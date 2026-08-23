@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   inject,
 } from '@angular/core';
@@ -9,7 +10,10 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import {
+  Router,
+  RouterLink,
+} from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
@@ -17,36 +21,63 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+  ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection:
+    ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
-  private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
+  private readonly formBuilder =
+    inject(FormBuilder);
 
-  readonly loginForm = this.formBuilder.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    rememberMe: [false],
-  });
+  private readonly authService =
+    inject(AuthService);
+
+  private readonly router =
+    inject(Router);
+
+  private readonly changeDetectorRef =
+    inject(ChangeDetectorRef);
+
+  readonly loginForm =
+    this.formBuilder.nonNullable.group({
+      tenDangNhap: [
+        '',
+        [
+          Validators.required,
+          Validators.maxLength(50),
+        ],
+      ],
+      matKhau: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(6),
+        ],
+      ],
+      rememberMe: [false],
+    });
 
   isPasswordVisible = false;
   isSubmitting = false;
   submitError = '';
 
-  get emailControl() {
-    return this.loginForm.controls.email;
+  get tenDangNhapControl() {
+    return this.loginForm.controls.tenDangNhap;
   }
 
-  get passwordControl() {
-    return this.loginForm.controls.password;
+  get matKhauControl() {
+    return this.loginForm.controls.matKhau;
   }
 
   togglePasswordVisibility(): void {
-    this.isPasswordVisible = !this.isPasswordVisible;
+    this.isPasswordVisible =
+      !this.isPasswordVisible;
   }
 
   submit(): void {
@@ -63,24 +94,53 @@ export class LoginComponent {
 
     this.isSubmitting = true;
 
+    const {
+      tenDangNhap,
+      matKhau,
+      rememberMe,
+    } = this.loginForm.getRawValue();
+
     this.authService
-      .login(this.loginForm.getRawValue())
+      .login({
+        tenDangNhap,
+        matKhau,
+      })
       .pipe(
         finalize(() => {
           this.isSubmitting = false;
+
+          this.changeDetectorRef.markForCheck();
         }),
       )
       .subscribe({
         next: (response) => {
-          this.authService.saveToken(
-            response.accessToken,
-            this.loginForm.controls.rememberMe.value,
+          if (
+            !response.success ||
+            !response.data
+          ) {
+            this.submitError =
+              response.message;
+
+            this.changeDetectorRef.markForCheck();
+            return;
+          }
+
+          this.authService.saveSession(
+            response.data,
+            rememberMe,
           );
 
-          void this.router.navigate(['/dashboard']);
+          void this.router.navigate([
+            '/dashboard',
+          ]);
         },
-        error: () => {
-          this.submitError = 'Tài khoản hoặc mật khẩu không chính xác';
+        error: (error: unknown) => {
+          this.submitError =
+            error instanceof Error
+              ? error.message
+              : 'Tên đăng nhập hoặc mật khẩu không chính xác.';
+
+          this.changeDetectorRef.markForCheck();
         },
       });
   }

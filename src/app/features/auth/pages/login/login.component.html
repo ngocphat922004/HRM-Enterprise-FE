@@ -5,15 +5,22 @@
 
       <div class="login-visual__content">
         <div class="version-badge">
-          <span class="version-badge__icon" aria-hidden="true">HR</span>
+          <span class="version-badge__icon" aria-hidden="true">
+            HR
+          </span>
+
           <span>HRM Enterprise v1.0</span>
         </div>
 
-        <h1>Quản trị nhân sự thông minh cho doanh nghiệp hiện đại</h1>
+        <h1>
+          Quản trị nhân sự thông minh cho
+          doanh nghiệp hiện đại
+        </h1>
 
         <p>
-          Tối ưu hóa quy trình quản lý, gắn kết đội ngũ và nâng tầm hiệu suất
-          làm việc với nền tảng HRM hàng đầu.
+          Tối ưu hóa quy trình quản lý, gắn kết
+          đội ngũ và nâng tầm hiệu suất làm việc
+          với nền tảng HRM hàng đầu.
         </p>
       </div>
     </aside>
@@ -25,7 +32,9 @@
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+
               <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+
               <path d="M10 6h4"></path>
               <path d="M10 10h4"></path>
               <path d="M10 14h4"></path>
@@ -37,62 +46,97 @@
         </div>
 
         <header class="login-card__header">
-          <h2 id="login-title">Chào mừng quay trở lại</h2>
-          <p>Vui lòng đăng nhập để tiếp tục</p>
+          <h2 id="login-title">
+            Chào mừng quay trở lại
+          </h2>
+
+          <p>
+            Vui lòng đăng nhập để tiếp tục
+          </p>
         </header>
 
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
           <div class="login-form-field">
-            <label for="email">Email</label>
+            <label for="tenDangNhap">
+              Tên đăng nhập
+            </label>
 
-            <div class="input-control" [class.input-control--invalid]="emailControl.touched && emailControl.invalid">
+            <div class="input-control" [class.input-control--invalid]="
+                tenDangNhapControl.touched &&
+                tenDangNhapControl.invalid
+              ">
               <svg class="input-control__icon lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
 
-              <input id="email" type="email" formControlName="email" placeholder="user@company.com"
-                autocomplete="username" aria-describedby="email-error" />
+              <input id="tenDangNhap" type="text" formControlName="tenDangNhap" placeholder="Nhập tên đăng nhập"
+                maxlength="50" autocomplete="username" aria-describedby="ten-dang-nhap-error" />
             </div>
 
-            @if (emailControl.touched && emailControl.hasError('required')) {
-            <p id="email-error" class="field-error">
-              Vui lòng nhập email
+            @if (
+            tenDangNhapControl.touched &&
+            tenDangNhapControl.hasError('required')
+            ) {
+            <p id="ten-dang-nhap-error" class="field-error">
+              Vui lòng nhập tên đăng nhập
             </p>
-            } @else if (emailControl.touched && emailControl.hasError('email')) {
-            <p id="email-error" class="field-error">
-              Email không đúng định dạng
+            } @else if (
+            tenDangNhapControl.touched &&
+            tenDangNhapControl.hasError('maxlength')
+            ) {
+            <p id="ten-dang-nhap-error" class="field-error">
+              Tên đăng nhập không được vượt
+              quá 50 ký tự
             </p>
             }
           </div>
 
           <div class="login-form-field">
             <div class="label-row">
-              <label for="password">Mật khẩu</label>
+              <label for="password">
+                Mật khẩu
+              </label>
 
-              <a routerLink="/forgot-password">Quên mật khẩu?</a>
+              <a routerLink="/forgot-password">
+                Quên mật khẩu?
+              </a>
             </div>
 
-            <div class="input-control"
-              [class.input-control--invalid]="passwordControl.touched && passwordControl.invalid">
+            <div class="input-control" [class.input-control--invalid]="
+                matKhauControl.touched &&
+                matKhauControl.invalid
+              ">
               <svg class="input-control__icon lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect width="18" height="11" x="3" y="11" rx="2"></rect>
+
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
 
-              <input id="password" [type]="isPasswordVisible ? 'text' : 'password'" formControlName="password"
-                placeholder="••••••••" autocomplete="current-password" aria-describedby="password-error" />
+              <input id="password" [type]="
+                  isPasswordVisible
+                    ? 'text'
+                    : 'password'
+                " formControlName="matKhau" placeholder="••••••••" autocomplete="current-password"
+                aria-describedby="password-error" />
 
-              <button class="password-toggle" type="button" (click)="togglePasswordVisibility()"
-                [attr.aria-label]="isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
+              <button class="password-toggle" type="button" (click)="togglePasswordVisibility()" [attr.aria-label]="
+                  isPasswordVisible
+                    ? 'Ẩn mật khẩu'
+                    : 'Hiện mật khẩu'
+                ">
                 @if (isPasswordVisible) {
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="m2 2 20 20"></path>
+
                   <path d="M6.71 6.71C4.9 7.97 3.56 9.77 3 12c1.19 4.78 4.62 8 9 8 1.37 0 2.63-.32 3.75-.88"></path>
+
                   <path d="M10.73 5.08C11.14 5.03 11.56 5 12 5c4.38 0 7.81 3.22 9 7-.31 1.24-.85 2.35-1.57 3.3"></path>
+
                   <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"></path>
                 </svg>
                 } @else {
@@ -101,25 +145,34 @@
                   <path
                     d="M2.06 12.35a1 1 0 0 1 0-.7C3.72 7.6 7.66 5 12 5c4.34 0 8.28 2.6 9.94 6.65a1 1 0 0 1 0 .7C20.28 16.4 16.34 19 12 19c-4.34 0-8.28-2.6-9.94-6.65">
                   </path>
+
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
                 }
               </button>
             </div>
 
-            @if (passwordControl.touched && passwordControl.hasError('required')) {
+            @if (
+            matKhauControl.touched &&
+            matKhauControl.hasError('required')
+            ) {
             <p id="password-error" class="field-error">
               Vui lòng nhập mật khẩu
             </p>
-            } @else if (passwordControl.touched && passwordControl.hasError('minlength')) {
+            } @else if (
+            matKhauControl.touched &&
+            matKhauControl.hasError('minlength')
+            ) {
             <p id="password-error" class="field-error">
-              Mật khẩu phải có ít nhất 6 ký tự
+              Mật khẩu phải có ít nhất
+              6 ký tự
             </p>
             }
           </div>
 
           <label class="remember-control">
             <input type="checkbox" formControlName="rememberMe" />
+
             <span>Ghi nhớ đăng nhập</span>
           </label>
 
@@ -128,6 +181,7 @@
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"></circle>
+
               <path d="M12 8v4"></path>
               <path d="M12 16h.01"></path>
             </svg>
@@ -136,9 +190,13 @@
           </div>
           }
 
-          <button class="login-button" type="submit" [disabled]="loginForm.invalid || isSubmitting">
+          <button class="login-button" type="submit" [disabled]="
+              loginForm.invalid ||
+              isSubmitting
+            ">
             @if (isSubmitting) {
             <span class="spinner" aria-hidden="true"></span>
+
             <span>Đang đăng nhập...</span>
             } @else {
             <span>Đăng nhập</span>
@@ -153,7 +211,7 @@
 
           <p class="demo-account">
             Tài khoản demo:
-            <strong>admin&#64;hrm.com</strong>
+            <strong>admin</strong>
             <span>/</span>
             <strong>123456</strong>
           </p>

@@ -339,7 +339,7 @@
                                         </td>
 
                                         <td class="row-action">
-                                            <button type="button" (click)="viewEmployee(employee)"
+                                            <button type="button" (click)="viewEmployeeInfo(employee)"
                                                 aria-label="Xem nhân viên">
                                                 ⋮
                                             </button>
@@ -351,7 +351,9 @@
                         </div>
 
                         <footer class="employee-card__footer">
-                            <a routerLink="/employees">Xem tất cả nhân sự</a>
+                            <button type="button" (click)="viewAllDepartmentEmployees()">
+                                Xem tất cả nhân sự
+                            </button>
                         </footer>
                     </article>
                 </div>

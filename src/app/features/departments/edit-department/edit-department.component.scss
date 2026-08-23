@@ -120,7 +120,6 @@
 }
 
 .form-field input,
-.form-field select,
 .form-field textarea {
     width        : 100%;
     border       : 1px solid var(--color-border);
@@ -133,8 +132,7 @@
     transition   : border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.form-field input,
-.form-field select {
+.form-field input {
     min-height: 46px;
     padding   : 0 13px;
 }
@@ -147,43 +145,9 @@
 }
 
 .form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus,
-.input-with-icon:focus-within {
+.form-field textarea:focus {
     border-color: var(--color-primary);
     box-shadow  : 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
-}
-
-.form-field small {
-    color      : var(--color-text-secondary);
-    font-size  : 11px;
-    line-height: 1.4;
-}
-
-.input-with-icon {
-    min-height   : 46px;
-    display      : flex;
-    align-items  : center;
-    gap          : 10px;
-    padding      : 0 13px;
-    border       : 1px solid var(--color-border);
-    border-radius: 9px;
-    background   : var(--color-surface);
-}
-
-.input-with-icon .lucide-icon {
-    width : 18px;
-    height: 18px;
-    flex  : 0 0 18px;
-    color : var(--color-text-secondary);
-}
-
-.input-with-icon input {
-    min-height   : auto;
-    padding      : 0;
-    border       : 0;
-    border-radius: 0;
-    box-shadow   : none !important;
 }
 
 .status-field {

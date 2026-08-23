@@ -1,21 +1,10 @@
-export type DepartmentEditStatus =
-    | 'active'
-    | 'paused';
+import { PhongBanTrangThai } from '../../../core/constants/status.constants';
 
 export interface DepartmentEditForm {
-    id: number;
-    name: string;
-    code: string;
-    managerId: number;
-    establishedDate: string;
-    description: string;
-    location: string;
-    status: DepartmentEditStatus;
-}
-
-export interface DepartmentManager {
-    id: number;
-    name: string;
+    maPB: number;
+    tenPB: string;
+    moTa: string;
+    trangThai: PhongBanTrangThai;
 }
 
 export interface SidebarItem {
