@@ -24,7 +24,6 @@ import {
     styleUrl: './employee-list.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
 export class EmployeeListComponent {
     sidebarOpen = false;
     activeMenu = 'Nhân viên';
@@ -44,7 +43,7 @@ export class EmployeeListComponent {
 
     readonly sidebarItems: SidebarItem[] = [
         {
-            label: 'Bảng điều khiển',
+            label: 'Tổng quan',
             icon: 'dashboard',
             route: '/dashboard',
         },
@@ -77,6 +76,11 @@ export class EmployeeListComponent {
             label: 'Bảng lương',
             icon: 'payroll',
             route: '/payroll',
+        },
+        {
+            label: 'Khen thưởng, kỷ luật',
+            icon: 'award',
+            route: '/rewards-discipline',
         },
         {
             label: 'Báo cáo',
@@ -246,6 +250,10 @@ export class EmployeeListComponent {
         },
     ];
 
+    constructor(
+        private readonly router: Router,
+    ) { }
+
     get filteredEmployees(): Employee[] {
         const keyword = this.searchTerm
             .trim()
@@ -364,9 +372,6 @@ export class EmployeeListComponent {
         );
     }
 
-    constructor(
-        private readonly router: Router,
-    ) { }
     setActiveMenu(label: string): void {
         this.activeMenu = label;
         this.sidebarOpen = false;
@@ -416,6 +421,7 @@ export class EmployeeListComponent {
                         employee.id,
                     ),
             );
+
             return;
         }
 
@@ -438,6 +444,7 @@ export class EmployeeListComponent {
             this.selectedEmployeeIds.delete(
                 employeeId,
             );
+
             return;
         }
 
@@ -488,6 +495,7 @@ export class EmployeeListComponent {
         );
 
         this.openedMenuId = null;
+
         this.showToast(
             `Đã xóa ${employee.fullName}.`,
         );
@@ -496,6 +504,7 @@ export class EmployeeListComponent {
     logout(): void {
         localStorage.clear();
         sessionStorage.clear();
+
         void this.router.navigate(['/login']);
     }
 

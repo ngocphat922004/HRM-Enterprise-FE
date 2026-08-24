@@ -38,6 +38,7 @@ export class EditEmployeeComponent {
     isSaving = false;
     toastMessage = '';
     chatOpen = false;
+
     get activeTabLabel(): string {
         return (
             this.tabs.find(
@@ -70,15 +71,56 @@ export class EditEmployeeComponent {
     ];
 
     readonly sidebarItems = [
-        { label: 'Bảng điều khiển', icon: 'dashboard', route: '/dashboard' },
-        { label: 'Nhân viên', icon: 'employees', route: '/employees' },
-        { label: 'Phòng ban', icon: 'department', route: '/departments' },
-        { label: 'Hợp đồng', icon: 'contract', route: '/contracts' },
-        { label: 'Chấm công', icon: 'attendance', route: '/attendance' },
-        { label: 'Nghỉ phép', icon: 'leave', route: '/leave' },
-        { label: 'Bảng lương', icon: 'payroll', route: '/payroll' },
-        { label: 'Báo cáo', icon: 'report', route: '/reports' },
-        { label: 'Cài đặt', icon: 'settings', route: '/settings' },
+        {
+            label: 'Tổng quan',
+            icon: 'dashboard',
+            route: '/dashboard',
+        },
+        {
+            label: 'Nhân viên',
+            icon: 'employees',
+            route: '/employees',
+        },
+        {
+            label: 'Phòng ban',
+            icon: 'department',
+            route: '/departments',
+        },
+        {
+            label: 'Hợp đồng',
+            icon: 'contract',
+            route: '/contracts',
+        },
+        {
+            label: 'Chấm công',
+            icon: 'attendance',
+            route: '/attendance',
+        },
+        {
+            label: 'Nghỉ phép',
+            icon: 'leave',
+            route: '/leave',
+        },
+        {
+            label: 'Bảng lương',
+            icon: 'payroll',
+            route: '/payroll',
+        },
+        {
+            label: 'Khen thưởng, kỷ luật',
+            icon: 'award',
+            route: '/rewards-discipline',
+        },
+        {
+            label: 'Báo cáo',
+            icon: 'report',
+            route: '/reports',
+        },
+        {
+            label: 'Cài đặt',
+            icon: 'settings',
+            route: '/settings',
+        },
     ];
 
     employee: EditEmployeeForm = {
@@ -174,7 +216,9 @@ export class EditEmployeeComponent {
 
         window.setTimeout(() => {
             this.isSaving = false;
-            this.showToast('Đã lưu thay đổi thông tin nhân viên.');
+            this.showToast(
+                'Đã lưu thay đổi thông tin nhân viên.',
+            );
         }, 900);
     }
 
@@ -233,7 +277,9 @@ export class EditEmployeeComponent {
         );
     }
 
-    viewDocument(document: EmployeeDocument): void {
+    viewDocument(
+        document: EmployeeDocument,
+    ): void {
         this.showToast(
             `Đang mở tài liệu ${document.name}.`,
         );
@@ -264,6 +310,7 @@ export class EditEmployeeComponent {
     logout(): void {
         localStorage.clear();
         sessionStorage.clear();
+
         void this.router.navigate(['/login']);
     }
 

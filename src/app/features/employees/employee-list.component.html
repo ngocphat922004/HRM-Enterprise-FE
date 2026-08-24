@@ -105,6 +105,15 @@
                     </svg>
                     }
 
+                    @case ('award') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                    </svg>
+                    }
+
                     @case ('report') {
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -139,6 +148,7 @@
                     <path d="M15 12H3"></path>
                     <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
                 </svg>
+
                 <span>Đăng xuất</span>
             </button>
         </div>
@@ -156,11 +166,13 @@
             </button>
 
             <label class="search-box">
-                <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <span aria-hidden="true">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.3-4.3"></path>
-                    </svg></span>
+                    </svg>
+                </span>
 
                 <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
                     placeholder="Tìm kiếm nhân viên, hồ sơ..." aria-label="Tìm kiếm nhân viên" />
@@ -168,12 +180,14 @@
 
             <div class="top-header__actions">
                 <a class="header-add-button" routerLink="/employees/add">
-                    <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
+                    <span aria-hidden="true">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M5 12h14"></path>
                             <path d="M12 5v14"></path>
-                        </svg></span>
+                        </svg>
+                    </span>
+
                     Thêm mới
                 </a>
 
@@ -184,6 +198,7 @@
                         <path d="M4 17h16"></path>
                         <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
                     </svg>
+
                     <span class="notification-dot"></span>
                 </button>
 
@@ -233,6 +248,7 @@
                             <path d="m7 10 5 5 5-5"></path>
                             <path d="M5 21h14"></path>
                         </svg>
+
                         Xuất Excel
                     </button>
                 </div>
@@ -251,20 +267,15 @@
                             </svg>
                         </span>
 
-                        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="
-                applyFilters()
-              " placeholder="Tên hoặc Mã NV..." />
+                        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+                            placeholder="Tên hoặc Mã NV..." />
                     </div>
                 </label>
 
                 <label class="filter-field">
                     <span>Phòng ban</span>
 
-                    <select [(ngModel)]="
-              selectedDepartment
-            " (ngModelChange)="
-              applyFilters()
-            ">
+                    <select [(ngModel)]="selectedDepartment" (ngModelChange)="applyFilters()">
                         <option value="">
                             Tất cả phòng ban
                         </option>
@@ -283,11 +294,7 @@
                 <label class="filter-field">
                     <span>Chức vụ</span>
 
-                    <select [(ngModel)]="
-              selectedPosition
-            " (ngModelChange)="
-              applyFilters()
-            ">
+                    <select [(ngModel)]="selectedPosition" (ngModelChange)="applyFilters()">
                         <option value="">
                             Tất cả chức vụ
                         </option>
@@ -306,23 +313,23 @@
                 <label class="filter-field">
                     <span>Trạng thái</span>
 
-                    <select [(ngModel)]="
-              selectedStatus
-            " (ngModelChange)="
-              applyFilters()
-            ">
+                    <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
                         <option value="">
                             Tất cả trạng thái
                         </option>
+
                         <option value="working">
                             Đang làm việc
                         </option>
+
                         <option value="probation">
                             Thử việc
                         </option>
+
                         <option value="on-leave">
                             Nghỉ phép
                         </option>
+
                         <option value="resigned">
                             Đã nghỉ
                         </option>
@@ -336,11 +343,8 @@
                         <thead>
                             <tr>
                                 <th class="checkbox-column">
-                                    <input type="checkbox" [checked]="
-                      allCurrentPageSelected
-                    " (change)="
-                      toggleSelectAll()
-                    " aria-label="Chọn tất cả" />
+                                    <input type="checkbox" [checked]="allCurrentPageSelected"
+                                        (change)="toggleSelectAll()" aria-label="Chọn tất cả" />
                                 </th>
 
                                 <th>Nhân viên</th>
@@ -360,26 +364,15 @@
                             ) {
                             <tr>
                                 <td class="checkbox-column">
-                                    <input type="checkbox" [checked]="
-                        selectedEmployeeIds.has(
-                          employee.id
-                        )
-                      " (change)="
-                        toggleEmployeeSelection(
-                          employee.id
-                        )
-                      " [attr.aria-label]="
-                        'Chọn ' +
-                        employee.fullName
-                      " />
+                                    <input type="checkbox" [checked]="selectedEmployeeIds.has(employee.id)"
+                                        (change)="toggleEmployeeSelection(employee.id)"
+                                        [attr.aria-label]="'Chọn ' + employee.fullName" />
                                 </td>
 
                                 <td>
                                     <div class="employee-info">
                                         <span class="employee-avatar">
-                                            {{
-                                            employee.initials
-                                            }}
+                                            {{ employee.initials }}
                                         </span>
 
                                         <div>
@@ -387,6 +380,7 @@
                                                 (click)="viewEmployee(employee)">
                                                 {{ employee.fullName }}
                                             </button>
+
                                             <span>
                                                 {{ employee.email }}
                                             </span>
@@ -395,15 +389,11 @@
                                 </td>
 
                                 <td>
-                                    {{
-                                    employee.employeeCode
-                                    }}
+                                    {{ employee.employeeCode }}
                                 </td>
 
                                 <td>
-                                    {{
-                                    employee.department
-                                    }}
+                                    {{ employee.department }}
                                 </td>
 
                                 <td>
@@ -415,27 +405,16 @@
                                 </td>
 
                                 <td>
-                                    <span class="status-badge" [class]="
-                        'status-badge ' +
-                        getStatusClass(
-                          employee.status
-                        )
-                      ">
-                                        {{
-                                        getStatusLabel(
-                                        employee.status
-                                        )
-                                        }}
+                                    <span class="status-badge"
+                                        [class]="'status-badge ' + getStatusClass(employee.status)">
+                                        {{ getStatusLabel(employee.status) }}
                                     </span>
                                 </td>
 
                                 <td class="action-column">
                                     <div class="row-menu-wrapper">
-                                        <button class="row-menu-button" type="button" (click)="
-                          toggleRowMenu(
-                            employee.id
-                          )
-                        " aria-label="Tùy chọn nhân viên">
+                                        <button class="row-menu-button" type="button"
+                                            (click)="toggleRowMenu(employee.id)" aria-label="Tùy chọn nhân viên">
                                             ⋮
                                         </button>
 
@@ -447,19 +426,13 @@
                                             <button type="button" (click)="viewEmployee(employee)">
                                                 Xem chi tiết
                                             </button>
-                                            <button type="button" (click)="
-                              editEmployee(
-                                employee
-                              )
-                            ">
+
+                                            <button type="button" (click)="editEmployee(employee)">
                                                 Chỉnh sửa
                                             </button>
 
-                                            <button class="delete-action" type="button" (click)="
-                              deleteEmployee(
-                                employee
-                              )
-                            ">
+                                            <button class="delete-action" type="button"
+                                                (click)="deleteEmployee(employee)">
                                                 Xóa
                                             </button>
                                         </div>
@@ -489,11 +462,8 @@
                     </p>
 
                     <div class="pagination">
-                        <button type="button" [disabled]="currentPage === 1" (click)="
-                goToPage(
-                  currentPage - 1
-                )
-              " aria-label="Trang trước">
+                        <button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)"
+                            aria-label="Trang trước">
                             ‹
                         </button>
 
@@ -501,20 +471,14 @@
                         page of visiblePages;
                         track page
                         ) {
-                        <button type="button" [class.pagination__active]="
-                  currentPage === page
-                " (click)="goToPage(page)">
+                        <button type="button" [class.pagination__active]="currentPage === page"
+                            (click)="goToPage(page)">
                             {{ page }}
                         </button>
                         }
 
-                        <button type="button" [disabled]="
-                currentPage === totalPages
-              " (click)="
-                goToPage(
-                  currentPage + 1
-                )
-              " aria-label="Trang sau">
+                        <button type="button" [disabled]="currentPage === totalPages"
+                            (click)="goToPage(currentPage + 1)" aria-label="Trang sau">
                             ›
                         </button>
                     </div>
@@ -522,15 +486,15 @@
                     <label class="page-size">
                         <span>Số dòng mỗi trang</span>
 
-                        <select [(ngModel)]="pageSize" (ngModelChange)="
-                changePageSize()
-              ">
+                        <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()">
                             <option [ngValue]="5">
                                 5
                             </option>
+
                             <option [ngValue]="10">
                                 10
                             </option>
+
                             <option [ngValue]="20">
                                 20
                             </option>

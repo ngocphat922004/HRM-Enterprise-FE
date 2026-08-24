@@ -46,7 +46,7 @@ export class AddLeaveComponent {
     readonly sidebarItems:
         AddLeaveSidebarItem[] = [
             {
-                label: 'Bảng điều khiển',
+                label: 'Tổng quan',
                 icon: 'dashboard',
                 route: '/dashboard',
             },
@@ -79,6 +79,11 @@ export class AddLeaveComponent {
                 label: 'Bảng lương',
                 icon: 'payroll',
                 route: '/payroll',
+            },
+            {
+                label: 'Khen thưởng, kỷ luật',
+                icon: 'award',
+                route: '/rewards-discipline',
             },
             {
                 label: 'Báo cáo',

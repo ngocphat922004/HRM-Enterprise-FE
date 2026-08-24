@@ -57,7 +57,7 @@ export class LeaveDetailComponent
     readonly sidebarItems:
         LeaveDetailSidebarItem[] = [
             {
-                label: 'Bảng điều khiển',
+                label: 'Tổng quan',
                 icon: 'dashboard',
                 route: '/dashboard',
             },
@@ -90,6 +90,11 @@ export class LeaveDetailComponent
                 label: 'Bảng lương',
                 icon: 'payroll',
                 route: '/payroll',
+            },
+            {
+                label: 'Khen thưởng, kỷ luật',
+                icon: 'award',
+                route: '/rewards-discipline',
             },
             {
                 label: 'Báo cáo',

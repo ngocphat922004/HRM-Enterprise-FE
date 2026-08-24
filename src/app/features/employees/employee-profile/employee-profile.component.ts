@@ -37,24 +37,83 @@ export class EmployeeProfileComponent {
   toastMessage = '';
 
   readonly sidebarItems: SidebarItem[] = [
-    { label: 'Bảng điều khiển', icon: 'dashboard', route: '/dashboard' },
-    { label: 'Nhân viên', icon: 'employees', route: '/employees' },
-    { label: 'Phòng ban', icon: 'department', route: '/departments' },
-    { label: 'Hợp đồng', icon: 'contract', route: '/contracts' },
-    { label: 'Chấm công', icon: 'attendance', route: '/attendance' },
-    { label: 'Nghỉ phép', icon: 'leave', route: '/leave' },
-    { label: 'Bảng lương', icon: 'payroll', route: '/payroll' },
-    { label: 'Báo cáo', icon: 'report', route: '/reports' },
-    { label: 'Cài đặt', icon: 'settings', route: '/settings' },
+    {
+      label: 'Tổng quan',
+      icon: 'dashboard',
+      route: '/dashboard',
+    },
+    {
+      label: 'Nhân viên',
+      icon: 'employees',
+      route: '/employees',
+    },
+    {
+      label: 'Phòng ban',
+      icon: 'department',
+      route: '/departments',
+    },
+    {
+      label: 'Hợp đồng',
+      icon: 'contract',
+      route: '/contracts',
+    },
+    {
+      label: 'Chấm công',
+      icon: 'attendance',
+      route: '/attendance',
+    },
+    {
+      label: 'Nghỉ phép',
+      icon: 'leave',
+      route: '/leave',
+    },
+    {
+      label: 'Bảng lương',
+      icon: 'payroll',
+      route: '/payroll',
+    },
+    {
+      label: 'Khen thưởng, kỷ luật',
+      icon: 'award',
+      route: '/rewards-discipline',
+    },
+    {
+      label: 'Báo cáo',
+      icon: 'report',
+      route: '/reports',
+    },
+    {
+      label: 'Cài đặt',
+      icon: 'settings',
+      route: '/settings',
+    },
   ];
 
   readonly tabs: EmployeeProfileTabItem[] = [
-    { id: 'personal', label: 'Thông tin cá nhân' },
-    { id: 'work', label: 'Thông tin công việc' },
-    { id: 'contract', label: 'Hợp đồng' },
-    { id: 'attendance', label: 'Chấm công & Nghỉ phép' },
-    { id: 'salary', label: 'Lương & Phúc lợi' },
-    { id: 'history', label: 'Lịch sử thay đổi' },
+    {
+      id: 'personal',
+      label: 'Thông tin cá nhân',
+    },
+    {
+      id: 'work',
+      label: 'Thông tin công việc',
+    },
+    {
+      id: 'contract',
+      label: 'Hợp đồng',
+    },
+    {
+      id: 'attendance',
+      label: 'Chấm công & Nghỉ phép',
+    },
+    {
+      id: 'salary',
+      label: 'Lương & Phúc lợi',
+    },
+    {
+      id: 'history',
+      label: 'Lịch sử thay đổi',
+    },
   ];
 
   employee: EmployeeProfile = {
@@ -76,8 +135,10 @@ export class EmployeeProfileComponent {
     ethnicity: 'Kinh',
     religion: 'Không',
     nationality: 'Việt Nam',
-    permanentAddress: '72 Trần Hưng Đạo, Quận 1, TP. Hồ Chí Minh',
-    temporaryAddress: '158 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh',
+    permanentAddress:
+      '72 Trần Hưng Đạo, Quận 1, TP. Hồ Chí Minh',
+    temporaryAddress:
+      '158 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh',
     emergencyContact: {
       name: 'Trần Thị Minh Anh',
       relationship: 'Vợ',
@@ -122,7 +183,9 @@ export class EmployeeProfileComponent {
     this.sidebarOpen = false;
   }
 
-  changeTab(tabId: EmployeeProfileTab): void {
+  changeTab(
+    tabId: EmployeeProfileTab,
+  ): void {
     this.activeTab = tabId;
   }
 
@@ -135,20 +198,27 @@ export class EmployeeProfileComponent {
   }
 
   exportPdf(): void {
-    this.showToast('Đang chuẩn bị file PDF hồ sơ nhân viên.');
+    this.showToast(
+      'Đang chuẩn bị file PDF hồ sơ nhân viên.',
+    );
   }
 
   lockAccount(): void {
-    this.showToast('Yêu cầu khóa tài khoản đã được ghi nhận.');
+    this.showToast(
+      'Yêu cầu khóa tài khoản đã được ghi nhận.',
+    );
   }
 
   logout(): void {
     localStorage.clear();
     sessionStorage.clear();
+
     void this.router.navigate(['/login']);
   }
 
-  private showToast(message: string): void {
+  private showToast(
+    message: string,
+  ): void {
     this.toastMessage = message;
 
     window.setTimeout(() => {

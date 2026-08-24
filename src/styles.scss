@@ -122,11 +122,11 @@ svg {
 }
 
 .sidebar__brand {
-    min-height : 96px;
+    min-height : 76px;
     display    : flex;
     align-items: center;
     gap        : 12px;
-    padding    : 22px 24px;
+    padding    : 10px 24px;
 }
 
 .brand-mark {
@@ -176,7 +176,7 @@ svg {
     flex          : 1;
     flex-direction: column;
     gap           : 3px;
-    padding       : 18px 0;
+    padding       : 6px 0 8px;
     overflow-y    : auto;
 }
 
@@ -224,17 +224,17 @@ svg {
 
 .sidebar__footer {
     margin-top: auto;
-    padding   : 16px 20px 22px;
+    padding   : 4px 20px 8px;
     border-top: 1px solid var(--color-border);
 }
 
 .logout-button {
     width        : 100%;
-    min-height   : 46px;
+    min-height   : 40px;
     display      : flex;
     align-items  : center;
-    gap          : 14px;
-    padding      : 0 12px;
+    gap          : 12px;
+    padding      : 0 8px;
     border       : 0;
     border-radius: var(--radius-small);
     background   : transparent;
@@ -258,9 +258,9 @@ svg {
 }
 
 .logout-button .nav-icon {
-    width : 20px;
-    height: 20px;
-    flex  : 0 0 20px;
+    width : 18px;
+    height: 18px;
+    flex  : 0 0 18px;
     stroke: currentColor;
     fill  : none;
 }
@@ -608,6 +608,7 @@ svg {
     display   : none;
     background: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 }
+
 
 @media (max-width: 860px) {
     .workspace {

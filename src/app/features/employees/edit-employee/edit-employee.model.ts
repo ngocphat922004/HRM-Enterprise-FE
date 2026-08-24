@@ -9,7 +9,11 @@ export interface EditEmployeeForm {
     id: number;
     employeeCode: string;
     fullName: string;
-    status: 'working' | 'probation' | 'on-leave' | 'resigned';
+    status:
+    | 'working'
+    | 'probation'
+    | 'on-leave'
+    | 'resigned';
 
     dateOfBirth: string;
     gender: string;

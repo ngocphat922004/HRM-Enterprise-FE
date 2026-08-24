@@ -104,6 +104,15 @@
                     </svg>
                     }
 
+                    @case ('award') {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="nav-icon" aria-hidden="true">
+                        <circle cx="12" cy="8" r="6" />
+                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                    </svg>
+                    }
+
                     @case ('report') {
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -156,18 +165,19 @@
             </button>
 
             <label class="search-box">
-                <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <span aria-hidden="true">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.3-4.3"></path>
-                    </svg></span>
+                    </svg>
+                </span>
 
                 <input type="search" [(ngModel)]="searchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
                     aria-label="Tìm kiếm nhân viên" />
             </label>
 
             <div class="top-header__actions">
-
                 <button type="button" class="icon-button notification-button" aria-label="Thông báo">
                     <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -175,6 +185,7 @@
                         <path d="M4 17h16"></path>
                         <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
                     </svg>
+
                     <span class="notification-dot"></span>
                 </button>
 
@@ -209,11 +220,16 @@
             <section class="page-heading">
                 <div>
                     <h1>Thêm nhân viên mới</h1>
-                    <p class="breadcrumb">Nhân viên <span>/</span> Thêm nhân viên mới</p>
+                    <p class="breadcrumb">
+                        Nhân viên <span>/</span> Thêm nhân viên mới
+                    </p>
                 </div>
 
                 <div class="page-actions">
-                    <button class="cancel-button" type="button" (click)="cancel()">Hủy bỏ</button>
+                    <button class="cancel-button" type="button" (click)="cancel()">
+                        Hủy bỏ
+                    </button>
+
                     <button class="save-button" type="button" (click)="saveEmployee()" [disabled]="isSaving">
                         @if (isSaving) {
                         <span class="spinner"></span>
@@ -227,6 +243,7 @@
                             <path d="M17 21v-8H7v8"></path>
                             <path d="M7 3v5h8"></path>
                         </svg>
+
                         Lưu thông tin
                         }
                     </button>
@@ -247,6 +264,7 @@
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                             }
+
                             @case ('work') {
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -254,6 +272,7 @@
                                 <rect width="20" height="14" x="2" y="6" rx="2"></rect>
                             </svg>
                             }
+
                             @case ('salary') {
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -263,6 +282,7 @@
                                 <path d="M16 12h5"></path>
                             </svg>
                             }
+
                             @default {
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -274,6 +294,7 @@
                             }
                             }
                         </span>
+
                         <span>{{ tab.label }}</span>
                     </button>
                     }
@@ -293,36 +314,49 @@
                                 <path d="M12 11v4"></path>
                                 <path d="m10 13 2-2 2 2"></path>
                             </svg>
+
                             <strong>Tải ảnh đại diện</strong>
                             }
                         </label>
+
                         <input id="avatar-input" type="file" accept=".jpg,.jpeg,.png"
                             (change)="handleAvatarUpload($event)" />
-                        <p>Định dạng JPG, PNG.<br />Tối đa 2MB.</p>
+
+                        <p>
+                            Định dạng JPG, PNG.<br />
+                            Tối đa 2MB.
+                        </p>
+
                         @if (personalForm.avatarPreview) {
-                        <button class="remove-avatar-button" type="button" (click)="removeAvatar()">Xóa ảnh</button>
+                        <button class="remove-avatar-button" type="button" (click)="removeAvatar()">
+                            Xóa ảnh
+                        </button>
                         }
                     </aside>
 
                     <div class="form-grid">
                         <label class="form-field">
                             <span>Họ và tên <strong>*</strong></span>
+
                             <input type="text" [(ngModel)]="personalForm.fullName" placeholder="Nhập đầy đủ họ tên" />
                         </label>
 
                         <label class="form-field">
                             <span>Mã nhân viên (Tự động)</span>
+
                             <input class="readonly-input" type="text" [(ngModel)]="personalForm.employeeCode"
                                 readonly />
                         </label>
 
                         <label class="form-field">
                             <span>Ngày sinh</span>
+
                             <input type="date" [(ngModel)]="personalForm.dateOfBirth" />
                         </label>
 
                         <label class="form-field">
                             <span>Giới tính</span>
+
                             <select [(ngModel)]="personalForm.gender">
                                 <option value="">Chọn giới tính</option>
                                 <option value="male">Nam</option>
@@ -333,29 +367,34 @@
 
                         <label class="form-field">
                             <span>Quốc tịch</span>
+
                             <input type="text" [(ngModel)]="personalForm.nationality" placeholder="Nhập quốc tịch" />
                         </label>
 
                         <label class="form-field">
                             <span>Số CMND/CCCD</span>
+
                             <input type="text" maxlength="12" inputmode="numeric"
                                 [(ngModel)]="personalForm.identityNumber" placeholder="12 chữ số" />
                         </label>
 
                         <label class="form-field form-field--full">
                             <span>Địa chỉ thường trú</span>
+
                             <input type="text" [(ngModel)]="personalForm.permanentAddress"
                                 placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" />
                         </label>
 
                         <label class="form-field">
                             <span>Số điện thoại</span>
+
                             <input type="tel" maxlength="10" inputmode="numeric" [(ngModel)]="personalForm.phoneNumber"
                                 placeholder="09xx xxx xxx" />
                         </label>
 
                         <label class="form-field">
                             <span>Email cá nhân</span>
+
                             <input type="email" [(ngModel)]="personalForm.personalEmail"
                                 placeholder="example@gmail.com" />
                         </label>
@@ -365,6 +404,7 @@
                 <footer class="form-footer">
                     <button class="continue-button" type="button" (click)="continueToNextStep()">
                         Tiếp tục
+
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14"></path>
@@ -383,9 +423,13 @@
                             <rect width="20" height="14" x="2" y="6" rx="2"></rect>
                         </svg>
                     </div>
+
                     <h2>Công việc & Hợp đồng</h2>
                     <p>Phần này sẽ dùng để nhập phòng ban, chức vụ, loại hợp đồng và ngày bắt đầu.</p>
-                    <button type="button" (click)="changeTab('salary')">Tiếp tục</button>
+
+                    <button type="button" (click)="changeTab('salary')">
+                        Tiếp tục
+                    </button>
                 </section>
                 }
 
@@ -400,9 +444,13 @@
                             <path d="M16 12h5"></path>
                         </svg>
                     </div>
+
                     <h2>Lương & Phúc lợi</h2>
                     <p>Phần này sẽ dùng để nhập lương cơ bản, phụ cấp và các quyền lợi của nhân viên.</p>
-                    <button type="button" (click)="changeTab('account')">Tiếp tục</button>
+
+                    <button type="button" (click)="changeTab('account')">
+                        Tiếp tục
+                    </button>
                 </section>
                 }
 
@@ -417,9 +465,13 @@
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                     </div>
+
                     <h2>Cài đặt tài khoản</h2>
                     <p>Phần này sẽ dùng để tạo tài khoản, phân quyền và thiết lập thông báo.</p>
-                    <button type="button" (click)="saveEmployee()">Hoàn tất</button>
+
+                    <button type="button" (click)="saveEmployee()">
+                        Hoàn tất
+                    </button>
                 </section>
                 }
             </section>
@@ -433,6 +485,7 @@
                             <path d="m9 12 2 2 4-4"></path>
                         </svg>
                     </span>
+
                     <div>
                         <h2>Bảo mật dữ liệu</h2>
                         <p>Mọi thông tin cá nhân đều được mã hóa theo tiêu chuẩn ISO 27001.</p>
@@ -447,6 +500,7 @@
                             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                         </svg>
                     </span>
+
                     <div>
                         <h2>Thông báo tự động</h2>
                         <p>Hệ thống sẽ gửi thông báo onboarding cho nhân viên ngay khi hoàn tất.</p>
@@ -463,6 +517,7 @@
                             <circle cx="7" cy="7" r="3"></circle>
                         </svg>
                     </span>
+
                     <div>
                         <h2>Đồng bộ bảng lương</h2>
                         <p>Lương và ngân hàng sẽ tự động kết nối với module Payroll.</p>
@@ -473,7 +528,8 @@
     </section>
 
     @if (toastMessage) {
-    <div class="toast-message" role="status">{{ toastMessage }}</div>
+    <div class="toast-message" role="status">
+        {{ toastMessage }}
+    </div>
     }
-
 </div>

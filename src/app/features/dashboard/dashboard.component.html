@@ -19,13 +19,9 @@
     </div>
 
     <nav class="sidebar__nav" aria-label="Điều hướng chính">
-      @for (
-      item of sidebarItems;
-      track item.label
-      ) {
-      <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="
-            activeMenu === item.label
-          " (click)="setActiveMenu(item.label)">
+      @for (item of sidebarItems; track item.label) {
+      <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="activeMenu === item.label"
+        (click)="setActiveMenu(item.label)">
         <span class="nav-item__icon" aria-hidden="true">
           @switch (item.icon) {
           @case ('dashboard') {
@@ -104,6 +100,15 @@
           </svg>
           }
 
+          @case ('award') {
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"
+            aria-hidden="true">
+            <circle cx="12" cy="8" r="6" />
+            <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+          </svg>
+          }
+
           @case ('report') {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="nav-icon"
@@ -156,11 +161,13 @@
       </button>
 
       <label class="search-box">
-        <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <span aria-hidden="true">
+          <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="m21 21-4.3-4.3"></path>
-          </svg></span>
+          </svg>
+        </span>
 
         <input type="search" [(ngModel)]="searchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
           aria-label="Tìm kiếm nhân viên" />
@@ -168,11 +175,13 @@
 
       <div class="top-header__actions">
         <a class="header-add-button" routerLink="/employees/add">
-          <span aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <span aria-hidden="true">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 12h14"></path>
               <path d="M12 5v14"></path>
-            </svg></span>
+            </svg>
+          </span>
           Thêm mới
         </a>
 
@@ -183,6 +192,7 @@
             <path d="M4 17h16"></path>
             <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
           </svg>
+
           <span class="notification-dot"></span>
         </button>
 
@@ -214,44 +224,9 @@
     </header>
 
     <main class="dashboard-content">
-      <!-- <section class="alert-banner" aria-label="Cảnh báo hợp đồng">
-        <span class="alert-banner__icon" aria-hidden="true">
-          <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
-            <path d="M12 9v4"></path>
-            <path d="M12 17h.01"></path>
-          </svg>
-        </span>
-
-        <div>
-          <strong>
-            Cảnh báo: 3 hợp đồng sắp hết hạn
-          </strong>
-
-          <p>
-            Có 3 nhân sự có hợp đồng sẽ hết hạn
-            trong vòng 30 ngày tới. Vui lòng kiểm
-            tra và thực hiện gia hạn hoặc kết thúc
-            hợp đồng.
-          </p>
-        </div>
-
-        <button type="button" (click)="
-            showToast(
-              'Đang mở danh sách hợp đồng sắp hết hạn.'
-            )
-          ">
-          Xem chi tiết
-        </button>
-      </section> -->
-
       <section class="stats-grid" aria-label="Thống kê tổng quan">
         @for (stat of stats; track stat.title) {
-        <article class="stat-card" [class]="
-              'stat-card stat-card--' +
-              stat.theme
-            ">
+        <article class="stat-card" [class]="'stat-card stat-card--' + stat.theme">
           <div>
             <span class="stat-card__title">
               {{ stat.title }}
@@ -325,27 +300,24 @@
             <h2>Biến động nhân sự</h2>
 
             <button type="button">
-              6 tháng qua <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              6 tháng qua
+
+              <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="m6 9 6 6 6-6"></path>
               </svg>
             </button>
           </div>
 
           <div class="bar-chart" role="img" aria-label="Biểu đồ biến động nhân sự trong 6 tháng">
-            @for (
-            item of employeeTrend;
-            track item.month
-            ) {
+            @for (item of employeeTrend; track item.month) {
             <div class="bar-chart__item">
               <span class="bar-chart__value">
                 {{ item.value }}
               </span>
 
               <div class="bar-chart__track">
-                <span class="bar-chart__bar" [style.height.%]="
-                      item.value * 2.8
-                    "></span>
+                <span class="bar-chart__bar" [style.height.%]="item.value * 2.8"></span>
               </div>
 
               <small>{{ item.month }}</small>
@@ -368,15 +340,9 @@
             </div>
 
             <ul class="department-list">
-              @for (
-              department of departments;
-              track department.name
-              ) {
+              @for (department of departments; track department.name) {
               <li>
-                <span class="department-dot" [class]="
-                      'department-dot ' +
-                      department.className
-                    "></span>
+                <span class="department-dot" [class]="'department-dot ' + department.className"></span>
 
                 <span>
                   {{ department.name }}
@@ -396,6 +362,7 @@
         <article class="dashboard-card list-card employee-card">
           <div class="card-heading list-card__heading">
             <h2>Nhân viên mới nhất</h2>
+
             <button type="button" class="heading-action" aria-label="Thêm nhân viên">
               <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -420,7 +387,9 @@
 
               <div class="employee-row__content">
                 <strong>{{ employee.name }}</strong>
-                <span>{{ employee.position }} • {{ employee.employeeCode }}</span>
+                <span>
+                  {{ employee.position }} • {{ employee.employeeCode }}
+                </span>
               </div>
 
               @if (first) {
@@ -428,7 +397,9 @@
               }
             </div>
             } @empty {
-            <p class="empty-state">Không tìm thấy nhân viên phù hợp.</p>
+            <p class="empty-state">
+              Không tìm thấy nhân viên phù hợp.
+            </p>
             }
           </div>
 
@@ -440,6 +411,7 @@
         <article class="dashboard-card list-card leave-card">
           <div class="card-heading list-card__heading">
             <h2>Đơn nghỉ phép chờ duyệt</h2>
+
             <button type="button" class="heading-action" aria-label="Xem tùy chọn">
               <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -451,14 +423,13 @@
           </div>
 
           <div class="leave-list leave-list--cards">
-            @for (
-            request of leaveRequests;
-            track request.id
-            ) {
+            @for (request of leaveRequests; track request.id) {
             <article class="leave-request-card">
               <div class="leave-request-card__top">
                 <div class="leave-row__person">
-                  <span class="avatar avatar--soft">{{ request.initials }}</span>
+                  <span class="avatar avatar--soft">
+                    {{ request.initials }}
+                  </span>
 
                   <div>
                     <strong>{{ request.employeeName }}</strong>
@@ -466,7 +437,9 @@
                   </div>
                 </div>
 
-                <strong class="leave-days">{{ request.numberOfDays }} ngày</strong>
+                <strong class="leave-days">
+                  {{ request.numberOfDays }} ngày
+                </strong>
               </div>
 
               <p class="leave-reason">
@@ -485,7 +458,11 @@
               </div>
               } @else {
               <span class="status-badge" [class.status-badge--rejected]="request.status === 'rejected'">
-                {{ request.status === 'approved' ? 'Đã duyệt' : 'Đã từ chối' }}
+                {{
+                request.status === 'approved'
+                ? 'Đã duyệt'
+                : 'Đã từ chối'
+                }}
               </span>
               }
             </article>
@@ -500,6 +477,7 @@
         <article class="dashboard-card list-card contract-card">
           <div class="card-heading list-card__heading">
             <h2>Hợp đồng sắp hết hạn</h2>
+
             <button type="button" class="heading-action heading-action--danger" aria-label="Xem hợp đồng sắp hết hạn">
               <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -518,28 +496,29 @@
               <span></span>
             </div>
 
-            @for (
-            contract of expiringContracts;
-            track contract.employeeName
-            ) {
+            @for (contract of expiringContracts; track contract.employeeName) {
             <button type="button" class="contract-row contract-row--table"
               (click)="openContract(contract.employeeName)">
               <div>
                 <strong>{{ contract.employeeName }}</strong>
-                <span>{{ contract.employeeName | slice:0:2 | uppercase }}{{ contract.remainingDays | number:'2.0'
-                  }}</span>
+
+                <span>
+                  {{ contract.employeeName | slice: 0 : 2 | uppercase
+                  }}{{ contract.remainingDays | number: '2.0' }}
+                </span>
               </div>
 
               <span class="contract-date" [class.contract-date--urgent]="contract.remainingDays <= 5">
                 {{ contract.expiryDate }}
               </span>
 
-              <span class="renew-icon" aria-hidden="true"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  aria-hidden="true">
+              <span class="renew-icon" aria-hidden="true">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"></path>
                   <path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"></path>
-                </svg></span>
+                </svg>
+              </span>
             </button>
             }
           </div>

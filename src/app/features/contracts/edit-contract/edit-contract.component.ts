@@ -51,7 +51,7 @@ export class EditContractComponent {
 
     readonly sidebarItems: SidebarItem[] = [
         {
-            label: 'Bảng điều khiển',
+            label: 'Tổng quan',
             icon: 'dashboard',
             route: '/dashboard',
         },
@@ -84,6 +84,11 @@ export class EditContractComponent {
             label: 'Bảng lương',
             icon: 'payroll',
             route: '/payroll',
+        },
+        {
+            label: 'Khen thưởng, kỷ luật',
+            icon: 'award',
+            route: '/rewards-discipline',
         },
         {
             label: 'Báo cáo',

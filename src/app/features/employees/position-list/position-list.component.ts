@@ -50,7 +50,7 @@ export class PositionListComponent {
 
     readonly sidebarItems: SidebarItem[] = [
         {
-            label: 'Bảng điều khiển',
+            label: 'Tổng quan',
             icon: 'dashboard',
             route: '/dashboard',
         },

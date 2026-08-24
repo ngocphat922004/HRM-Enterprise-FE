@@ -40,13 +40,14 @@ export class DepartmentListComponent {
     toastMessage = '';
 
     readonly sidebarItems: SidebarItem[] = [
-        { label: 'Bảng điều khiển', icon: 'dashboard', route: '/dashboard' },
+        { label: 'Tổng quan', icon: 'dashboard', route: '/dashboard' },
         { label: 'Nhân viên', icon: 'employees', route: '/employees' },
         { label: 'Phòng ban', icon: 'department', route: '/departments' },
         { label: 'Hợp đồng', icon: 'contract', route: '/contracts' },
         { label: 'Chấm công', icon: 'attendance', route: '/attendance' },
         { label: 'Nghỉ phép', icon: 'leave', route: '/leave' },
         { label: 'Bảng lương', icon: 'payroll', route: '/payroll' },
+        { label: 'Khen thưởng, kỷ luật', icon: 'award', route: '/rewards-discipline' },
         { label: 'Báo cáo', icon: 'report', route: '/reports' },
         { label: 'Cài đặt', icon: 'settings', route: '/settings' },
     ];

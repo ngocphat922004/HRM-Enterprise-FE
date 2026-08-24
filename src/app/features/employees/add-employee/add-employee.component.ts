@@ -38,7 +38,7 @@ export class AddEmployeeComponent {
 
     readonly sidebarItems: SidebarItem[] = [
         {
-            label: 'Bảng điều khiển',
+            label: 'Tổng quan',
             icon: 'dashboard',
             route: '/dashboard',
         },
@@ -71,6 +71,11 @@ export class AddEmployeeComponent {
             label: 'Bảng lương',
             icon: 'payroll',
             route: '/payroll',
+        },
+        {
+            label: 'Khen thưởng, kỷ luật',
+            icon: 'award',
+            route: '/rewards-discipline',
         },
         {
             label: 'Báo cáo',
@@ -144,6 +149,7 @@ export class AddEmployeeComponent {
     logout(): void {
         localStorage.clear();
         sessionStorage.clear();
+
         void this.router.navigate(['/login']);
     }
 
@@ -161,7 +167,10 @@ export class AddEmployeeComponent {
         ];
 
         if (!allowedTypes.includes(file.type)) {
-            this.showToast('Chỉ chấp nhận ảnh JPG hoặc PNG.');
+            this.showToast(
+                'Chỉ chấp nhận ảnh JPG hoặc PNG.',
+            );
+
             input.value = '';
             return;
         }
@@ -169,7 +178,10 @@ export class AddEmployeeComponent {
         const maxFileSize = 2 * 1024 * 1024;
 
         if (file.size > maxFileSize) {
-            this.showToast('Kích thước ảnh không được vượt quá 2MB.');
+            this.showToast(
+                'Kích thước ảnh không được vượt quá 2MB.',
+            );
+
             input.value = '';
             return;
         }
@@ -202,7 +214,10 @@ export class AddEmployeeComponent {
         }
 
         this.activeTab = 'work';
-        this.showToast('Đã chuyển sang bước Công việc & Hợp đồng.');
+
+        this.showToast(
+            'Đã chuyển sang bước Công việc & Hợp đồng.',
+        );
     }
 
     saveEmployee(): void {
@@ -219,63 +234,116 @@ export class AddEmployeeComponent {
 
         window.setTimeout(() => {
             this.isSaving = false;
-            this.showToast('Đã lưu thông tin nhân viên.');
+
+            this.showToast(
+                'Đã lưu thông tin nhân viên.',
+            );
 
             window.setTimeout(() => {
-                void this.router.navigate(['/employees']);
+                void this.router.navigate([
+                    '/employees',
+                ]);
             }, 900);
         }, 900);
     }
 
     cancel(): void {
-        void this.router.navigate(['/employees']);
+        void this.router.navigate([
+            '/employees',
+        ]);
     }
 
     private validatePersonalForm(): boolean {
         if (!this.personalForm.fullName.trim()) {
-            this.showToast('Vui lòng nhập họ và tên.');
+            this.showToast(
+                'Vui lòng nhập họ và tên.',
+            );
+
             return false;
         }
 
         if (!this.personalForm.dateOfBirth) {
-            this.showToast('Vui lòng chọn ngày sinh.');
+            this.showToast(
+                'Vui lòng chọn ngày sinh.',
+            );
+
             return false;
         }
 
         if (!this.personalForm.gender) {
-            this.showToast('Vui lòng chọn giới tính.');
+            this.showToast(
+                'Vui lòng chọn giới tính.',
+            );
+
             return false;
         }
 
-        if (!this.personalForm.identityNumber.trim()) {
-            this.showToast('Vui lòng nhập số CMND hoặc CCCD.');
+        if (
+            !this.personalForm.identityNumber.trim()
+        ) {
+            this.showToast(
+                'Vui lòng nhập số CMND hoặc CCCD.',
+            );
+
             return false;
         }
 
-        if (!/^\d{12}$/.test(this.personalForm.identityNumber.trim())) {
-            this.showToast('Số CMND hoặc CCCD phải gồm 12 chữ số.');
+        if (
+            !/^\d{12}$/.test(
+                this.personalForm.identityNumber.trim(),
+            )
+        ) {
+            this.showToast(
+                'Số CMND hoặc CCCD phải gồm 12 chữ số.',
+            );
+
             return false;
         }
 
-        if (!this.personalForm.phoneNumber.trim()) {
-            this.showToast('Vui lòng nhập số điện thoại.');
+        if (
+            !this.personalForm.phoneNumber.trim()
+        ) {
+            this.showToast(
+                'Vui lòng nhập số điện thoại.',
+            );
+
             return false;
         }
 
-        if (!/^0\d{9}$/.test(this.personalForm.phoneNumber.trim())) {
-            this.showToast('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
+        if (
+            !/^0\d{9}$/.test(
+                this.personalForm.phoneNumber.trim(),
+            )
+        ) {
+            this.showToast(
+                'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.',
+            );
+
             return false;
         }
 
-        if (!this.personalForm.personalEmail.trim()) {
-            this.showToast('Vui lòng nhập email cá nhân.');
+        if (
+            !this.personalForm.personalEmail.trim()
+        ) {
+            this.showToast(
+                'Vui lòng nhập email cá nhân.',
+            );
+
             return false;
         }
 
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!emailPattern.test(this.personalForm.personalEmail.trim())) {
-            this.showToast('Email cá nhân không đúng định dạng.');
+        if (
+            !emailPattern.test(
+                this.personalForm.personalEmail.trim(),
+            )
+        ) {
+            this.showToast(
+                'Email cá nhân không đúng định dạng.',
+            );
+
             return false;
         }
 
@@ -283,11 +351,16 @@ export class AddEmployeeComponent {
     }
 
     private generateEmployeeCode(): string {
-        const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+        const randomNumber =
+            Math.floor(Math.random() * 9000) +
+            1000;
+
         return `EMP-2026-${randomNumber}`;
     }
 
-    private showToast(message: string): void {
+    private showToast(
+        message: string,
+    ): void {
         this.toastMessage = message;
 
         window.setTimeout(() => {
