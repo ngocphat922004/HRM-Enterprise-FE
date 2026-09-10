@@ -1,0 +1,36 @@
+<div class="ai-chat-container">
+    <div class="ai-header">
+        <div>Trợ lý HRM</div>
+    </div>
+
+    <div class="ai-body" aria-live="polite">
+        @if (messages.length === 0 && !loading) {
+        <div class="ai-empty-state">
+            Hỏi trợ lý về thông tin nhân sự, chấm công, nghỉ phép hoặc lương.
+        </div>
+        }
+
+        @for (item of messages; track $index) {
+        <div class="message" [class.user]="item.role === 'user'" [class.ai]="item.role === 'ai'">
+            <div class="bubble">
+                {{ item.content }}
+            </div>
+        </div>
+        }
+
+        @if (loading) {
+        <div class="loading">
+            Đang xử lý câu hỏi...
+        </div>
+        }
+    </div>
+
+    <div class="ai-input">
+        <input type="text" [(ngModel)]="message" placeholder="Nhập câu hỏi..." (keyup.enter)="sendMessage()"
+            [disabled]="loading" aria-label="Nhập câu hỏi cho trợ lý HRM" />
+
+        <button type="button" (click)="sendMessage()" [disabled]="loading || !message.trim()">
+            {{ loading ? 'Đang gửi' : 'Gửi' }}
+        </button>
+    </div>
+</div>

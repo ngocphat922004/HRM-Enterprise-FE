@@ -9,6 +9,7 @@ export interface Employee {
     fullName: string;
     email: string;
     employeeCode: string;
+    departmentId: number | null;
     department: string;
     position: string;
     joinDate: string;
@@ -16,10 +17,9 @@ export interface Employee {
     initials: string;
 }
 
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
+export interface EmployeeDepartmentOption {
+    id: number;
+    name: string;
 }
 
 export interface NewEmployeeForm {

@@ -1,253 +1,139 @@
 import { HttpClient } from '@angular/common/http';
-import {
-    Injectable,
-    inject,
-} from '@angular/core';
-import {
-    Observable,
-    delay,
-    of,
-    switchMap,
-    throwError,
-    timer,
-} from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
-import {
-    TRINH_DO_MOCK_DATA,
-    TRINH_DO_MOCK_DELAY,
-} from '../mocks/trinh-do.mock';
 import {
     CreateTrinhDoRequest,
     TrinhDo,
     UpdateTrinhDoRequest,
 } from '../models/trinh-do.model';
 
+interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T | null;
+    errors?: Record<string, string[] | string> | null;
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class TrinhDoService {
     private readonly http = inject(HttpClient);
-
-    private readonly apiUrl =
-        `${environment.apiBaseUrl}` +
-        `${API_ENDPOINTS.trinhDo}`;
-
-    private trinhDos: TrinhDo[] =
-        TRINH_DO_MOCK_DATA.map(
-            (trinhDo) => ({ ...trinhDo }),
-        );
+    private readonly apiUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.trinhDo}`;
 
     getAll(): Observable<TrinhDo[]> {
-        if (!environment.useMockApi) {
-            return this.http.get<TrinhDo[]>(
-                this.apiUrl,
-            );
-        }
-
-        const data = this.trinhDos
-            .map((trinhDo) => ({
-                ...trinhDo,
-            }))
-            .sort(
-                (first, second) =>
-                    first.maTD - second.maTD,
-            );
-
-        return of(data).pipe(
-            delay(TRINH_DO_MOCK_DELAY),
-        );
+        return this.http
+            .get<ApiResponse<TrinhDo[]> | TrinhDo[]>(this.apiUrl)
+            .pipe(map((response) => this.unwrapList(response)));
     }
 
-    getById(
-        maTD: number,
-    ): Observable<TrinhDo> {
-        if (!environment.useMockApi) {
-            return this.http.get<TrinhDo>(
-                `${this.apiUrl}/${maTD}`,
-            );
-        }
-
-        const trinhDo =
-            this.trinhDos.find(
-                (item) => item.maTD === maTD,
-            );
-
-        if (!trinhDo) {
-            return this.mockError(
-                'Không tìm thấy trình độ.',
-            );
-        }
-
-        return of({
-            ...trinhDo,
-        }).pipe(
-            delay(TRINH_DO_MOCK_DELAY),
-        );
-    }
-
-    create(
-        payload: CreateTrinhDoRequest,
-    ): Observable<TrinhDo> {
-        if (!environment.useMockApi) {
-            return this.http.post<TrinhDo>(
-                this.apiUrl,
-                payload,
-            );
-        }
-
-        const tenTD = payload.tenTD.trim();
-
-        if (!tenTD) {
-            return this.mockError(
-                'Tên trình độ không được để trống.',
-            );
-        }
-
-        if (this.isDuplicateName(tenTD)) {
-            return this.mockError(
-                'Tên trình độ đã tồn tại.',
-            );
-        }
-
-        const nextMaTD =
-            this.trinhDos.length > 0
-                ? Math.max(
-                    ...this.trinhDos.map(
-                        (item) => item.maTD,
-                    ),
-                ) + 1
-                : 1;
-
-        const newTrinhDo: TrinhDo = {
-            maTD: nextMaTD,
-            tenTD,
-        };
-
-        this.trinhDos = [
-            ...this.trinhDos,
-            newTrinhDo,
-        ];
-
-        return of({
-            ...newTrinhDo,
-        }).pipe(
-            delay(TRINH_DO_MOCK_DELAY),
-        );
-    }
-
-    update(
-        maTD: number,
-        payload: UpdateTrinhDoRequest,
-    ): Observable<TrinhDo> {
-        if (!environment.useMockApi) {
-            return this.http.put<TrinhDo>(
-                `${this.apiUrl}/${maTD}`,
-                payload,
-            );
-        }
-
-        const index =
-            this.trinhDos.findIndex(
-                (item) => item.maTD === maTD,
-            );
-
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy trình độ.',
-            );
-        }
-
-        const tenTD = payload.tenTD.trim();
-
-        if (!tenTD) {
-            return this.mockError(
-                'Tên trình độ không được để trống.',
-            );
-        }
-
-        if (
-            this.isDuplicateName(
-                tenTD,
-                maTD,
+    getById(maTD: number): Observable<TrinhDo> {
+        return this.http
+            .get<ApiResponse<TrinhDo> | TrinhDo>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.trinhDoById(maTD)}`,
             )
-        ) {
-            return this.mockError(
-                'Tên trình độ đã tồn tại.',
-            );
-        }
+            .pipe(
+                map((response) => {
+                    const qualification = this.unwrapItem(response);
 
-        const updatedTrinhDo: TrinhDo = {
-            maTD,
-            tenTD,
+                    if (!qualification) {
+                        throw new Error('Không nhận được dữ liệu trình độ.');
+                    }
+
+                    return qualification;
+                }),
+            );
+    }
+
+    create(payload: CreateTrinhDoRequest): Observable<TrinhDo> {
+        const request: CreateTrinhDoRequest = {
+            tenTD: payload.tenTD.trim(),
         };
 
-        this.trinhDos[index] =
-            updatedTrinhDo;
+        return this.http
+            .post<ApiResponse<TrinhDo> | TrinhDo>(this.apiUrl, request)
+            .pipe(
+                map((response) => {
+                    const qualification = this.unwrapItem(response);
 
-        return of({
-            ...updatedTrinhDo,
-        }).pipe(
-            delay(TRINH_DO_MOCK_DELAY),
-        );
+                    if (!qualification) {
+                        throw new Error('Không nhận được trình độ vừa tạo.');
+                    }
+
+                    return qualification;
+                }),
+            );
     }
 
-    delete(
-        maTD: number,
-    ): Observable<void> {
-        if (!environment.useMockApi) {
-            return this.http.delete<void>(
-                `${this.apiUrl}/${maTD}`,
+    update(maTD: number, payload: UpdateTrinhDoRequest): Observable<TrinhDo> {
+        const request: UpdateTrinhDoRequest = {
+            tenTD: payload.tenTD.trim(),
+        };
+
+        return this.http
+            .put<ApiResponse<TrinhDo | null> | TrinhDo | null>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.trinhDoById(maTD)}`,
+                request,
+            )
+            .pipe(
+                map((response) => {
+                    const qualification = this.unwrapItem(response);
+                    return qualification ?? { maTD, tenTD: request.tenTD };
+                }),
             );
+    }
+
+    delete(maTD: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.trinhDoById(maTD)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
+                }),
+            );
+    }
+
+    private unwrapList<T>(response: ApiResponse<T[]> | T[]): T[] {
+        if (Array.isArray(response)) {
+            return response;
         }
 
-        const index =
-            this.trinhDos.findIndex(
-                (item) => item.maTD === maTD,
-            );
+        this.assertSuccess(response);
+        return response.data ?? [];
+    }
 
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy trình độ.',
-            );
+    private unwrapItem<T>(response: ApiResponse<T | null> | T | null): T | null {
+        if (this.isApiResponse<T | null>(response)) {
+            this.assertSuccess(response);
+            return response.data;
         }
 
-        this.trinhDos.splice(index, 1);
-
-        return of(undefined).pipe(
-            delay(TRINH_DO_MOCK_DELAY),
-        );
+        return response;
     }
 
-    private isDuplicateName(
-        tenTD: string,
-        ignoredMaTD?: number,
-    ): boolean {
-        const normalizedName =
-            tenTD.toLocaleLowerCase('vi');
-
-        return this.trinhDos.some(
-            (item) =>
-                item.maTD !== ignoredMaTD &&
-                item.tenTD
-                    .trim()
-                    .toLocaleLowerCase('vi') ===
-                normalizedName,
-        );
+    private assertSuccess(response: unknown): void {
+        if (
+            this.isApiResponse<unknown>(response) &&
+            response.success === false
+        ) {
+            throw new Error(response.message?.trim() || 'Thao tác trình độ không thành công.');
+        }
     }
 
-    private mockError(
-        message: string,
-    ): Observable<never> {
-        return timer(
-            TRINH_DO_MOCK_DELAY,
-        ).pipe(
-            switchMap(() =>
-                throwError(
-                    () => new Error(message),
-                ),
-            ),
+    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+        return Boolean(
+            response &&
+            typeof response === 'object' &&
+            !Array.isArray(response) &&
+            'success' in response &&
+            'message' in response &&
+            'data' in response,
         );
     }
 }

@@ -12,8 +12,3 @@ export interface AccountDetail
     tenCV: string | null;
 }
 
-export interface AccountDetailSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

@@ -2,10 +2,6 @@
     display: block;
 }
 
-.role-list-page {
-    min-height: 100vh;
-}
-
 .role-list-heading {
     margin-bottom: 22px;
 }
@@ -45,6 +41,45 @@
     color      : var(--color-text-secondary);
     font-size  : 14px;
     line-height: 1.55;
+}
+
+
+.role-list-heading__row {
+    display        : flex;
+    align-items    : flex-end;
+    justify-content: space-between;
+    gap            : 20px;
+}
+
+.add-role-button {
+    min-height   : 42px;
+    padding      : 0 16px;
+    border       : 1px solid var(--color-primary);
+    border-radius: 10px;
+    background   : var(--color-primary);
+    color        : #fff;
+    font         : inherit;
+    font-size    : 14px;
+    font-weight  : 700;
+    display      : inline-flex;
+    align-items  : center;
+    gap          : 8px;
+    cursor       : pointer;
+    white-space  : nowrap;
+}
+
+.add-role-button .lucide-icon {
+    width : 18px;
+    height: 18px;
+}
+
+.add-role-button:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+}
+
+.add-role-button:disabled {
+    opacity: .6;
+    cursor : not-allowed;
 }
 
 .role-stats {
@@ -595,6 +630,110 @@
     font-weight  : 600;
 }
 
+.button-spinner {
+    display         : inline-block;
+    width           : 14px;
+    height          : 14px;
+    flex            : 0 0 14px;
+    border          : 2px solid rgb(100 116 139 / 25%);
+    border-top-color: currentColor;
+    border-radius   : 50%;
+    animation       : role-list-button-spin 0.7s linear infinite;
+}
+
+button {
+    .button-spinner {
+        margin-right: 4px;
+    }
+
+    &:disabled {
+        cursor : not-allowed;
+        opacity: 0.6;
+    }
+}
+
+.role-row--processing {
+    position: relative;
+    opacity : 0.65;
+
+    &::after {
+        position      : absolute;
+        inset         : 0;
+        z-index       : 2;
+        background    : rgb(255 255 255 / 30%);
+        pointer-events: none;
+        content       : '';
+    }
+}
+
+.table-row--deleting {
+    position: relative;
+    opacity : 0.62;
+
+    td {
+        pointer-events: none;
+    }
+
+    &::after {
+        position      : absolute;
+        inset         : 0;
+        z-index       : 2;
+        background    : rgb(255 255 255 / 30%);
+        pointer-events: none;
+        content       : '';
+    }
+}
+
+.button-spinner {
+    display         : inline-block;
+    width           : 14px;
+    height          : 14px;
+    flex            : 0 0 14px;
+    border          : 2px solid rgb(100 116 139 / 25%);
+    border-top-color: currentColor;
+    border-radius   : 50%;
+    animation       : role-list-button-spin 0.7s linear infinite;
+}
+
+button {
+    .button-spinner {
+        margin-right: 4px;
+    }
+
+    &:disabled {
+        cursor : not-allowed;
+        opacity: 0.6;
+    }
+}
+
+@keyframes role-list-button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .button-spinner {
+        width     : 13px;
+        height    : 13px;
+        flex-basis: 13px;
+    }
+}
+
+@keyframes role-list-button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .button-spinner {
+        width     : 13px;
+        height    : 13px;
+        flex-basis: 13px;
+    }
+}
+
 @keyframes role-spin {
     to {
         transform: rotate(360deg);
@@ -657,5 +796,17 @@
     .page-toast {
         right : 16px;
         bottom: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .role-list-heading__row {
+        align-items   : stretch;
+        flex-direction: column;
+    }
+
+    .add-role-button {
+        width          : 100%;
+        justify-content: center;
     }
 }

@@ -1,13 +1,12 @@
 :host {
-    display   : block;
-    min-height: 100vh;
+    display: block;
+    width  : 100%;
 }
 
 .dashboard-content {
-    width    : 100%;
-    max-width: 1600px;
-    margin   : 0 auto;
-    padding  : 32px;
+    width     : 100%;
+    padding   : 24px;
+    box-sizing: border-box;
 }
 
 .alert-banner {
@@ -46,16 +45,42 @@
     line-height: 1.45;
 }
 
-.alert-banner button {
-    min-height   : 42px;
-    padding      : 0 20px;
-    border       : 0;
-    border-radius: 8px;
-    background   : var(--color-danger);
-    color        : var(--color-surface);
-    font-size    : 13px;
-    font-weight  : 700;
-    cursor       : pointer;
+.alert-banner a {
+    min-height     : 42px;
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+    padding        : 0 20px;
+    border         : 0;
+    border-radius  : 8px;
+    background     : var(--color-danger);
+    color          : var(--color-surface);
+    font-size      : 13px;
+    font-weight    : 700;
+    text-decoration: none;
+    cursor         : pointer;
+}
+
+.alert-banner--success {
+    border-color: #9bd8ad;
+    background  : #dcf5e4;
+}
+
+.alert-banner--success .alert-banner__icon {
+    background: rgb(255 255 255 / 65%);
+    color     : #15803d;
+}
+
+.alert-banner--success strong {
+    color: #166534;
+}
+
+.alert-banner--success p {
+    color: #2f7a49;
+}
+
+.alert-banner--success a {
+    background: #15803d;
 }
 
 .stats-grid {
@@ -100,15 +125,6 @@
     line-height: 1;
 }
 
-.stat-card small {
-    display    : block;
-    margin-top : 8px;
-    margin-left: 0;
-    color      : var(--color-text-secondary);
-    font-size  : 11px;
-    line-height: 1.3;
-}
-
 .stat-card__icon {
     flex         : 0 0 auto;
     width        : 40px;
@@ -134,10 +150,6 @@
 .stat-card--danger .stat-card__icon {
     background: #ffe7e7;
     color     : #dc2626;
-}
-
-.stat-card--danger small {
-    color: #dc2626;
 }
 
 .charts-grid {
@@ -168,7 +180,8 @@
 }
 
 .card-heading button,
-.heading-icon {
+.heading-icon,
+.chart-period-label {
     min-height   : 36px;
     display      : inline-flex;
     align-items  : center;
@@ -235,11 +248,7 @@
     width        : 200px;
     height       : 200px;
     border-radius: 50%;
-    background   :
-        conic-gradient(#4f46e5 0 40%,
-            #64748b 40% 70%,
-            #f59e0b 70% 90%,
-            #e7e5ef 90% 100%);
+    background   : conic-gradient(#e7e5ef 0 100%);
 }
 
 .donut-chart::before {
@@ -392,7 +401,7 @@
 }
 
 .avatar--soft {
-    background: var(--color-surface)3e6;
+    background: #fff0e6;
     color     : #a54100;
 }
 
@@ -658,30 +667,6 @@
     border-top: 1px solid var(--color-border);
 }
 
-.quick-actions {
-    position: fixed;
-    right   : 28px;
-    bottom  : 28px;
-    z-index : 40;
-}
-
-.quick-actions__menu {
-    position     : absolute;
-    right        : 0;
-    bottom       : 68px;
-    min-width    : 180px;
-    display      : none;
-    padding      : 8px;
-    border       : 1px solid var(--color-border);
-    border-radius: 10px;
-    background   : var(--color-surface);
-    box-shadow   : 0 16px 40px rgb(32 24 65 / 14%);
-}
-
-.quick-actions--open .quick-actions__menu {
-    display: grid;
-}
-
 .quick-actions__menu button {
     min-height   : 38px;
     border       : 0;
@@ -693,20 +678,6 @@
 
 .quick-actions__menu button:hover {
     background: var(--color-primary-light);
-}
-
-.floating-button {
-    width        : 56px;
-    height       : 56px;
-    display      : grid;
-    place-items  : center;
-    border       : 0;
-    border-radius: 50%;
-    background   : var(--color-primary);
-    color        : var(--color-surface);
-    font-size    : 28px;
-    box-shadow   : 0 12px 26px rgb(63 43 217 / 30%);
-    cursor       : pointer;
 }
 
 .toast-message {
@@ -738,9 +709,8 @@
 
 @media (max-width: 860px) {
     .dashboard-content {
-        padding: 20px;
+        padding: 16px;
     }
-
 }
 
 @media (max-width: 640px) {
@@ -752,7 +722,7 @@
         grid-template-columns: auto 1fr;
     }
 
-    .alert-banner button {
+    .alert-banner a {
         grid-column: 1 / -1;
         width      : 100%;
     }
@@ -770,7 +740,7 @@
     }
 }
 
-/* Căn thẳng tuyệt đối icon ở tiêu đề 3 card */
+
 .list-card__heading {
     position  : relative;
     min-height: 68px;
@@ -791,9 +761,7 @@
     height : 18px;
 }
 
-/* =========================================================
-   FIX CUỐI: CĂN THẲNG ICON TIÊU ĐỀ 3 CARD
-   ========================================================= */
+
 .lists-grid>.list-card {
     position: relative;
 }
@@ -849,49 +817,4 @@
 
 .list-card__heading>.heading-action--danger {
     color: #dc2626 !important;
-}
-
-/* =========================
-   SIDEBAR FOOTER / LOGOUT
-   ========================= */
-.sidebar__footer {
-    margin-top: auto;
-    padding   : 16px 20px 22px;
-    border-top: 1px solid #e7e3f0;
-}
-
-.logout-button {
-    width        : 100%;
-    min-height   : 46px;
-    display      : flex;
-    align-items  : center;
-    gap          : 14px;
-    padding      : 0 12px;
-    border       : 0;
-    border-radius: 8px;
-    background   : transparent;
-    color        : #dc2626;
-    font-size    : 14px;
-    font-weight  : 600;
-    text-align   : left;
-    cursor       : pointer;
-    transition   : background 160ms ease, color 160ms ease;
-}
-
-.logout-button:hover {
-    background: var(--color-surface)1f2;
-    color     : #b91c1c;
-}
-
-.logout-button:focus-visible {
-    outline       : 2px solid #dc2626;
-    outline-offset: 2px;
-}
-
-.logout-button .nav-icon {
-    width : 20px;
-    height: 20px;
-    flex  : 0 0 20px;
-    stroke: currentColor;
-    fill  : none;
 }

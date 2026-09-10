@@ -1,421 +1,651 @@
-<div class="dashboard-shell role-detail-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true"></div>
+<section class="role-detail-heading">
+    <nav class="breadcrumb" aria-label="Điều hướng">
+        <a routerLink="/settings">
+            Cài đặt
+        </a>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">HR</div>
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">×</button>
+        <span>/</span>
+
+        <a routerLink="/settings/roles">
+            Quản lý quyền
+        </a>
+
+        <span>/</span>
+
+        <strong>
+            {{ roleCode }}
+        </strong>
+    </nav>
+
+    <div class="role-detail-heading__title">
+        <div>
+            <h1>
+                Chi tiết quyền
+            </h1>
+
+            <p>
+                Xem thông tin quyền và
+                các tài khoản đang được
+                cấp quyền này.
+            </p>
         </div>
 
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
-                (click)="closeSidebar()">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('layout-dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
-                    @case ('users') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
-                    @case ('building-2') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4M10 10h4M10 14h4"></path>
-                    </svg>
-                    }
-                    @case ('file-text') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6M8 13h8M8 17h8"></path>
-                    </svg>
-                    }
-                    @case ('clock-3') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-                    @case ('calendar-days') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01"></path>
-                    </svg>
-                    }
-                    @case ('banknote') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="20" height="14" x="2" y="5" rx="2"></rect>
-                        <circle cx="12" cy="12" r="2"></circle>
-                        <path d="M6 9h.01M18 15h.01"></path>
-                    </svg>
-                    }
-                    @case ('award') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="8" r="6"></circle>
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
-                    </svg>
-                    }
-                    @case ('chart-no-axes-combined') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18M7 16l4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
-                </span>
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
+        <button class="back-button" type="button" (click)="backToList()" [disabled]="isDeleting">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"></path>
+            </svg>
 
-        <div class="sidebar__footer">
-            <button class="logout-button" type="button" (click)="logout()">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
+            Quay lại danh sách
+        </button>
+    </div>
+</section>
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
+@if (isLoading) {
+<section class="role-state-card" aria-live="polite">
+    <span class="page-spinner" aria-hidden="true"></span>
 
-            <label class="search-box">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.3-4.3"></path>
-                </svg>
-                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm nhân viên, tài khoản..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+    <h2>
+        Đang tải chi tiết quyền
+    </h2>
 
-            <div class="top-header__actions">
-                <button class="header-add-button" type="button" (click)="editRole()">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
-                    </svg>
-                    Chỉnh sửa quyền
-                </button>
+    <p>
+        Đang lấy quyền, tài khoản,
+        nhân viên, phòng ban và
+        chức vụ liên quan.
+    </p>
+</section>
 
-                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0M4 17h16M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
-                </button>
+} @else if (
+errorMessage &&
+!role
+) {
+<section class="
+                        role-state-card
+                        role-state-card--error
+                    " role="alert">
+    <span class="role-state-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
 
-                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+            <path d="M12 8v4"></path>
 
-                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info"><strong>Trần Hoàng Nam</strong><span>Quản trị viên</span></div>
-                    <span class="header-profile__avatar">TN</span>
-                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6"></path>
-                    </svg>
-                </button>
-            </div>
-        </header>
+            <path d="M12 16h.01"></path>
+        </svg>
+    </span>
 
-        <main class="main-content">
-            <section class="role-detail-heading">
-                <nav class="breadcrumb" aria-label="Điều hướng">
-                    <a routerLink="/settings">Cài đặt</a><span>/</span>
-                    <a routerLink="/settings/roles">Quản lý quyền</a><span>/</span>
-                    <strong>{{ roleCode }}</strong>
-                </nav>
-                <div class="role-detail-heading__title">
-                    <div>
-                        <h1>Chi tiết quyền</h1>
-                        <p>Xem thông tin quyền và các tài khoản đang được cấp quyền này.</p>
-                    </div>
-                    <button class="back-button" type="button" (click)="backToList()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="m15 18-6-6 6-6"></path>
-                        </svg>
-                        Quay lại danh sách
-                    </button>
-                </div>
-            </section>
+    <h2>
+        Không thể mở quyền
+    </h2>
 
-            @if (isLoading) {
-            <section class="role-state-card" aria-live="polite">
-                <span class="page-spinner" aria-hidden="true"></span>
-                <h2>Đang tải chi tiết quyền</h2>
-                <p>Vui lòng chờ trong giây lát.</p>
-            </section>
-            } @else if (errorMessage) {
-            <section class="role-state-card role-state-card--error">
-                <span class="role-state-card__icon">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 8v4M12 16h.01"></path>
-                    </svg>
-                </span>
-                <h2>Không thể mở quyền</h2>
-                <p>{{ errorMessage }}</p>
-                <div class="role-state-card__actions">
-                    @if (roleId !== null) {<button class="primary-state-button" type="button" (click)="retry()">Thử
-                        lại</button>}
-                    <button class="secondary-state-button" type="button" (click)="backToList()">Quay lại</button>
-                </div>
-            </section>
-            } @else if (!role) {
-            <section class="role-state-card role-state-card--empty">
-                <span class="role-state-card__icon">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
-                        <path d="M9 12h6"></path>
-                    </svg>
-                </span>
-                <h2>Chưa có dữ liệu quyền</h2>
-                <p>Quyền {{ roleCode }} sẽ được tải từ Backend khi kết nối API. Trang hiện không sử dụng dữ liệu mẫu.
-                </p>
-                <div class="role-state-card__actions">
-                    <button class="primary-state-button" type="button" (click)="retry()">Tải lại</button>
-                    <button class="secondary-state-button" type="button" (click)="backToList()">Danh sách quyền</button>
-                </div>
-            </section>
+    <p>
+        {{ errorMessage }}
+    </p>
+
+    <div class="role-state-card__actions">
+        @if (
+        roleId !== null
+        ) {
+        <button class="primary-state-button" type="button" (click)="retry()" [disabled]="isLoading">
+            Thử lại
+        </button>
+        }
+
+        <button class="secondary-state-button" type="button" (click)="backToList()">
+            Quay lại
+        </button>
+    </div>
+</section>
+
+} @else if (!role) {
+<section class="
+                        role-state-card
+                        role-state-card--empty
+                    ">
+    <span class="role-state-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+
+            <path d="M9 12h6"></path>
+        </svg>
+    </span>
+
+    <h2>
+        Không tìm thấy dữ liệu quyền
+    </h2>
+
+    <p>
+        Không tìm thấy dữ liệu
+        cho quyền
+        <strong>
+            {{ roleCode }}
+        </strong>.
+    </p>
+
+    <div class="role-state-card__actions">
+        @if (
+        roleId !== null
+        ) {
+        <button class="primary-state-button" type="button" (click)="retry()">
+            Tải lại
+        </button>
+        }
+
+        <button class="secondary-state-button" type="button" (click)="backToList()">
+            Danh sách quyền
+        </button>
+    </div>
+</section>
+
+} @else {
+
+
+@if (errorMessage) {
+<section class="
+                            role-state-card
+                            role-state-card--error
+                        " role="alert">
+    <span class="role-state-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+
+            <path d="M12 8v4"></path>
+
+            <path d="M12 16h.01"></path>
+        </svg>
+    </span>
+
+    <h2>
+        Thao tác chưa hoàn tất
+    </h2>
+
+    <p>
+        {{ errorMessage }}
+    </p>
+</section>
+}
+
+<section class="role-profile-card">
+    <div class="role-profile-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
+
+            <path d="M9 12l2 2 4-4"></path>
+        </svg>
+    </div>
+
+    <div class="role-profile-card__content">
+        <span>
+            {{ roleCode }}
+        </span>
+
+        <h2>
+            {{ role.tenQuyen }}
+        </h2>
+
+        <p>
+            {{
+            role.moTa ||
+            'Chưa có mô tả cho quyền này.'
+            }}
+        </p>
+    </div>
+
+    <div class="role-profile-card__actions">
+        <button class="delete-button" type="button" (click)="deleteRole()" [disabled]="
+                                role.soTaiKhoan > 0 ||
+                                isDeleting
+                            ">
+            @if (isDeleting) {
+            Đang xóa...
+
             } @else {
-            <section class="role-profile-card">
-                <div class="role-profile-card__icon">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 3l8 4v5c0 5-3.4 8.5-8 9-4.6-.5-8-4-8-9V7l8-4Z"></path>
-                        <path d="M9 12l2 2 4-4"></path>
-                    </svg>
-                </div>
-                <div class="role-profile-card__content">
-                    <span>{{ roleCode }}</span>
-                    <h2>{{ role.tenQuyen }}</h2>
-                    <p>{{ role.moTa || 'Chưa có mô tả cho quyền này.' }}</p>
-                </div>
-                <div class="role-profile-card__actions">
-                    <button class="delete-button" type="button" (click)="deleteRole()" [disabled]="role.soTaiKhoan > 0">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"></path>
-                        </svg>
-                        Xóa quyền
-                    </button>
-                    @if (role.soTaiKhoan > 0) {<small>Phải chuyển các tài khoản sang quyền khác trước khi xóa.</small>}
-                </div>
-            </section>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18"></path>
 
-            <section class="role-summary" aria-label="Thống kê tài khoản sử dụng quyền">
-                <article class="summary-card summary-card--primary"><span class="summary-card__icon"><svg
-                            class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        </svg></span>
-                    <div><span>Tổng tài khoản</span><strong>{{ summary.tongTaiKhoan }}</strong><small>Đang được cấp
-                            quyền</small></div>
-                </article>
-                <article class="summary-card summary-card--success"><span class="summary-card__icon"><svg
-                            class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M8 12l2.5 2.5L16 9"></path>
-                        </svg></span>
-                    <div><span>Đang hoạt động</span><strong>{{ summary.dangHoatDong }}</strong><small>Tài khoản sử dụng
-                            bình thường</small></div>
-                </article>
-                <article class="summary-card summary-card--danger"><span class="summary-card__icon"><svg
-                            class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <rect width="18" height="11" x="3" y="11" rx="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg></span>
-                    <div><span>Bị khóa</span><strong>{{ summary.biKhoa }}</strong><small>Tài khoản tạm khóa</small>
-                    </div>
-                </article>
-                <article class="summary-card summary-card--neutral"><span class="summary-card__icon"><svg
-                            class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M8 12h8"></path>
-                        </svg></span>
-                    <div><span>Ngừng hoạt động</span><strong>{{ summary.ngungHoatDong }}</strong><small>Tài khoản đã
-                            ngừng</small></div>
-                </article>
-            </section>
+                <path d="M8 6V4h8v2"></path>
 
-            <section class="role-accounts-card">
-                <header class="accounts-toolbar">
-                    <div>
-                        <h2>Tài khoản sử dụng quyền</h2>
-                        <p>Danh sách tài khoản đang liên kết với {{ role.tenQuyen }}.</p>
-                    </div>
-                    <label class="account-search">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.3-4.3"></path>
-                        </svg>
-                        <input type="search" [(ngModel)]="accountSearchTerm" (ngModelChange)="applyAccountSearch()"
-                            placeholder="Tìm tài khoản hoặc nhân viên" aria-label="Tìm tài khoản sử dụng quyền" />
-                        @if (accountSearchTerm) {<button type="button" (click)="clearAccountSearch()"
-                            aria-label="Xóa tìm kiếm"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                aria-hidden="true">
-                                <path d="M18 6 6 18M6 6l12 12"></path>
-                            </svg></button>}
-                    </label>
-                </header>
+                <path d="M19 6l-1 14H6L5 6"></path>
 
-                @if (role.taiKhoanSuDung.length === 0) {
-                <div class="accounts-empty"><span><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M19 8v6M22 11h-6"></path>
-                        </svg></span>
-                    <h3>Chưa có tài khoản sử dụng quyền</h3>
-                    <p>Quyền này chưa được gán cho tài khoản nào.</p>
-                </div>
-                } @else if (filteredAccounts.length === 0) {
-                <div class="accounts-empty"><span><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.3-4.3M8 11h6"></path>
-                        </svg></span>
-                    <h3>Không tìm thấy tài khoản</h3>
-                    <p>Hãy thử từ khóa khác hoặc xóa tìm kiếm hiện tại.</p><button type="button"
-                        (click)="clearAccountSearch()">Xóa tìm kiếm</button>
-                </div>
-                } @else {
-                <div class="accounts-table-wrap">
-                    <table class="accounts-table">
-                        <thead>
-                            <tr>
-                                <th>Tài khoản</th>
-                                <th>Nhân viên</th>
-                                <th>Phòng ban · Chức vụ</th>
-                                <th class="table-status">Trạng thái</th>
-                                <th class="table-actions">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (account of pagedAccounts; track account.maTK) {
-                            <tr>
-                                <td><button class="account-code" type="button" (click)="viewAccount(account)">{{
-                                        formatAccountCode(account.maTK) }}</button><span class="username">{{
-                                        account.tenDangNhap }}</span></td>
-                                <td>
-                                    <div class="employee-cell">@if (account.hinhAnh) {<img [src]="account.hinhAnh"
-                                            [alt]="account.hoTen" />} @else {<span class="employee-avatar">{{
-                                            getInitials(account.hoTen) }}</span>}<div><strong>{{ account.hoTen
-                                                }}</strong><small>Mã NV {{ account.maNV }} · {{ account.email || 'Chưa
-                                                có email' }}</small></div>
-                                    </div>
-                                </td>
-                                <td><strong class="department-name">{{ account.tenPB || 'Chưa phân phòng'
-                                        }}</strong><span class="position-name">{{ account.tenCV || 'Chưa có chức vụ'
-                                        }}</span></td>
-                                <td class="table-status"><span class="account-status"
-                                        [class.account-status--active]="account.trangThai === activeStatus"
-                                        [class.account-status--locked]="account.trangThai === lockedStatus"
-                                        [class.account-status--inactive]="account.trangThai === inactiveStatus"><i
-                                            aria-hidden="true"></i>{{ account.trangThai }}</span></td>
-                                <td class="table-actions"><button class="view-account-button" type="button"
-                                        (click)="viewAccount(account)" aria-label="Xem tài khoản"><svg
-                                            class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                            aria-hidden="true">
-                                            <path
-                                                d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.1 7 5.5 12 5.5s8.5 2.6 9.94 6.15a1 1 0 0 1 0 .7C20.5 15.9 17 18.5 12 18.5s-8.5-2.6-9.94-6.15Z">
-                                            </path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg></button></td>
-                            </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                <path d="M10 11v5"></path>
 
-                <footer class="accounts-pagination">
-                    <p>Hiển thị <strong>{{ startItem }}–{{ endItem }}</strong> trong tổng số <strong>{{
-                            filteredAccounts.length }}</strong> tài khoản</p>
-                    <nav aria-label="Phân trang tài khoản">
-                        <button type="button" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1"
-                            aria-label="Trang trước"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                aria-hidden="true">
-                                <path d="m15 18-6-6 6-6"></path>
-                            </svg></button>
-                        @for (page of visiblePageNumbers; track page) {<button type="button" (click)="goToPage(page)"
-                            [class.pagination-button--active]="currentPage === page"
-                            [attr.aria-current]="currentPage === page ? 'page' : null">{{ page }}</button>}
-                        <button type="button" (click)="goToPage(currentPage + 1)"
-                            [disabled]="currentPage === totalPages" aria-label="Trang sau"><svg class="lucide-icon"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m9 18 6-6-6-6"></path>
-                            </svg></button>
-                    </nav>
-                </footer>
-                }
-            </section>
+                <path d="M14 11v5"></path>
+            </svg>
+
+            Xóa quyền
             }
-        </main>
-    </section>
+        </button>
 
-    @if (toastMessage) {<div class="page-toast" role="status">{{ toastMessage }}</div>}
+        @if (
+        role.soTaiKhoan > 0
+        ) {
+        <small>
+            Phải chuyển
+            {{ role.soTaiKhoan }}
+            tài khoản sang quyền khác
+            trước khi xóa.
+        </small>
+
+        } @else {
+        <small>
+            Quyền chưa được tài khoản
+            nào sử dụng nên có thể xóa.
+        </small>
+        }
+    </div>
+</section>
+
+<section class="role-summary" aria-label="Thống kê tài khoản sử dụng quyền">
+    <article class="
+                            summary-card
+                            summary-card--primary
+                        ">
+        <span class="summary-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+
+                <circle cx="9" cy="7" r="4"></circle>
+
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Tổng tài khoản
+            </span>
+
+            <strong>
+                {{ summary.tongTaiKhoan }}
+            </strong>
+        </div>
+    </article>
+
+    <article class="
+                            summary-card
+                            summary-card--success
+                        ">
+        <span class="summary-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="M8 12l2.5 2.5L16 9"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Đang hoạt động
+            </span>
+
+            <strong>
+                {{ summary.dangHoatDong }}
+            </strong>
+        </div>
+    </article>
+
+    <article class="
+                            summary-card
+                            summary-card--danger
+                        ">
+        <span class="summary-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="18" height="11" x="3" y="11" rx="2"></rect>
+
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Bị khóa
+            </span>
+
+            <strong>
+                {{ summary.biKhoa }}
+            </strong>
+        </div>
+    </article>
+
+    <article class="
+                            summary-card
+                            summary-card--neutral
+                        ">
+        <span class="summary-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="M8 12h8"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Ngừng hoạt động
+            </span>
+
+            <strong>
+                {{ summary.ngungHoatDong }}
+            </strong>
+        </div>
+    </article>
+</section>
+
+<section class="role-accounts-card">
+    <header class="accounts-toolbar">
+        <div>
+            <h2>
+                Tài khoản sử dụng quyền
+            </h2>
+
+            <p>
+                Danh sách tài khoản
+                đang liên kết với
+                {{ role.tenQuyen }}.
+            </p>
+        </div>
+
+        <label class="account-search">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+
+                <path d="m21 21-4.3-4.3"></path>
+            </svg>
+
+            <input type="search" [(ngModel)]="accountSearchTerm" (ngModelChange)="applyAccountSearch()"
+                placeholder="Tìm tài khoản hoặc nhân viên" aria-label="Tìm tài khoản sử dụng quyền"
+                [disabled]="isDeleting" />
+
+            @if (accountSearchTerm) {
+            <button type="button" (click)="clearAccountSearch()" aria-label="Xóa tìm kiếm" [disabled]="isDeleting">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+
+                    <path d="M6 6l12 12"></path>
+                </svg>
+            </button>
+            }
+        </label>
+    </header>
+
+    @if (
+    role.taiKhoanSuDung.length === 0
+    ) {
+    <div class="accounts-empty">
+        <span>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+
+                <circle cx="9" cy="7" r="4"></circle>
+
+                <path d="M19 8v6"></path>
+
+                <path d="M22 11h-6"></path>
+            </svg>
+        </span>
+
+        <h3>
+            Chưa có tài khoản sử dụng quyền
+        </h3>
+
+        <p>
+            Quyền này chưa được
+            gán cho tài khoản nào.
+        </p>
+    </div>
+
+    } @else if (
+    filteredAccounts.length === 0
+    ) {
+    <div class="accounts-empty">
+        <span>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+
+                <path d="m21 21-4.3-4.3"></path>
+
+                <path d="M8 11h6"></path>
+            </svg>
+        </span>
+
+        <h3>
+            Không tìm thấy tài khoản
+        </h3>
+
+        <p>
+            Hãy thử từ khóa khác
+            hoặc xóa tìm kiếm hiện tại.
+        </p>
+
+        <button type="button" (click)="clearAccountSearch()">
+            Xóa tìm kiếm
+        </button>
+    </div>
+
+    } @else {
+    <div class="accounts-table-wrap">
+        <table class="accounts-table">
+            <thead>
+                <tr>
+                    <th>
+                        Tài khoản
+                    </th>
+
+                    <th>
+                        Nhân viên
+                    </th>
+
+                    <th>
+                        Phòng ban · Chức vụ
+                    </th>
+
+                    <th class="table-status">
+                        Trạng thái
+                    </th>
+
+                    <th class="table-actions">
+                        Thao tác
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @for (
+                account of pagedAccounts;
+                track account.maTK
+                ) {
+                <tr>
+                    <td>
+                        <button class="account-code" type="button" (click)="viewAccount(account)"
+                            [disabled]="isDeleting">
+                            {{
+                            formatAccountCode(
+                            account.maTK
+                            )
+                            }}
+                        </button>
+
+                        <span class="username">
+                            {{
+                            account.tenDangNhap
+                            }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="employee-cell">
+                            @if (
+                            account.hinhAnh
+                            ) {
+                            <img [src]="account.hinhAnh" [alt]="account.hoTen" />
+
+                            } @else {
+                            <span class="employee-avatar">
+                                {{
+                                getInitials(
+                                account.hoTen
+                                )
+                                }}
+                            </span>
+                            }
+
+                            <div>
+                                <strong>
+                                    {{
+                                    account.hoTen
+                                    }}
+                                </strong>
+
+                                <small>
+                                    Mã NV
+                                    {{ account.maNV }}
+
+                                    ·
+
+                                    {{
+                                    account.email ||
+                                    'Chưa có email'
+                                    }}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <strong class="department-name">
+                            {{
+                            account.tenPB ||
+                            'Chưa phân phòng'
+                            }}
+                        </strong>
+
+                        <span class="position-name">
+                            {{
+                            account.tenCV ||
+                            'Chưa có chức vụ'
+                            }}
+                        </span>
+                    </td>
+
+                    <td class="table-status">
+                        <span class="account-status" [class.account-status--active]="
+                                                        account.trangThai ===
+                                                        activeStatus
+                                                    " [class.account-status--locked]="
+                                                        account.trangThai ===
+                                                        lockedStatus
+                                                    " [class.account-status--inactive]="
+                                                        account.trangThai ===
+                                                        inactiveStatus
+                                                    ">
+                            <i aria-hidden="true"></i>
+
+                            {{
+                            account.trangThai
+                            }}
+                        </span>
+                    </td>
+
+                    <td class="table-actions">
+                        <button class="view-account-button" type="button" (click)="viewAccount(account)"
+                            [disabled]="isDeleting" aria-label="Xem tài khoản" title="Xem tài khoản">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.1 7 5.5 12 5.5s8.5 2.6 9.94 6.15a1 1 0 0 1 0 .7C20.5 15.9 17 18.5 12 18.5s-8.5-2.6-9.94-6.15Z">
+                                </path>
+
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="accounts-pagination">
+        <p>
+            Hiển thị
+
+            <strong>
+                {{ startItem }}–{{ endItem }}
+            </strong>
+
+            trong tổng số
+
+            <strong>
+                {{ filteredAccounts.length }}
+            </strong>
+
+            tài khoản
+        </p>
+
+        <nav aria-label="Phân trang tài khoản">
+            <button type="button" (click)="
+                                        goToPage(
+                                            currentPage - 1
+                                        )
+                                    " [disabled]="
+                                        currentPage === 1 ||
+                                        isDeleting
+                                    " aria-label="Trang trước">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6"></path>
+                </svg>
+            </button>
+
+            @for (
+            page of visiblePageNumbers;
+            track page
+            ) {
+            <button type="button" (click)="goToPage(page)" [disabled]="isDeleting" [class.pagination-button--active]="
+                                            currentPage === page
+                                        " [attr.aria-current]="
+                                            currentPage === page
+                                                ? 'page'
+                                                : null
+                                        ">
+                {{ page }}
+            </button>
+            }
+
+            <button type="button" (click)="
+                                        goToPage(
+                                            currentPage + 1
+                                        )
+                                    " [disabled]="
+                                        currentPage === totalPages ||
+                                        isDeleting
+                                    " aria-label="Trang sau">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </button>
+        </nav>
+    </footer>
+    }
+</section>
+}
+
+@if (toastMessage) {
+<div class="page-toast" role="status">
+    {{ toastMessage }}
 </div>
+}

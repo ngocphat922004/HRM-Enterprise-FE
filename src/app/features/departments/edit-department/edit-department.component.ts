@@ -1,9 +1,23 @@
-import { CommonModule } from '@angular/common';
+import {
+    CommonModule,
+} from '@angular/common';
+
+import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
+    OnDestroy,
+    OnInit,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
 import {
     ActivatedRoute,
     Router,
@@ -11,115 +25,811 @@ import {
 } from '@angular/router';
 
 import {
+    finalize,
+} from 'rxjs';
+
+import {
+    PHONG_BAN_TRANG_THAI,
+} from '../../../core/constants/status.constants';
+
+import {
+    PhongBanService,
+} from '../services/phong-ban.service';
+
+import {
     DepartmentEditForm,
-    SidebarItem,
 } from './edit-department.model';
-import { PHONG_BAN_TRANG_THAI } from '../../../core/constants/status.constants';
+
 
 @Component({
-    selector: 'app-edit-department',
-    standalone: true,
+    selector:
+        'app-edit-department',
+
+    standalone:
+        true,
+
     imports: [
         CommonModule,
         FormsModule,
         RouterLink,
     ],
-    templateUrl: './edit-department.component.html',
-    styleUrl: './edit-department.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
+
+    templateUrl:
+        './edit-department.component.html',
+
+    styleUrl:
+        './edit-department.component.scss',
+
+    changeDetection:
+        ChangeDetectionStrategy.OnPush,
 })
-export class EditDepartmentComponent {
-    sidebarOpen = false;
-    activeMenu = 'Phòng ban';
-    searchTerm = '';
-    isSaving = false;
-    toastMessage = '';
+export class EditDepartmentComponent
+    implements OnInit, OnDestroy {
+    searchTerm =
+        '';
 
-    readonly phongBanTrangThai = PHONG_BAN_TRANG_THAI;
+    isLoading =
+        false;
 
-    readonly sidebarItems: SidebarItem[] = [
-        { label: 'Tổng quan', icon: 'dashboard', route: '/dashboard' },
-        { label: 'Nhân viên', icon: 'employees', route: '/employees' },
-        { label: 'Phòng ban', icon: 'department', route: '/departments' },
-        { label: 'Hợp đồng', icon: 'contract', route: '/contracts' },
-        { label: 'Chấm công', icon: 'attendance', route: '/attendance' },
-        { label: 'Nghỉ phép', icon: 'leave', route: '/leave' },
-        { label: 'Bảng lương', icon: 'payroll', route: '/payroll' },
-        { label: 'Khen thưởng, kỷ luật', icon: 'award', route: '/rewards-discipline' },
-        { label: 'Báo cáo', icon: 'report', route: '/reports' },
-        { label: 'Cài đặt', icon: 'settings', route: '/settings' },
-    ];
+    isSaving =
+        false;
 
-    form: DepartmentEditForm = {
-        maPB: 1,
-        tenPB: 'Phòng Công nghệ Thông tin',
-        moTa:
-            'Quản lý và vận hành hệ thống công nghệ thông tin của công ty. Hỗ trợ kỹ thuật, phát triển phần mềm nội bộ và đảm bảo an toàn thông tin mạng.',
-        trangThai: PHONG_BAN_TRANG_THAI.DANG_HOAT_DONG,
-    };
+    submitted =
+        false;
+
+    toastMessage =
+        '';
+
+    errorMessage =
+        '';
+
+    isCreateMode =
+        false;
+
+    departmentId:
+        number | null =
+        null;
+
+
+    private toastTimer:
+        ReturnType<typeof setTimeout> | null =
+        null;
+    readonly phongBanTrangThai =
+        PHONG_BAN_TRANG_THAI;
+    form:
+        DepartmentEditForm = {
+
+            maPB:
+                0,
+
+            tenPB:
+                '',
+
+            moTa:
+                '',
+
+            trangThai:
+                PHONG_BAN_TRANG_THAI
+                    .DANG_HOAT_DONG,
+        };
+
 
     constructor(
-        private readonly route: ActivatedRoute,
-        private readonly router: Router,
-    ) {
-        const departmentId = Number(
-            this.route.snapshot.paramMap.get('id'),
+        private readonly route:
+            ActivatedRoute,
+
+        private readonly router:
+            Router,
+
+        private readonly phongBanService:
+            PhongBanService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
+    ) { }
+
+
+    ngOnInit():
+        void {
+
+        this.readRoute();
+    }
+
+
+    ngOnDestroy():
+        void {
+
+        if (
+            this.toastTimer
+        ) {
+
+            clearTimeout(
+                this.toastTimer,
+            );
+        }
+    }
+    get pageTitle():
+        string {
+
+        return this.isCreateMode
+            ? 'Thêm phòng ban'
+            : 'Chỉnh sửa phòng ban';
+    }
+
+
+    get submitButtonLabel():
+        string {
+
+        return this.isCreateMode
+            ? 'Thêm phòng ban'
+            : 'Lưu thay đổi';
+    }
+    get departmentNameInvalid():
+        boolean {
+
+        if (
+            !this.submitted
+        ) {
+
+            return false;
+        }
+
+
+        const value =
+            this.form
+                .tenPB
+                .trim();
+
+
+        return (
+            value.length ===
+            0 ||
+
+            value.length >
+            100
+        );
+    }
+
+
+    get descriptionInvalid():
+        boolean {
+
+        if (
+            !this.submitted
+        ) {
+
+            return false;
+        }
+
+
+        return (
+            this.form
+                .moTa
+                .trim()
+                .length >
+            255
+        );
+    }
+    private readRoute():
+        void {
+
+        const rawId =
+            this.route
+                .snapshot
+                .paramMap
+                .get(
+                    'id',
+                );
+        if (
+            rawId ===
+            null
+        ) {
+
+            this.isCreateMode =
+                true;
+
+
+            this.departmentId =
+                null;
+
+
+            this.resetForm();
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
+        const parsedId =
+            Number(
+                rawId,
+            );
+
+
+        if (
+            !Number.isInteger(
+                parsedId,
+            ) ||
+
+            parsedId <=
+            0
+        ) {
+
+            this.isCreateMode =
+                false;
+
+
+            this.departmentId =
+                null;
+
+
+            this.errorMessage =
+                'Mã phòng ban trên đường dẫn không hợp lệ.';
+
+
+            this.resetForm();
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
+        this.isCreateMode =
+            false;
+
+
+        this.departmentId =
+            parsedId;
+
+
+        this.loadDepartment();
+    }
+    private loadDepartment():
+        void {
+
+        if (
+            this.departmentId ===
+            null
+        ) {
+
+            return;
+        }
+
+
+        this.isLoading =
+            true;
+
+
+        this.errorMessage =
+            '';
+
+
+        this.submitted =
+            false;
+
+
+        this.phongBanService
+            .getById(
+                this.departmentId,
+            )
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isLoading =
+                            false;
+
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+
+                next: (
+                    department,
+                ) => {
+
+                    this.form = {
+
+                        maPB:
+                            department.maPB,
+
+                        tenPB:
+                            department.tenPB,
+
+                        moTa:
+                            department.moTa ??
+                            '',
+
+                        trangThai:
+                            department.trangThai as
+                            DepartmentEditForm['trangThai'],
+                    };
+
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    console.error(
+                        'LOAD DEPARTMENT ERROR:',
+                        error,
+                    );
+
+
+                    this.resetForm();
+
+
+                    if (
+                        error.status ===
+                        404
+                    ) {
+
+                        this.errorMessage =
+                            'Không tìm thấy phòng ban.';
+
+                    } else if (
+                        error.status ===
+                        401
+                    ) {
+
+                        this.errorMessage =
+                            'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+
+                    } else if (
+                        error.status ===
+                        0
+                    ) {
+
+                        this.errorMessage =
+                            'Không thể kết nối đến API phòng ban.';
+
+                    } else {
+
+                        this.errorMessage =
+                            error.error
+                                ?.message ??
+                            'Không thể tải thông tin phòng ban.';
+                    }
+
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
+    }
+    saveChanges():
+        void {
+
+        this.submitted =
+            true;
+
+
+        if (
+            this.isSaving ||
+            this.isLoading
+        ) {
+
+            return;
+        }
+
+
+        const tenPB =
+            this.form
+                .tenPB
+                .trim();
+
+
+        const moTa =
+            this.form
+                .moTa
+                .trim();
+
+
+        if (
+            tenPB.length ===
+            0
+        ) {
+
+            this.showToast(
+                'Vui lòng nhập tên phòng ban.',
+            );
+
+
+            return;
+        }
+
+
+        if (
+            tenPB.length >
+            100
+        ) {
+
+            this.showToast(
+                'Tên phòng ban không được vượt quá 100 ký tự.',
+            );
+
+
+            return;
+        }
+
+
+        if (
+            moTa.length >
+            255
+        ) {
+
+            this.showToast(
+                'Mô tả phòng ban không được vượt quá 255 ký tự.',
+            );
+
+
+            return;
+        }
+        const payload = {
+
+            tenPB,
+
+            moTa:
+                moTa.length >
+                    0
+
+                    ? moTa
+                    : null,
+
+            trangThai:
+                this.form
+                    .trangThai,
+        };
+
+
+        this.isSaving =
+            true;
+
+
+        this.errorMessage =
+            '';
+        if (
+            this.isCreateMode
+        ) {
+
+            this.phongBanService
+                .create(
+                    payload,
+                )
+                .pipe(
+                    finalize(
+                        () => {
+
+                            this.isSaving =
+                                false;
+
+
+                            this.changeDetectorRef
+                                .markForCheck();
+                        },
+                    ),
+                )
+                .subscribe({
+
+                    next: (
+                        department,
+                    ) => {
+
+                        this.showToast(
+                            'Thêm phòng ban thành công.',
+                        );
+
+
+                        void this.router
+                            .navigate([
+                                '/departments',
+                                department.maPB,
+                            ]);
+                    },
+
+
+                    error: (
+                        error:
+                            HttpErrorResponse,
+                    ) => {
+
+                        this.handleSaveError(
+                            error,
+                        );
+                    },
+                });
+
+
+            return;
+        }
+        if (
+            this.departmentId ===
+            null
+        ) {
+
+            this.isSaving =
+                false;
+
+
+            this.showToast(
+                'Không xác định được phòng ban cần cập nhật.',
+            );
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
+        this.phongBanService
+            .update(
+                this.departmentId,
+                payload,
+            )
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isSaving =
+                            false;
+
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+
+                next: (
+                    department,
+                ) => {
+
+                    this.form = {
+
+                        maPB:
+                            department.maPB,
+
+                        tenPB:
+                            department.tenPB,
+
+                        moTa:
+                            department.moTa ??
+                            '',
+
+                        trangThai:
+                            department.trangThai as
+                            DepartmentEditForm['trangThai'],
+                    };
+
+
+                    this.showToast(
+                        'Cập nhật phòng ban thành công.',
+                    );
+
+
+                    void this.router
+                        .navigate([
+                            '/departments',
+                            department.maPB,
+                        ]);
+                },
+
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    this.handleSaveError(
+                        error,
+                    );
+                },
+            });
+    }
+    private handleSaveError(
+        error:
+            HttpErrorResponse,
+    ): void {
+
+        console.error(
+            'SAVE DEPARTMENT ERROR:',
+            error,
         );
 
-        if (departmentId) {
-            this.form = {
-                ...this.form,
-                maPB: departmentId,
-            };
+
+        if (
+            error.status ===
+            400
+        ) {
+
+            this.errorMessage =
+                error.error
+                    ?.message ??
+                'Dữ liệu phòng ban không hợp lệ.';
+
+        } else if (
+            error.status ===
+            401
+        ) {
+
+            this.errorMessage =
+                'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+
+        } else if (
+            error.status ===
+            404
+        ) {
+
+            this.errorMessage =
+                'Không tìm thấy phòng ban cần cập nhật.';
+
+        } else if (
+            error.status ===
+            409
+        ) {
+
+            this.errorMessage =
+                error.error
+                    ?.message ??
+                'Thông tin phòng ban đã tồn tại.';
+
+        } else if (
+            error.status ===
+            0
+        ) {
+
+            this.errorMessage =
+                'Không thể kết nối đến API phòng ban.';
+
+        } else {
+
+            this.errorMessage =
+                error.error
+                    ?.message ??
+                'Không thể lưu thông tin phòng ban.';
         }
-    }
 
-    toggleSidebar(): void {
-        this.sidebarOpen = !this.sidebarOpen;
-    }
 
-    closeSidebar(): void {
-        this.sidebarOpen = false;
+        this.showToast(
+            this.errorMessage,
+        );
     }
+    retry():
+        void {
 
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
-    }
+        if (
+            this.isCreateMode ||
+            this.departmentId ===
+            null ||
+            this.isLoading
+        ) {
 
-    cancel(): void {
-        void this.router.navigate(['/departments']);
-    }
-
-    saveChanges(): void {
-        if (!this.form.tenPB.trim()) {
-            this.showToast('Vui lòng nhập tên phòng ban.');
             return;
         }
 
-        if (this.isSaving) {
+
+        this.loadDepartment();
+    }
+    cancel():
+        void {
+
+        if (
+            this.isSaving
+        ) {
+
             return;
         }
 
-        this.isSaving = true;
 
-        window.setTimeout(() => {
-            this.isSaving = false;
-            this.showToast('Đã lưu thay đổi phòng ban.');
-        }, 900);
+        if (
+            !this.isCreateMode &&
+            this.departmentId !==
+            null
+        ) {
+
+            void this.router
+                .navigate([
+                    '/departments',
+                    this.departmentId,
+                ]);
+
+
+            return;
+        }
+
+
+        void this.router
+            .navigate([
+                '/departments',
+            ]);
     }
 
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
-        void this.router.navigate(['/login']);
+    private resetForm():
+        void {
+
+        this.form = {
+
+            maPB:
+                this.departmentId ??
+                0,
+
+            tenPB:
+                '',
+
+            moTa:
+                '',
+
+            trangThai:
+                PHONG_BAN_TRANG_THAI
+                    .DANG_HOAT_DONG,
+        };
+
+
+        this.submitted =
+            false;
     }
+    private showToast(
+        message:
+            string,
+    ): void {
 
-    private showToast(message: string): void {
-        this.toastMessage = message;
+        this.toastMessage =
+            message;
 
-        window.setTimeout(() => {
-            this.toastMessage = '';
-        }, 2500);
+
+        this.changeDetectorRef
+            .markForCheck();
+
+
+        if (
+            this.toastTimer
+        ) {
+
+            clearTimeout(
+                this.toastTimer,
+            );
+        }
+
+
+        this.toastTimer =
+            setTimeout(
+                () => {
+
+                    this.toastMessage =
+                        '';
+
+
+                    this.toastTimer =
+                        null;
+
+
+                    this.changeDetectorRef
+                        .markForCheck();
+
+                },
+                2500,
+            );
     }
 }

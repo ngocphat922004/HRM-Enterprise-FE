@@ -1,488 +1,516 @@
-<div class="dashboard-shell department-detail-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true">
+<section class="department-detail-heading">
+    <div>
+        <p class="breadcrumb">
+            <a routerLink="/employees">
+                Nhân sự
+            </a>
+
+            <span>/</span>
+
+            <a routerLink="/departments">
+                Phòng ban
+            </a>
+
+            <span>/</span>
+
+            Chi tiết
+        </p>
+
+        <h1>
+            @if (department.name) {
+            Chi tiết phòng ban:
+            {{ department.name }}
+            } @else {
+            Chi tiết phòng ban
+            }
+        </h1>
     </div>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">HR</div>
+    @if (
+    !isLoading &&
+    !errorMessage &&
+    departmentId !== null
+    ) {
+    <div class="department-detail-actions">
+        <button type="button" class="outline-button" (click)="editDepartment()">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
 
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+            </svg>
 
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
-                ×
-            </button>
-        </div>
+            Chỉnh sửa
+        </button>
+    </div>
+    }
+</section>
 
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="activeMenu === item.label"
-                (click)="setActiveMenu(item.label)">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
+@if (isLoading) {
+<article class="detail-card">
+    <div style="
+                padding: 32px;
+                text-align: center;
+            ">
+        <strong>
+            Đang tải thông tin phòng ban...
+        </strong>
+    </div>
+</article>
+} @else if (errorMessage) {
+<article class="detail-card">
+    <div style="
+                padding: 32px;
+                text-align: center;
+            ">
+        <p>
+            {{ errorMessage }}
+        </p>
 
-                    @case ('employees') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
-
-                    @case ('department') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4"></path>
-                        <path d="M10 10h4"></path>
-                        <path d="M10 14h4"></path>
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    }
-
-                    @case ('contract') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M8 13h8"></path>
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
-
-                    @case ('attendance') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="m9 16 2 2 4-4"></path>
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
-                        <path d="M16 14h2"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
-                </span>
-
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
-
-        <div class="sidebar__footer">
-            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
-
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
-
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
-
-            <label class="search-box">
-                <span aria-hidden="true">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-                </span>
-
-                <input type="search" [(ngModel)]="searchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
-
-            <div class="top-header__actions">
-                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
-                </button>
-
-                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
-
-                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
-
-                    <span class="header-profile__avatar">TN</span>
-
-                    <span class="header-profile__arrow" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </span>
-                </button>
-            </div>
-        </header>
-
-        <main class="main-content">
-            <section class="department-detail-heading">
+        @if (departmentId !== null) {
+        <button type="button" class="outline-button" (click)="retry()">
+            Thử lại
+        </button>
+        }
+    </div>
+</article>
+} @else {
+<section class="department-detail-layout">
+    <div class="department-detail-main">
+        <article class="
+                    detail-card
+                    department-overview-card
+                ">
+            <header class="detail-card__heading">
                 <div>
-                    <p class="breadcrumb">
-                        <a routerLink="/employees">Nhân sự</a>
-                        <span>/</span>
-                        <a routerLink="/departments">Phòng ban</a>
-                        <span>/</span>
-                        Chi tiết
-                    </p>
-
-                    <h1>Chi tiết phòng ban: {{ department.name }}</h1>
-                </div>
-
-                <div class="department-detail-actions">
-                    <button type="button" class="outline-button" (click)="editDepartment()">
+                    <span class="detail-card__icon">
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                            <circle cx="12" cy="12" r="9"></circle>
+
+                            <path d="M12 11v5"></path>
+
+                            <path d="M12 8h.01"></path>
                         </svg>
-                        Chỉnh sửa
+                    </span>
+
+                    <h2>Thông tin chung</h2>
+                </div>
+            </header>
+
+            <div class="department-overview-grid">
+                <div>
+                    <small>
+                        Tên phòng ban
+                    </small>
+
+                    <strong>
+                        {{
+                        department.name ||
+                        'Chưa cập nhật'
+                        }}
+                    </strong>
+                </div>
+
+                <div>
+                    <small>
+                        Mã phòng ban
+                    </small>
+
+                    <strong>
+                        {{ department.code }}
+                    </strong>
+                </div>
+
+                <div>
+                    <small>
+                        Trưởng bộ phận
+                    </small>
+
+                    <div class="manager-inline">
+                        <span class="manager-avatar">
+                            {{
+                            department.managerInitials
+                            }}
+                        </span>
+
+                        <strong>
+                            {{
+                            department.managerName
+                            }}
+                        </strong>
+                    </div>
+                </div>
+
+                <div>
+                    <small>
+                        Tổng nhân sự hiện tại
+                    </small>
+
+                    <strong>
+                        {{ totalEmployees }}
+                        nhân viên
+                    </strong>
+                </div>
+
+                <div class="
+                            department-overview-grid__full
+                        ">
+                    <small>
+                        Mô tả / chức năng nhiệm vụ
+                    </small>
+
+                    <p>
+                        {{
+                        department.description
+                        }}
+                    </p>
+                </div>
+            </div>
+        </article>
+
+        <article class="
+                    detail-card
+                    employee-card
+                ">
+            <header class="
+                        detail-card__heading
+                        detail-card__heading--space
+                    ">
+                <div>
+                    <span class="detail-card__icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+
+                            <circle cx="9" cy="7" r="4"></circle>
+
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        </svg>
+                    </span>
+
+                    <h2>
+                        Danh sách nhân sự
+                        ({{ totalEmployees }})
+                    </h2>
+                </div>
+
+                <div class="card-tools">
+                    <button type="button" aria-label="Xuất Excel" (click)="exportEmployees()" [disabled]="
+                            isLoading ||
+                            employees.length === 0
+                        ">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v12"></path>
+
+                            <path d="m7 10 5 5 5-5"></path>
+
+                            <path d="M5 21h14"></path>
+                        </svg>
                     </button>
                 </div>
-            </section>
+            </header>
 
-            <section class="department-detail-layout">
-                <div class="department-detail-main">
-                    <article class="detail-card department-overview-card">
-                        <header class="detail-card__heading">
-                            <div>
-                                <span class="detail-card__icon">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="9"></circle>
-                                        <path d="M12 11v5"></path>
-                                        <path d="M12 8h.01"></path>
-                                    </svg>
-                                </span>
-                                <h2>Thông tin chung</h2>
-                            </div>
-                        </header>
+            <div class="employee-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Họ tên</th>
+                            <th>Chức vụ</th>
+                            <th>
+                                Ngày vào làm
+                            </th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
 
-                        <div class="department-overview-grid">
-                            <div>
-                                <small>Tên phòng ban</small>
-                                <strong>{{ department.name }}</strong>
-                            </div>
+                    <tbody>
+                        @for (
+                        employee of employees;
+                        track employee.id
+                        ) {
+                        <tr>
+                            <td>
+                                <div class="
+                                                employee-inline
+                                            ">
+                                    <span class="
+                                                    employee-avatar
+                                                ">
+                                        {{
+                                        employee.initials
+                                        }}
+                                    </span>
 
-                            <div>
-                                <small>Mã phòng</small>
-                                <strong>{{ department.code }}</strong>
-                            </div>
+                                    <div>
+                                        <strong>
+                                            {{
+                                            employee.fullName
+                                            }}
+                                        </strong>
 
-                            <div>
-                                <small>Trưởng bộ phận</small>
-                                <div class="manager-inline">
-                                    <span class="manager-avatar">{{ department.managerInitials }}</span>
-                                    <strong>{{ department.managerName }}</strong>
+                                        <span>
+                                            {{
+                                            employee.email
+                                            }}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            </td>
 
-                            <div>
-                                <small>Ngày thành lập</small>
-                                <strong>{{ department.establishedDate }}</strong>
-                            </div>
+                            <td>
+                                {{
+                                employee.position
+                                }}
+                            </td>
 
-                            <div class="department-overview-grid__full">
-                                <small>Chức năng nhiệm vụ</small>
-                                <p>{{ department.description }}</p>
-                            </div>
-                        </div>
-                    </article>
+                            <td>
+                                {{
+                                employee.joinDate
+                                }}
+                            </td>
 
-                    <article class="detail-card employee-card">
-                        <header class="detail-card__heading detail-card__heading--space">
-                            <div>
-                                <span class="detail-card__icon">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="9" cy="7" r="4"></circle>
-                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    </svg>
+                            <td>
+                                <span [class]="
+                                                'status-badge ' +
+                                                getEmployeeStatusClass(
+                                                    employee.status
+                                                )
+                                            ">
+                                    {{
+                                    getEmployeeStatusLabel(
+                                    employee.status
+                                    )
+                                    }}
                                 </span>
-                                <h2>Danh sách nhân sự ({{ employees.length }})</h2>
-                            </div>
+                            </td>
 
-                            <div class="card-tools">
-                                <button type="button" aria-label="Lọc danh sách">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 6h16"></path>
-                                        <path d="M7 12h10"></path>
-                                        <path d="M10 18h4"></path>
-                                    </svg>
+                            <td class="row-action">
+                                <button type="button" (click)="
+                                                viewEmployeeInfo(
+                                                    employee
+                                                )
+                                            " aria-label="Xem nhân viên">
+                                    ⋮
                                 </button>
+                            </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td colspan="5" style="
+                                            text-align: center;
+                                            padding: 32px 16px;
+                                        ">
+                                Phòng ban hiện chưa có
+                                nhân viên.
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-                                <button type="button" aria-label="Tải danh sách" (click)="exportEmployees()">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 3v12"></path>
-                                        <path d="m7 10 5 5 5-5"></path>
-                                        <path d="M5 21h14"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </header>
-
-                        <div class="employee-table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Họ tên</th>
-                                        <th>Chức vụ</th>
-                                        <th>Ngày vào làm</th>
-                                        <th>Trạng thái</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    @for (employee of employees; track employee.id) {
-                                    <tr>
-                                        <td>
-                                            <div class="employee-inline">
-                                                <span class="employee-avatar">{{ employee.initials }}</span>
-
-                                                <div>
-                                                    <strong>{{ employee.fullName }}</strong>
-                                                    <span>{{ employee.email }}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td>{{ employee.position }}</td>
-                                        <td>{{ employee.joinDate }}</td>
-
-                                        <td>
-                                            <span class="status-badge" [class]="
-                          'status-badge ' +
-                          getEmployeeStatusClass(employee.status)
+            <footer class="employee-card__footer">
+                <button type="button" (click)="
+                            viewAllDepartmentEmployees()
                         ">
-                                                {{ getEmployeeStatusLabel(employee.status) }}
-                                            </span>
-                                        </td>
+                    Xem danh sách nhân viên
+                </button>
+            </footer>
+        </article>
+    </div>
 
-                                        <td class="row-action">
-                                            <button type="button" (click)="viewEmployeeInfo(employee)"
-                                                aria-label="Xem nhân viên">
-                                                ⋮
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
+    <aside class="department-detail-sidebar">
+        <article class="metric-card">
+            <header>
+                <span class="metric-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
 
-                        <footer class="employee-card__footer">
-                            <button type="button" (click)="viewAllDepartmentEmployees()">
-                                Xem tất cả nhân sự
-                            </button>
-                        </footer>
-                    </article>
+                        <circle cx="9" cy="7" r="4"></circle>
+
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    </svg>
+                </span>
+            </header>
+
+            <small>
+                TỔNG NHÂN SỰ
+            </small>
+
+            <h2>
+                {{ totalEmployees }}
+            </h2>
+
+            <p>
+                Nhân viên thuộc phòng ban
+            </p>
+        </article>
+
+        <article class="metric-card">
+            <header>
+                <span class="metric-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+
+                        <path d="m8 12 2.5 2.5L16 9"></path>
+                    </svg>
+                </span>
+            </header>
+
+            <small>
+                ĐANG LÀM VIỆC
+            </small>
+
+            <h2>
+                {{ workingEmployees }}
+            </h2>
+
+            <p>
+                Nhân viên đang hoạt động
+            </p>
+        </article>
+
+        <article class="
+                    metric-card
+                    metric-card--warning
+                ">
+            <header>
+                <span class="metric-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+
+                        <path d="M12 7v5"></path>
+
+                        <path d="M12 16h.01"></path>
+                    </svg>
+                </span>
+            </header>
+
+            <small>
+                TẠM NGHỈ
+            </small>
+
+            <h2>
+                {{ onLeaveEmployees }}
+            </h2>
+
+            <p>
+                Nhân viên đang tạm nghỉ
+            </p>
+        </article>
+
+        <article class="
+                    detail-card
+                    organization-card
+                ">
+            <header class="detail-card__heading">
+                <div>
+                    <span class="detail-card__icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8a3 3 0 1 0-6 0v4"></path>
+
+                            <path d="M6 8a3 3 0 1 0-6 0v4"></path>
+
+                            <path d="M12 12h6"></path>
+
+                            <path d="M6 12h6"></path>
+
+                            <path d="M3 12v6"></path>
+
+                            <path d="M15 12v6"></path>
+
+                            <path d="M9 18h12"></path>
+                        </svg>
+                    </span>
+
+                    <h2>
+                        Cơ cấu nhân sự
+                    </h2>
+                </div>
+            </header>
+
+            <div class="organization-chart">
+                <div class="
+                            organization-node
+                            organization-node--root
+                        ">
+                    <span class="node-icon">
+                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+
+                            <path d="M10 6h4"></path>
+
+                            <path d="M10 10h4"></path>
+                        </svg>
+                    </span>
+
+                    <div>
+                        <strong>
+                            {{
+                            department.name
+                            }}
+                        </strong>
+
+                        <small>
+                            {{
+                            department.code
+                            }}
+                        </small>
+                    </div>
                 </div>
 
-                <aside class="department-detail-sidebar">
-                    <article class="metric-card metric-card--danger">
-                        <header>
-                            <span class="metric-card__icon">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M19 8v6"></path>
-                                    <path d="M22 11h-6"></path>
-                                </svg>
-                            </span>
-                            <strong>+0.5%</strong>
-                        </header>
+                <span class="organization-line"></span>
 
-                        <small>TỶ LỆ NGHỈ VIỆC (YTD)</small>
-                        <h2>4.2%</h2>
-                    </article>
+                <div class="
+                            organization-node
+                            organization-node--active
+                        ">
+                    <strong>
+                        {{
+                        department.managerName
+                        }}
+                    </strong>
 
-                    <article class="metric-card metric-card--warning">
-                        <header>
-                            <span class="metric-card__icon">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7">
-                                    </path>
-                                    <path d="M16 14h2"></path>
-                                </svg>
-                            </span>
-                            <strong>68% đã dùng</strong>
-                        </header>
+                    <small>
+                        Trưởng bộ phận
+                    </small>
+                </div>
 
-                        <small>NGÂN SÁCH NHÂN SỰ</small>
-                        <h2>4.2 tỷ VND</h2>
-                        <p>Hạn mức: 6.2 tỷ VND</p>
-                    </article>
+                <span class="organization-line"></span>
 
-                    <article class="detail-card organization-card">
-                        <header class="detail-card__heading">
-                            <div>
-                                <span class="detail-card__icon">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 8a3 3 0 1 0-6 0v4"></path>
-                                        <path d="M6 8a3 3 0 1 0-6 0v4"></path>
-                                        <path d="M12 12h6"></path>
-                                        <path d="M6 12h6"></path>
-                                        <path d="M3 12v6"></path>
-                                        <path d="M15 12v6"></path>
-                                        <path d="M9 18h12"></path>
-                                    </svg>
-                                </span>
-                                <h2>Sơ đồ tổ chức</h2>
-                            </div>
-                        </header>
+                <div class="organization-branches">
+                    <span>
+                        {{ totalEmployees }}
+                        nhân viên
+                    </span>
 
-                        <div class="organization-chart">
-                            <div class="organization-node organization-node--root">
-                                <span class="node-icon">
-                                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                                        <path d="M10 6h4"></path>
-                                        <path d="M10 10h4"></path>
-                                    </svg>
-                                </span>
+                    <span>
+                        {{ workingEmployees }}
+                        đang làm việc
+                    </span>
 
-                                <div>
-                                    <strong>Ban Giám đốc</strong>
-                                    <small>Cấp điều hành</small>
-                                </div>
-                            </div>
+                    <span>
+                        {{ onLeaveEmployees }}
+                        tạm nghỉ
+                    </span>
+                </div>
+            </div>
+        </article>
 
-                            <span class="organization-line"></span>
 
-                            <div class="organization-node organization-node--active">
-                                <strong>{{ department.name }}</strong>
-                            </div>
-
-                            <span class="organization-line"></span>
-
-                            <div class="organization-branches">
-                                <span>15 nhân viên</span>
-                                <span>15 nhân viên</span>
-                                <span>12 Cộng tác</span>
-                                <span>...</span>
-                            </div>
-                        </div>
-                    </article>
-
-                    <article class="detail-card activity-card">
-                        <header class="detail-card__heading">
-                            <div>
-                                <h2>Hoạt động gần đây</h2>
-                            </div>
-                        </header>
-
-                        <ul>
-                            @for (activity of activities; track activity.id) {
-                            <li>
-                                <span></span>
-                                <div>
-                                    <strong>{{ activity.title }}</strong>
-                                    <small>{{ activity.time }}</small>
-                                </div>
-                            </li>
-                            }
-                        </ul>
-                    </article>
-                </aside>
-            </section>
-        </main>
-    </section>
-
-    @if (toastMessage) {
-    <div class="toast-message" role="status">{{ toastMessage }}</div>
-    }
+    </aside>
+</section>
+}
+@if (toastMessage) {
+<div class="toast-message" role="status">
+    {{ toastMessage }}
 </div>
+}

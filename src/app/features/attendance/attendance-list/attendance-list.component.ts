@@ -1,45 +1,95 @@
 import { CommonModule } from '@angular/common';
+
+import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
+    OnInit,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
 import {
     Router,
     RouterLink,
 } from '@angular/router';
 
 import {
+    finalize,
+    forkJoin,
+} from 'rxjs';
+
+import {
     CHAM_CONG_TRANG_THAI,
 } from '../../../core/constants/status.constants';
+
+import {
+    ExcelExportService,
+} from '../../../core/services/excel-export.service';
+
+import {
+    PhongBan,
+} from '../../departments/models/phong-ban.model';
+
+import {
+    PhongBanService,
+} from '../../departments/services/phong-ban.service';
+
+import {
+    NhanVienChiTiet,
+} from '../../employees/models/nhan-vien.model';
+
+import {
+    NhanVienService,
+} from '../../employees/services/nhan-vien.service';
+
+import {
+    ChamCong,
+} from '../models/cham-cong.model';
+
+import {
+    LoaiCa,
+} from '../models/loai-ca.model';
+
+import {
+    ChamCongService,
+} from '../services/cham-cong.service';
 
 import {
     AttendanceCell,
     AttendanceEmployeeRow,
     AttendanceLegend,
     DepartmentOption,
-    SidebarItem,
 } from './attendance-list.model';
 
 @Component({
     selector: 'app-attendance-list',
+
     standalone: true,
+
     imports: [
         CommonModule,
         FormsModule,
         RouterLink,
     ],
+
     templateUrl:
         './attendance-list.component.html',
+
     styleUrl:
         './attendance-list.component.scss',
+
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
-export class AttendanceListComponent {
-    sidebarOpen = false;
-    activeMenu = 'Chấm công';
-    globalSearchTerm = '';
+export class AttendanceListComponent
+    implements OnInit {
 
     selectedMonth =
         this.createCurrentMonth();
@@ -47,112 +97,99 @@ export class AttendanceListComponent {
     selectedDepartment = '';
 
     currentPage = 1;
+
     pageSize = 10;
+
     toastMessage = '';
+
+    errorMessage = '';
+
+    isLoading = false;
+
+    private attendanceRecords:
+        ChamCong[] = [];
+
+    private employeesData:
+        NhanVienChiTiet[] = [];
+
+    private departmentsData:
+        PhongBan[] = [];
+
+    private shiftData:
+        LoaiCa[] = [];
 
     readonly attendanceStatus =
         CHAM_CONG_TRANG_THAI;
 
-    readonly sidebarItems: SidebarItem[] = [
-        {
-            label: 'Tổng quan',
-            icon: 'dashboard',
-            route: '/dashboard',
-        },
-        {
-            label: 'Nhân viên',
-            icon: 'employees',
-            route: '/employees',
-        },
-        {
-            label: 'Phòng ban',
-            icon: 'department',
-            route: '/departments',
-        },
-        {
-            label: 'Hợp đồng',
-            icon: 'contract',
-            route: '/contracts',
-        },
-        {
-            label: 'Chấm công',
-            icon: 'attendance',
-            route: '/attendance',
-        },
-        {
-            label: 'Nghỉ phép',
-            icon: 'leave',
-            route: '/leave',
-        },
-        {
-            label: 'Bảng lương',
-            icon: 'payroll',
-            route: '/payroll',
-        },
-        {
-            label: 'Khen thưởng, kỷ luật',
-            icon: 'award',
-            route: '/rewards-discipline',
-        },
-        {
-            label: 'Báo cáo',
-            icon: 'report',
-            route: '/reports',
-        },
-        {
-            label: 'Cài đặt',
-            icon: 'settings',
-            route: '/settings',
-        },
-    ];
+    readonly legends:
+        AttendanceLegend[] = [
+            {
+                code: 'X',
 
-    readonly legends: AttendanceLegend[] = [
-        {
-            code: 'X',
-            label: 'Đủ công',
-            status:
-                CHAM_CONG_TRANG_THAI
-                    .DU_CONG,
-            className: 'full-day',
-        },
-        {
-            code: 'M',
-            label: 'Đi trễ',
-            status:
-                CHAM_CONG_TRANG_THAI
-                    .DI_TRE,
-            className: 'late',
-        },
-        {
-            code: 'S',
-            label: 'Về sớm',
-            status:
-                CHAM_CONG_TRANG_THAI
-                    .VE_SOM,
-            className: 'early',
-        },
-        {
-            code: 'P',
-            label: 'Nghỉ phép',
-            status:
-                CHAM_CONG_TRANG_THAI
-                    .NGHI_PHEP,
-            className: 'leave',
-        },
-        {
-            code: 'V',
-            label: 'Vắng không phép',
-            status:
-                CHAM_CONG_TRANG_THAI
-                    .VANG_KHONG_PHEP,
-            className: 'absent',
-        },
-    ];
+                label: 'Đủ công',
 
-    /*
-     * Tạm ngưng mock.
-     * Dữ liệu sẽ được tải từ API sau.
-     */
+                status:
+                    CHAM_CONG_TRANG_THAI
+                        .DU_CONG,
+
+                className:
+                    'full-day',
+            },
+
+            {
+                code: 'M',
+
+                label: 'Đi trễ',
+
+                status:
+                    CHAM_CONG_TRANG_THAI
+                        .DI_TRE,
+
+                className:
+                    'late',
+            },
+
+            {
+                code: 'S',
+
+                label: 'Về sớm',
+
+                status:
+                    CHAM_CONG_TRANG_THAI
+                        .VE_SOM,
+
+                className:
+                    'early',
+            },
+
+            {
+                code: 'P',
+
+                label: 'Nghỉ phép',
+
+                status:
+                    CHAM_CONG_TRANG_THAI
+                        .NGHI_PHEP,
+
+                className:
+                    'leave',
+            },
+
+            {
+                code: 'V',
+
+                label:
+                    'Vắng không phép',
+
+                status:
+                    CHAM_CONG_TRANG_THAI
+                        .VANG_KHONG_PHEP,
+
+                className:
+                    'absent',
+            },
+        ];
+
     attendanceRows:
         AttendanceEmployeeRow[] = [];
 
@@ -160,16 +197,297 @@ export class AttendanceListComponent {
         DepartmentOption[] = [];
 
     constructor(
-        private readonly router: Router,
+        private readonly router:
+            Router,
+
+        private readonly chamCongService:
+            ChamCongService,
+
+        private readonly nhanVienService:
+            NhanVienService,
+
+        private readonly phongBanService:
+            PhongBanService,
+
+        private readonly excelExportService:
+            ExcelExportService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
     ) { }
 
-    get daysInSelectedMonth(): number[] {
-        const [year, month] =
+    ngOnInit(): void {
+        this.loadAttendanceData();
+    }
+
+    loadAttendanceData(): void {
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        forkJoin({
+            attendance:
+                this.chamCongService
+                    .getAll(),
+            employees:
+                this.nhanVienService
+                    .getAll(),
+            departments:
+                this.phongBanService
+                    .getAll(),
+            shifts:
+                this.chamCongService
+                    .getShiftTypes(),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    attendance,
+                    employees,
+                    departments,
+                    shifts,
+                }) => {
+                    this.attendanceRecords =
+                        attendance;
+
+                    this.employeesData =
+                        employees;
+
+                    this.departmentsData =
+                        departments;
+
+                    this.shiftData =
+                        shifts;
+
+                    this.departments =
+                        departments.map(
+                            (department) => ({
+                                maPB:
+                                    department.maPB,
+                                tenPB:
+                                    department.tenPB,
+                            }),
+                        );
+
+                    this.buildAttendanceRows();
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.errorMessage =
+                        this.getLoadErrorMessage(
+                            error,
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+            });
+    }
+
+    retryLoad(): void {
+        if (this.isLoading) {
+            return;
+        }
+
+        this.loadAttendanceData();
+    }
+
+    private buildAttendanceRows():
+        void {
+
+        const selectedMonth =
+            this.selectedMonth;
+
+        const monthRecords =
+            this.attendanceRecords
+                .filter(
+                    record => {
+
+                        const date =
+                            this.normalizeDate(
+                                record
+                                    .ngayChamCong,
+                            );
+
+                        return (
+                            date.startsWith(
+                                selectedMonth,
+                            )
+                        );
+                    },
+                );
+
+        this.attendanceRows =
+            this.employeesData
+                .map(
+                    employee => {
+
+                        const department =
+                            this.departmentsData
+                                .find(
+                                    item =>
+                                        item.maPB ===
+                                        employee.maPB,
+                                );
+
+                        const employeeRecords =
+                            monthRecords
+                                .filter(
+                                    record =>
+                                        record.maNV ===
+                                        employee.maNV,
+                                );
+
+                        const cells:
+                            AttendanceCell[] =
+                            employeeRecords
+                                .map(
+                                    record =>
+                                        this
+                                            .mapAttendanceCell(
+                                                record,
+                                            ),
+                                )
+                                .sort(
+                                    (
+                                        first,
+                                        second,
+                                    ) =>
+                                        first.day -
+                                        second.day,
+                                );
+
+                        return {
+                            maNV:
+                                employee
+                                    .maNV,
+
+                            hoTen:
+                                employee
+                                    .hoTen,
+
+                            maPB:
+                                employee.maPB ??
+                                null,
+
+                            tenPB:
+                                department?.tenPB ??
+                                null,
+
+                            cells,
+                        };
+                    },
+                );
+
+        this.attendanceRows
+            .sort(
+                (
+                    first,
+                    second,
+                ) =>
+                    first.maNV -
+                    second.maNV,
+            );
+
+        this.currentPage = 1;
+    }
+
+    private mapAttendanceCell(
+        record:
+            ChamCong,
+    ): AttendanceCell {
+
+        const normalizedDate =
+            this.normalizeDate(
+                record.ngayChamCong,
+            );
+
+        const day =
+            Number(
+                normalizedDate
+                    .slice(
+                        8,
+                        10,
+                    ),
+            );
+
+        const shift =
+            this.shiftData.find(
+                (item) =>
+                    item.maCa ===
+                    record.maCa,
+            );
+
+        return {
+            maCC:
+                record.maCC,
+            maCa:
+                record.maCa,
+            tenCa:
+                shift?.tenCa ??
+                null,
+            day,
+            ngayChamCong:
+                record.ngayChamCong,
+            gioVao:
+                record.gioVao,
+            gioRa:
+                record.gioRa,
+            soGioLam:
+                Number(
+                    record.soGioLam ??
+                    0,
+                ),
+            trangThai:
+                record.trangThai,
+            ghiChu:
+                record.ghiChu,
+        };
+    }
+
+    private normalizeDate(
+        value: string,
+    ): string {
+
+        if (!value) {
+            return '';
+        }
+
+        return value
+            .split('T')[0];
+    }
+
+    get daysInSelectedMonth():
+        number[] {
+
+        const [
+            year,
+            month,
+        ] =
             this.selectedMonth
                 .split('-')
                 .map(Number);
 
-        if (!year || !month) {
+        if (
+            !year ||
+            !month
+        ) {
             return [];
         }
 
@@ -178,313 +496,556 @@ export class AttendanceListComponent {
                 year,
                 month,
                 0,
-            ).getDate();
+            )
+                .getDate();
 
         return Array.from(
             {
-                length: totalDays,
+                length:
+                    totalDays,
             },
-            (_, index) => index + 1,
+            (
+                _,
+                index,
+            ) =>
+                index + 1,
         );
     }
 
     get filteredRows():
         AttendanceEmployeeRow[] {
-        if (!this.selectedDepartment) {
-            return this.attendanceRows;
+
+        if (
+            !this
+                .selectedDepartment
+        ) {
+
+            return this
+                .attendanceRows;
         }
 
-        const departmentId = Number(
-            this.selectedDepartment,
-        );
+        const departmentId =
+            Number(
+                this
+                    .selectedDepartment,
+            );
 
-        return this.attendanceRows.filter(
-            (row) =>
-                row.maPB === departmentId,
-        );
+        return this
+            .attendanceRows
+            .filter(
+                row =>
+                    row.maPB ===
+                    departmentId,
+            );
     }
 
     get paginatedRows():
         AttendanceEmployeeRow[] {
+
         const start =
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize;
 
-        return this.filteredRows.slice(
-            start,
-            start + this.pageSize,
-        );
+        return this
+            .filteredRows
+            .slice(
+                start,
+                start +
+                this.pageSize,
+            );
     }
 
-    get totalPages(): number {
+    get totalPages():
+        number {
+
         return Math.max(
             1,
+
             Math.ceil(
-                this.filteredRows.length /
+                this.filteredRows
+                    .length /
                 this.pageSize,
             ),
         );
     }
 
-    get visiblePages(): number[] {
+    get visiblePages():
+        number[] {
+
         return Array.from(
             {
-                length: this.totalPages,
+                length:
+                    this.totalPages,
             },
-            (_, index) => index + 1,
+
+            (
+                _,
+                index,
+            ) =>
+                index + 1,
         );
     }
 
-    get firstDisplayedRow(): number {
-        if (this.filteredRows.length === 0) {
+    get firstDisplayedRow():
+        number {
+
+        if (
+            this.filteredRows
+                .length ===
+            0
+        ) {
+
             return 0;
         }
 
         return (
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize +
             1
         );
     }
 
-    get lastDisplayedRow(): number {
+    get lastDisplayedRow():
+        number {
+
         return Math.min(
             this.currentPage *
             this.pageSize,
-            this.filteredRows.length,
+
+            this.filteredRows
+                .length,
         );
     }
 
     get allAttendanceCells():
         AttendanceCell[] {
-        return this.filteredRows.flatMap(
-            (row) => row.cells,
-        );
+
+        return this
+            .filteredRows
+            .flatMap(
+                row =>
+                    row.cells,
+            );
     }
 
-    get attendanceRate(): number {
-        const cells = this.allAttendanceCells;
+    get attendanceRate():
+        number {
 
-        if (cells.length === 0) {
+        const cells =
+            this
+                .allAttendanceCells;
+
+        if (
+            cells.length ===
+            0
+        ) {
             return 0;
         }
 
-        const presentCount = cells.filter(
-            (cell) =>
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .DU_CONG ||
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .DI_TRE ||
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .VE_SOM,
-        ).length;
+        const presentCount =
+            cells.filter(
+                cell =>
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .DU_CONG ||
 
-        return Math.round(
-            (presentCount / cells.length) *
-            1000,
-        ) / 10;
-    }
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .DI_TRE ||
 
-    get lateEarlyCount(): number {
-        return this.allAttendanceCells.filter(
-            (cell) =>
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .DI_TRE ||
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .VE_SOM,
-        ).length;
-    }
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .VE_SOM,
+            )
+                .length;
 
-    get absenceCount(): number {
-        return this.allAttendanceCells.filter(
-            (cell) =>
-                cell.trangThai ===
-                CHAM_CONG_TRANG_THAI
-                    .VANG_KHONG_PHEP,
-        ).length;
-    }
-
-    get totalWorkHours(): number {
-        return this.allAttendanceCells.reduce(
-            (total, cell) =>
-                total + cell.soGioLam,
-            0,
+        return (
+            Math.round(
+                (
+                    presentCount /
+                    cells.length
+                ) *
+                1000,
+            ) /
+            10
         );
     }
 
+    get lateEarlyCount():
+        number {
+
+        return this
+            .allAttendanceCells
+            .filter(
+                cell =>
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .DI_TRE ||
+
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .VE_SOM,
+            )
+            .length;
+    }
+
+    get absenceCount():
+        number {
+
+        return this
+            .allAttendanceCells
+            .filter(
+                cell =>
+                    cell.trangThai ===
+                    CHAM_CONG_TRANG_THAI
+                        .VANG_KHONG_PHEP,
+            )
+            .length;
+    }
+
+    get totalWorkHours():
+        number {
+
+        return this
+            .allAttendanceCells
+            .reduce(
+                (
+                    total,
+                    cell,
+                ) =>
+                    total +
+                    Number(
+                        cell
+                            .soGioLam ??
+                        0,
+                    ),
+
+                0,
+            );
+    }
+
     findCell(
-        row: AttendanceEmployeeRow,
-        day: number,
+        row:
+            AttendanceEmployeeRow,
+
+        day:
+            number,
     ): AttendanceCell | null {
+
         return (
-            row.cells.find(
-                (cell) =>
-                    cell.day === day,
-            ) ?? null
+            row.cells
+                .find(
+                    cell =>
+                        cell.day ===
+                        day,
+                ) ??
+            null
         );
     }
 
     getStatusCode(
-        cell: AttendanceCell | null,
+        cell:
+            AttendanceCell |
+            null,
     ): string {
+
         if (!cell) {
             return '';
         }
 
-        const codes: Record<string, string> = {
+        const codes:
+            Record<
+                string,
+                string
+            > = {
+
             [
                 CHAM_CONG_TRANG_THAI
                     .DU_CONG
-            ]: 'X',
+            ]:
+                'X',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .DI_TRE
-            ]: 'M',
+            ]:
+                'M',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VE_SOM
-            ]: 'S',
+            ]:
+                'S',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VANG_CO_PHEP
-            ]: 'P',
+            ]:
+                'P',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VANG_KHONG_PHEP
-            ]: 'V',
+            ]:
+                'V',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .NGHI_PHEP
-            ]: 'P',
+            ]:
+                'P',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .CHUA_XAC_DINH
-            ]: '-',
+            ]:
+                '-',
         };
 
-        return codes[cell.trangThai] ?? '-';
+        return (
+            codes[
+            cell.trangThai
+            ] ??
+            '-'
+        );
     }
 
     getStatusClass(
-        cell: AttendanceCell | null,
+        cell:
+            AttendanceCell |
+            null,
     ): string {
+
         if (!cell) {
             return 'empty';
         }
 
         const classes:
-            Record<string, string> = {
+            Record<
+                string,
+                string
+            > = {
+
             [
                 CHAM_CONG_TRANG_THAI
                     .DU_CONG
-            ]: 'full-day',
+            ]:
+                'full-day',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .DI_TRE
-            ]: 'late',
+            ]:
+                'late',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VE_SOM
-            ]: 'early',
+            ]:
+                'early',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VANG_CO_PHEP
-            ]: 'leave',
+            ]:
+                'leave',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .VANG_KHONG_PHEP
-            ]: 'absent',
+            ]:
+                'absent',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .NGHI_PHEP
-            ]: 'leave',
+            ]:
+                'leave',
+
             [
                 CHAM_CONG_TRANG_THAI
                     .CHUA_XAC_DINH
-            ]: 'unknown',
+            ]:
+                'unknown',
         };
 
         return (
-            classes[cell.trangThai] ??
+            classes[
+            cell.trangThai
+            ] ??
             'unknown'
         );
     }
 
-    applyFilters(): void {
-        this.currentPage = 1;
+    getAttendanceCellTitle(
+        cell:
+            AttendanceCell |
+            null,
+    ): string {
+        if (!cell) {
+            return 'Chưa có dữ liệu chấm công.';
+        }
+
+        const parts = [
+            `Trạng thái: ${cell.trangThai}`,
+            `Ca làm: ${cell.tenCa ?? 'Chưa xác định'}`,
+            `Giờ vào: ${cell.gioVao ? cell.gioVao.slice(0, 5) : '--:--'}`,
+            `Giờ ra: ${cell.gioRa ? cell.gioRa.slice(0, 5) : '--:--'}`,
+            `Số giờ làm: ${Number(cell.soGioLam ?? 0).toLocaleString('vi-VN')}`,
+        ];
+
+        if (cell.ghiChu?.trim()) {
+            parts.push(
+                `Ghi chú: ${cell.ghiChu.trim()}`,
+            );
+        }
+
+        return parts.join(' · ');
     }
 
-    goToPage(page: number): void {
+    applyFilters(): void {
+
+        this.buildAttendanceRows();
+
+        this.currentPage = 1;
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    goToPage(
+        page:
+            number,
+    ): void {
+
         if (
             page < 1 ||
-            page > this.totalPages
+            page >
+            this.totalPages
         ) {
             return;
         }
 
-        this.currentPage = page;
+        this.currentPage =
+            page;
     }
 
-    viewAttendanceOverview(): void {
-        void this.router.navigate([
-            '/attendance/overview',
-        ]);
+    viewAttendanceOverview():
+        void {
+
+        void this.router
+            .navigate([
+                '/attendance/overview',
+            ]);
     }
 
     exportExcel(): void {
-        this.showToast(
-            'Chức năng xuất Excel sẽ hoạt động sau khi kết nối API.',
+        if (!this.filteredRows.length) {
+            this.showToast('Không có dữ liệu chấm công để xuất.');
+            return;
+        }
+
+        const data = this.filteredRows.map((row) => {
+            const dayColumns: Record<string, string> = {};
+
+            this.daysInSelectedMonth.forEach((day) => {
+                const cell = this.findCell(row, day);
+                dayColumns[`Ngày ${day}`] = cell?.trangThai ?? '';
+            });
+
+            return {
+                'Mã nhân viên': `NV-${String(row.maNV).padStart(4, '0')}`,
+                'Họ tên': row.hoTen,
+                'Phòng ban': row.tenPB || 'Chưa phân phòng',
+                'Tháng': this.selectedMonth,
+                'Số ngày có chấm công': row.cells.length,
+                'Tổng giờ làm': row.cells.reduce(
+                    (total, cell) => total + Number(cell.soGioLam ?? 0),
+                    0,
+                ),
+                ...dayColumns,
+            };
+        });
+
+        this.excelExportService.exportToExcel(
+            data,
+            `cham-cong-${this.selectedMonth}`,
+            'Chấm công',
         );
+
+        this.showToast('Đã xuất dữ liệu chấm công.');
     }
 
-    toggleSidebar(): void {
-        this.sidebarOpen =
-            !this.sidebarOpen;
-    }
+    private createCurrentMonth():
+        string {
 
-    closeSidebar(): void {
-        this.sidebarOpen = false;
-    }
-
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
-    }
-
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
-
-        void this.router.navigate([
-            '/login',
-        ]);
-    }
-
-    private createCurrentMonth(): string {
-        const currentDate = new Date();
+        const currentDate =
+            new Date();
 
         const year =
-            currentDate.getFullYear();
+            currentDate
+                .getFullYear();
 
-        const month = String(
-            currentDate.getMonth() + 1,
-        ).padStart(2, '0');
+        const month =
+            String(
+                currentDate
+                    .getMonth() +
+                1,
+            )
+                .padStart(
+                    2,
+                    '0',
+                );
 
         return `${year}-${month}`;
     }
 
-    private showToast(
-        message: string,
-    ): void {
-        this.toastMessage = message;
+    private getLoadErrorMessage(
+        error:
+            HttpErrorResponse,
+    ): string {
+        if (error.status === 401) {
+            return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+        }
 
-        window.setTimeout(() => {
-            this.toastMessage = '';
-        }, 2800);
+        if (error.status === 403) {
+            return 'Bạn không có quyền xem dữ liệu chấm công.';
+        }
+
+        if (error.status === 0) {
+            return 'Không thể kết nối đến hệ thống chấm công.';
+        }
+
+        return 'Không thể tải dữ liệu chấm công. Vui lòng thử lại.';
+    }
+
+    private showToast(
+        message:
+            string,
+    ): void {
+
+        this.toastMessage =
+            message;
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        window.setTimeout(
+            () => {
+
+                this.toastMessage =
+                    '';
+
+                this.changeDetectorRef
+                    .markForCheck();
+            },
+            2800,
+        );
     }
 }

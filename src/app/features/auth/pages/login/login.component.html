@@ -100,9 +100,9 @@
                 Mật khẩu
               </label>
 
-              <a routerLink="/forgot-password">
-                Quên mật khẩu?
-              </a>
+              <!-- <span class="password-help">
+                Liên hệ quản trị viên nếu cần đặt lại mật khẩu
+              </span> -->
             </div>
 
             <div class="input-control" [class.input-control--invalid]="
@@ -190,10 +190,7 @@
           </div>
           }
 
-          <button class="login-button" type="submit" [disabled]="
-              loginForm.invalid ||
-              isSubmitting
-            ">
+          <button class="login-button" type="submit" [disabled]="isSubmitting">
             @if (isSubmitting) {
             <span class="spinner" aria-hidden="true"></span>
 
@@ -209,12 +206,6 @@
             }
           </button>
 
-          <p class="demo-account">
-            Tài khoản demo:
-            <strong>admin</strong>
-            <span>/</span>
-            <strong>123456</strong>
-          </p>
         </form>
       </div>
     </section>

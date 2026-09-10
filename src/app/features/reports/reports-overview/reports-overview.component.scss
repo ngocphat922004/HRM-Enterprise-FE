@@ -228,12 +228,6 @@
     background   : #c6bfd3;
 }
 
-.report-context small {
-    margin-left: auto;
-    color      : #948ca1;
-    font-size  : 12px;
-}
-
 .report-stats-grid {
     margin-bottom        : 24px;
     display              : grid;
@@ -243,7 +237,7 @@
 
 .report-stat-card {
     min-width    : 0;
-    min-height   : 142px;
+    min-height   : 120px;
     padding      : 22px;
     border       : 1px solid var(--border-color, #e9e5f3);
     border-radius: 15px;
@@ -288,13 +282,6 @@
     font-weight  : 800;
     line-height  : 1.2;
     overflow-wrap: anywhere;
-}
-
-.report-stat-card small {
-    margin-top : 7px;
-    color      : #938b9f;
-    font-size  : 12px;
-    line-height: 1.4;
 }
 
 .report-stat-card--purple {
@@ -534,16 +521,6 @@
     border-radius: inherit;
     background   : linear-gradient(90deg, #22c55e, #16a34a);
     transition   : width 0.35s ease;
-}
-
-.attendance-note {
-    margin-top   : 16px;
-    padding      : 13px;
-    border-radius: 10px;
-    background   : #f8fafc;
-    color        : #7a7484;
-    font-size    : 12px;
-    line-height  : 1.55;
 }
 
 .decision-summary-grid {
@@ -888,6 +865,55 @@
     animation    : reports-overview-toast-in 0.24s ease-out;
 }
 
+/* =========================
+   REPORT ERROR STATE
+========================= */
+
+.report-state-card--error {
+    border    : 1px solid #fecaca;
+    background: #fffafa;
+
+    .report-state-card__icon {
+        background: #fee2e2;
+        color     : #dc2626;
+    }
+
+    h2 {
+        color: #991b1b;
+    }
+
+    p {
+        color: #b91c1c;
+    }
+
+    .primary-action-button {
+        border-color: #dc2626;
+        background  : #dc2626;
+        color       : #ffffff;
+
+        &:hover:not(:disabled) {
+            border-color: #b91c1c;
+            background  : #b91c1c;
+        }
+
+        &:disabled {
+            cursor : not-allowed;
+            opacity: 0.6;
+        }
+    }
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+    .report-state-card--error {
+        padding: 36px 18px;
+    }
+}
+
 @keyframes reports-overview-spin {
     to {
         transform: rotate(360deg);
@@ -964,13 +990,8 @@
         grid-column: auto;
     }
 
-    .report-context small {
-        width      : 100%;
-        margin-left: 0;
-    }
-
     .report-stat-card {
-        min-height: 132px;
+        min-height: 120px;
     }
 
     .decision-summary-grid {

@@ -3,13 +3,9 @@
 }
 
 .attendance-page {
-    min-height: 100vh;
-    color     : var(--color-text-primary, #252033);
-}
 
-/* =========================
-   PAGE HEADING
-========================= */
+    color: var(--color-text-primary, #252033);
+}
 
 .attendance-heading {
     display        : flex;
@@ -119,10 +115,6 @@
     }
 }
 
-/* =========================
-   FILTER TOOLBAR
-========================= */
-
 .attendance-toolbar {
     display        : flex;
     justify-content: flex-end;
@@ -179,10 +171,6 @@
         cursor: pointer;
     }
 }
-
-/* =========================
-   LEGEND
-========================= */
 
 .attendance-legend {
     display              : grid;
@@ -274,10 +262,6 @@
         background: #fee2e2;
     }
 }
-
-/* =========================
-   ATTENDANCE TABLE
-========================= */
 
 .attendance-table-card {
     overflow     : hidden;
@@ -511,10 +495,6 @@ thead .attendance-table__employee-column {
     background: #f4f2f8;
 }
 
-/* =========================
-   EMPTY STATE
-========================= */
-
 .attendance-empty-state {
     padding   : 0 !important;
     background: #ffffff !important;
@@ -561,10 +541,6 @@ thead .attendance-table__employee-column {
         height: 29px;
     }
 }
-
-/* =========================
-   TABLE FOOTER
-========================= */
 
 .attendance-table-footer {
     min-height     : 66px;
@@ -631,10 +607,6 @@ thead .attendance-table__employee-column {
     background  : var(--color-primary, #4f46e5);
 }
 
-/* =========================
-   SUMMARY CARDS
-========================= */
-
 .attendance-summary {
     display              : grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -693,10 +665,6 @@ thead .attendance-table__employee-column {
     background: #fff0f1;
 }
 
-/* =========================
-   TOAST
-========================= */
-
 .page-toast {
     position     : fixed;
     right        : 24px;
@@ -713,6 +681,32 @@ thead .attendance-table__employee-column {
     animation    : toast-in 0.25s ease;
 }
 
+.attendance-loading-spinner {
+    width : 26px;
+    height: 26px;
+
+    display: inline-block;
+
+    border          : 3px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius   : 50%;
+
+    animation: attendance-loading-spin 0.7s linear infinite;
+}
+
+@keyframes attendance-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.attendance-filter input:disabled,
+.attendance-filter select:disabled,
+.primary-button:disabled {
+    cursor : not-allowed;
+    opacity: 0.6;
+}
+
 @keyframes toast-in {
     from {
         opacity  : 0;
@@ -724,10 +718,6 @@ thead .attendance-table__employee-column {
         transform: translateY(0);
     }
 }
-
-/* =========================
-   RESPONSIVE
-========================= */
 
 @media (max-width: 1200px) {
     .attendance-legend {
@@ -828,5 +818,36 @@ thead .attendance-table__employee-column {
         width     : 35px;
         height    : 35px;
         flex-basis: 35px;
+    }
+}
+
+.attendance-error {
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    gap            : 16px;
+    padding        : 16px 18px;
+    margin-bottom  : 20px;
+    border         : 1px solid #fecaca;
+    border-radius  : 14px;
+    background     : #fff7f7;
+}
+
+.attendance-error strong {
+    display  : block;
+    color    : #991b1b;
+    font-size: 14px;
+}
+
+.attendance-error p {
+    margin   : 4px 0 0;
+    color    : #7f1d1d;
+    font-size: 13px;
+}
+
+@media (max-width: 640px) {
+    .attendance-error {
+        align-items   : stretch;
+        flex-direction: column;
     }
 }

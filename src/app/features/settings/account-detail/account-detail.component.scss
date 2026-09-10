@@ -55,7 +55,8 @@
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
     min-height     : 46px;
     padding        : 0 18px;
     border-radius  : 10px;
@@ -96,9 +97,29 @@
 }
 
 .primary-button .lucide-icon,
-.secondary-button .lucide-icon {
+.secondary-button .lucide-icon,
+.danger-button .lucide-icon {
     width : 18px;
     height: 18px;
+}
+
+
+.danger-button {
+    border    : 1px solid #ef4444;
+    background: #ffffff;
+    color     : #dc2626;
+}
+
+.danger-button:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled {
+    opacity  : 0.6;
+    cursor   : not-allowed;
+    transform: none;
 }
 
 .account-profile-card,

@@ -18,8 +18,3 @@ export interface AddRewardsDisciplineForm {
     ngayQuyetDinh: string;
 }
 
-export interface AddRewardsDisciplineSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

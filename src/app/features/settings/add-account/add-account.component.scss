@@ -2,10 +2,6 @@
     display: block;
 }
 
-.add-account-page {
-    min-height: 100vh;
-}
-
 .add-account-heading {
     margin-bottom: 24px;
 }
@@ -594,6 +590,34 @@
     animation    : add-account-toast-in 220ms ease-out;
 }
 
+.summary-status--inactive {
+    border-color: #fecaca !important;
+    background  : #fef2f2 !important;
+    color       : #b91c1c !important;
+
+    &::before {
+        background: #ef4444 !important;
+    }
+
+    svg {
+        color: #dc2626;
+    }
+}
+
+.summary-status--active {
+    border-color: #bbf7d0;
+    background  : #f0fdf4;
+    color       : #166534;
+
+    &::before {
+        background: #22c55e;
+    }
+
+    svg {
+        color: #16a34a;
+    }
+}
+
 @keyframes add-account-spin {
     to {
         transform: rotate(360deg);
@@ -698,7 +722,6 @@
         bottom: 16px;
     }
 }
-
 
 .form-card__icon--security {
     background: #fef2f2;

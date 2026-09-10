@@ -6,9 +6,3 @@ export interface DepartmentEditForm {
     moTa: string;
     trangThai: PhongBanTrangThai;
 }
-
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

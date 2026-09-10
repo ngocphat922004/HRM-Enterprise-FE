@@ -5,8 +5,3 @@ import {
 export type AddRoleForm =
     CreateQuyenRequest;
 
-export interface AddRoleSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

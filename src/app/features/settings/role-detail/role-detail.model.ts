@@ -5,9 +5,6 @@ import {
     TaiKhoan,
 } from '../../accounts/models/tai-khoan.model';
 
-/**
- * Tài khoản đang sử dụng quyền, kèm thông tin nhân viên để hiển thị.
- */
 export interface RoleDetailAccountItem
     extends TaiKhoan {
     hoTen: string;
@@ -17,9 +14,6 @@ export interface RoleDetailAccountItem
     tenCV: string | null;
 }
 
-/**
- * Dữ liệu chi tiết quyền và các tài khoản liên kết.
- */
 export interface RoleDetail
     extends Quyen {
     soTaiKhoan: number;
@@ -34,8 +28,3 @@ export interface RoleDetailSummary {
     ngungHoatDong: number;
 }
 
-export interface RoleDetailSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

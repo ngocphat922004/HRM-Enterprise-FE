@@ -1,292 +1,149 @@
 import { HttpClient } from '@angular/common/http';
-import {
-    Injectable,
-    inject,
-} from '@angular/core';
-import {
-    Observable,
-    delay,
-    of,
-    switchMap,
-    throwError,
-    timer,
-} from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
-import {
-    CHUC_VU_MOCK_DATA,
-    CHUC_VU_MOCK_DELAY,
-} from '../mocks/chuc-vu.mock';
 import {
     ChucVu,
     CreateChucVuRequest,
     UpdateChucVuRequest,
 } from '../models/chuc-vu.model';
 
+interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T | null;
+    errors?: Record<string, string[] | string> | null;
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class ChucVuService {
     private readonly http = inject(HttpClient);
-
-    private readonly apiUrl =
-        `${environment.apiBaseUrl}` +
-        `${API_ENDPOINTS.chucVu}`;
-
-    private chucVus: ChucVu[] =
-        CHUC_VU_MOCK_DATA.map(
-            (chucVu) => ({ ...chucVu }),
-        );
+    private readonly apiUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.chucVu}`;
 
     getAll(): Observable<ChucVu[]> {
-        if (!environment.useMockApi) {
-            return this.http.get<ChucVu[]>(
-                this.apiUrl,
-            );
-        }
-
-        const data = this.chucVus
-            .map((chucVu) => ({
-                ...chucVu,
-            }))
-            .sort(
-                (first, second) =>
-                    first.maCV - second.maCV,
-            );
-
-        return of(data).pipe(
-            delay(CHUC_VU_MOCK_DELAY),
-        );
+        return this.http
+            .get<ApiResponse<ChucVu[]> | ChucVu[]>(this.apiUrl)
+            .pipe(map((response) => this.unwrapList(response)));
     }
 
-    getById(
-        maCV: number,
-    ): Observable<ChucVu> {
-        if (!environment.useMockApi) {
-            return this.http.get<ChucVu>(
-                `${this.apiUrl}/${maCV}`,
-            );
-        }
-
-        const chucVu =
-            this.chucVus.find(
-                (item) => item.maCV === maCV,
-            );
-
-        if (!chucVu) {
-            return this.mockError(
-                'Không tìm thấy chức vụ.',
-            );
-        }
-
-        return of({
-            ...chucVu,
-        }).pipe(
-            delay(CHUC_VU_MOCK_DELAY),
-        );
-    }
-
-    create(
-        payload: CreateChucVuRequest,
-    ): Observable<ChucVu> {
-        if (!environment.useMockApi) {
-            return this.http.post<ChucVu>(
-                this.apiUrl,
-                payload,
-            );
-        }
-
-        const tenCV = payload.tenCV.trim();
-        const heSoPhuCap =
-            payload.heSoPhuCap ?? 0;
-
-        const validationError =
-            this.validate(
-                tenCV,
-                heSoPhuCap,
-            );
-
-        if (validationError) {
-            return this.mockError(
-                validationError,
-            );
-        }
-
-        if (this.isDuplicateName(tenCV)) {
-            return this.mockError(
-                'Tên chức vụ đã tồn tại.',
-            );
-        }
-
-        const nextMaCV =
-            this.chucVus.length > 0
-                ? Math.max(
-                    ...this.chucVus.map(
-                        (item) => item.maCV,
-                    ),
-                ) + 1
-                : 1;
-
-        const newChucVu: ChucVu = {
-            maCV: nextMaCV,
-            tenCV,
-            moTa:
-                payload.moTa?.trim() || null,
-            heSoPhuCap,
-        };
-
-        this.chucVus = [
-            ...this.chucVus,
-            newChucVu,
-        ];
-
-        return of({
-            ...newChucVu,
-        }).pipe(
-            delay(CHUC_VU_MOCK_DELAY),
-        );
-    }
-
-    update(
-        maCV: number,
-        payload: UpdateChucVuRequest,
-    ): Observable<ChucVu> {
-        if (!environment.useMockApi) {
-            return this.http.put<ChucVu>(
-                `${this.apiUrl}/${maCV}`,
-                payload,
-            );
-        }
-
-        const index =
-            this.chucVus.findIndex(
-                (item) => item.maCV === maCV,
-            );
-
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy chức vụ.',
-            );
-        }
-
-        const tenCV = payload.tenCV.trim();
-
-        const validationError =
-            this.validate(
-                tenCV,
-                payload.heSoPhuCap,
-            );
-
-        if (validationError) {
-            return this.mockError(
-                validationError,
-            );
-        }
-
-        if (
-            this.isDuplicateName(
-                tenCV,
-                maCV,
+    getById(maCV: number): Observable<ChucVu> {
+        return this.http
+            .get<ApiResponse<ChucVu> | ChucVu>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.chucVuById(maCV)}`,
             )
-        ) {
-            return this.mockError(
-                'Tên chức vụ đã tồn tại.',
-            );
-        }
+            .pipe(
+                map((response) => {
+                    const position = this.unwrapItem(response);
 
-        const updatedChucVu: ChucVu = {
-            maCV,
-            tenCV,
-            moTa:
-                payload.moTa?.trim() || null,
-            heSoPhuCap:
-                payload.heSoPhuCap,
+                    if (!position) {
+                        throw new Error('Không nhận được dữ liệu chức vụ.');
+                    }
+
+                    return position;
+                }),
+            );
+    }
+
+    create(payload: CreateChucVuRequest): Observable<ChucVu> {
+        const request: CreateChucVuRequest = {
+            tenCV: payload.tenCV.trim(),
+            moTa: payload.moTa?.trim() || null,
         };
 
-        this.chucVus[index] =
-            updatedChucVu;
+        return this.http
+            .post<ApiResponse<ChucVu> | ChucVu>(this.apiUrl, request)
+            .pipe(
+                map((response) => {
+                    const position = this.unwrapItem(response);
 
-        return of({
-            ...updatedChucVu,
-        }).pipe(
-            delay(CHUC_VU_MOCK_DELAY),
-        );
+                    if (!position) {
+                        throw new Error('Không nhận được chức vụ vừa tạo.');
+                    }
+
+                    return position;
+                }),
+            );
     }
 
-    delete(
-        maCV: number,
-    ): Observable<void> {
-        if (!environment.useMockApi) {
-            return this.http.delete<void>(
-                `${this.apiUrl}/${maCV}`,
+    update(maCV: number, payload: UpdateChucVuRequest): Observable<ChucVu> {
+        const request: UpdateChucVuRequest = {
+            tenCV: payload.tenCV.trim(),
+            moTa: payload.moTa?.trim() || null,
+        };
+
+        return this.http
+            .put<ApiResponse<ChucVu | null> | ChucVu | null>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.chucVuById(maCV)}`,
+                request,
+            )
+            .pipe(
+                map((response) => {
+                    const position = this.unwrapItem(response);
+                    return position ?? this.buildUpdatedPosition(maCV, request);
+                }),
             );
-        }
-
-        const index =
-            this.chucVus.findIndex(
-                (item) => item.maCV === maCV,
-            );
-
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy chức vụ.',
-            );
-        }
-
-        this.chucVus.splice(index, 1);
-
-        return of(undefined).pipe(
-            delay(CHUC_VU_MOCK_DELAY),
-        );
     }
 
-    private validate(
-        tenCV: string,
-        heSoPhuCap: number,
-    ): string | null {
-        if (!tenCV) {
-            return 'Tên chức vụ không được để trống.';
+    delete(maCV: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.chucVuById(maCV)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
+                }),
+            );
+    }
+
+    private unwrapList<T>(response: ApiResponse<T[]> | T[]): T[] {
+        if (Array.isArray(response)) {
+            return response;
         }
 
+        this.assertSuccess(response);
+        return response.data ?? [];
+    }
+
+    private unwrapItem<T>(response: ApiResponse<T | null> | T | null): T | null {
+        if (this.isApiResponse<T | null>(response)) {
+            this.assertSuccess(response);
+            return response.data;
+        }
+
+        return response;
+    }
+
+    private assertSuccess(response: unknown): void {
         if (
-            !Number.isFinite(heSoPhuCap) ||
-            heSoPhuCap < 0
+            this.isApiResponse<unknown>(response) &&
+            response.success === false
         ) {
-            return 'Hệ số phụ cấp phải lớn hơn hoặc bằng 0.';
+            throw new Error(response.message?.trim() || 'Thao tác chức vụ không thành công.');
         }
-
-        return null;
     }
 
-    private isDuplicateName(
-        tenCV: string,
-        ignoredMaCV?: number,
-    ): boolean {
-        const normalizedName =
-            tenCV.toLocaleLowerCase('vi');
-
-        return this.chucVus.some(
-            (item) =>
-                item.maCV !== ignoredMaCV &&
-                item.tenCV
-                    .trim()
-                    .toLocaleLowerCase('vi') ===
-                normalizedName,
+    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+        return Boolean(
+            response &&
+            typeof response === 'object' &&
+            !Array.isArray(response) &&
+            'success' in response &&
+            'message' in response &&
+            'data' in response,
         );
     }
 
-    private mockError(
-        message: string,
-    ): Observable<never> {
-        return timer(
-            CHUC_VU_MOCK_DELAY,
-        ).pipe(
-            switchMap(() =>
-                throwError(
-                    () => new Error(message),
-                ),
-            ),
-        );
+    private buildUpdatedPosition(maCV: number, payload: UpdateChucVuRequest): ChucVu {
+        return {
+            maCV,
+            tenCV: payload.tenCV,
+            moTa: payload.moTa,
+        };
     }
 }

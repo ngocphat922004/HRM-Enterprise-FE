@@ -1,7 +1,3 @@
-import {
-    NghiPhepTrangThai,
-} from '../../../core/constants/status.constants';
-
 export interface LeaveDetail {
     maNP: number;
     maNV: number;
@@ -18,7 +14,7 @@ export interface LeaveDetail {
     soNgay: number;
 
     lyDo: string | null;
-    trangThai: NghiPhepTrangThai;
+    trangThai: string;
 
     nguoiDuyet: number | null;
     tenNguoiDuyet: string | null;
@@ -33,8 +29,3 @@ export interface LeaveProcessStep {
     active: boolean;
 }
 
-export interface LeaveDetailSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

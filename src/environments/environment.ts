@@ -1,5 +1,4 @@
 export const environment = {
     production: false,
-    useMockApi: true,
-    apiBaseUrl: 'http://localhost:5000',
+    apiBaseUrl: 'https://qlns-uit.runasp.net',
 } as const;

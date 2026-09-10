@@ -35,6 +35,7 @@ export interface LeaveRequestItem {
 }
 
 export interface ExpiringContractItem {
+    maHD: number;
     employeeName: string;
     expiryDate: string;
     remainingDays: number;

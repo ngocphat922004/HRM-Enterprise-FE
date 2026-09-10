@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
+    OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -9,17 +12,27 @@ import {
     Router,
     RouterLink,
 } from '@angular/router';
+import {
+    finalize,
+    forkJoin,
+} from 'rxjs';
 
 import {
     HOP_DONG_TRANG_THAI,
 } from '../../../core/constants/status.constants';
 
 import {
-    ContractNavigationData,
+    NhanVienService,
+} from '../../employees/services/nhan-vien.service';
+
+import {
+    HopDongService,
+} from '../services/hop-dong.service';
+
+import {
     ContractTypeOption,
     EditContractForm,
     EmployeeOption,
-    SidebarItem,
 } from './edit-contract.model';
 
 @Component({
@@ -37,245 +50,379 @@ import {
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
-export class EditContractComponent {
-    sidebarOpen = false;
-    activeMenu = 'Hợp đồng';
-    globalSearchTerm = '';
+export class EditContractComponent
+    implements OnInit {
+
 
     submitted = false;
+
+    isLoading = false;
     isSaving = false;
+
     toastMessage = '';
+    errorMessage = '';
 
     readonly contractStatus =
         HOP_DONG_TRANG_THAI;
 
-    readonly sidebarItems: SidebarItem[] = [
-        {
-            label: 'Tổng quan',
-            icon: 'dashboard',
-            route: '/dashboard',
-        },
-        {
-            label: 'Nhân viên',
-            icon: 'employees',
-            route: '/employees',
-        },
-        {
-            label: 'Phòng ban',
-            icon: 'department',
-            route: '/departments',
-        },
-        {
-            label: 'Hợp đồng',
-            icon: 'contract',
-            route: '/contracts',
-        },
-        {
-            label: 'Chấm công',
-            icon: 'attendance',
-            route: '/attendance',
-        },
-        {
-            label: 'Nghỉ phép',
-            icon: 'leave',
-            route: '/leave',
-        },
-        {
-            label: 'Bảng lương',
-            icon: 'payroll',
-            route: '/payroll',
-        },
-        {
-            label: 'Khen thưởng, kỷ luật',
-            icon: 'award',
-            route: '/rewards-discipline',
-        },
-        {
-            label: 'Báo cáo',
-            icon: 'report',
-            route: '/reports',
-        },
-        {
-            label: 'Cài đặt',
-            icon: 'settings',
-            route: '/settings',
-        },
-    ];
-
-    /*
-     * Tạm ngưng mock.
-     * Danh sách sẽ được lấy từ API sau.
-     */
-    employees: EmployeeOption[] = [];
+    employees:
+        EmployeeOption[] = [];
 
     contractTypes:
         ContractTypeOption[] = [];
 
-    form: EditContractForm = {
-        maHD: 0,
-        maNV: null,
-        maLoaiHD: null,
-        ngayBatDau: '',
-        ngayKetThuc: '',
-        luongCoBan: null,
-        trangThai:
-            HOP_DONG_TRANG_THAI
-                .CON_HIEU_LUC,
-    };
+    form:
+        EditContractForm = {
+            maHD: 0,
+
+            maNV: null,
+
+            maLoaiHD: null,
+
+            ngayBatDau: '',
+
+            ngayKetThuc: '',
+
+            luongCoBan: null,
+
+            trangThai:
+                HOP_DONG_TRANG_THAI
+                    .CON_HIEU_LUC,
+        };
 
     selectedEmployeeName =
-        'Chưa tải dữ liệu';
+        '';
 
     selectedContractTypeName =
-        'Chưa tải dữ liệu';
+        '';
 
     constructor(
         private readonly route:
             ActivatedRoute,
-        private readonly router: Router,
-    ) {
-        const contractId = Number(
-            this.route.snapshot.paramMap.get(
-                'id',
-            ),
-        );
 
-        if (contractId > 0) {
-            this.form.maHD = contractId;
-        }
+        private readonly router:
+            Router,
 
-        const navigationContract =
-            this.router
-                .getCurrentNavigation()
-                ?.extras.state?.[
-            'contract'
-            ] as
-            | ContractNavigationData
-            | undefined;
+        private readonly hopDongService:
+            HopDongService,
+
+        private readonly nhanVienService:
+            NhanVienService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
+    ) { }
+
+    ngOnInit(): void {
+        const rawId =
+            this.route.snapshot
+                .paramMap
+                .get('id');
+
+        const contractId =
+            Number(rawId);
 
         if (
-            navigationContract &&
-            navigationContract.maHD ===
-            contractId
+            !Number.isInteger(
+                contractId,
+            ) ||
+            contractId <= 0
         ) {
-            this.form = {
-                maHD:
-                    navigationContract.maHD,
-                maNV:
-                    navigationContract.maNV,
-                maLoaiHD:
-                    navigationContract
-                        .maLoaiHD,
-                ngayBatDau:
-                    navigationContract
-                        .ngayBatDau,
-                ngayKetThuc:
-                    navigationContract
-                        .ngayKetThuc ?? '',
-                luongCoBan:
-                    navigationContract
-                        .luongCoBan,
-                trangThai:
-                    navigationContract
-                        .trangThai,
-            };
+            this.errorMessage =
+                'Mã hợp đồng không hợp lệ.';
 
-            this.selectedEmployeeName =
-                navigationContract.tenNV;
-
-            this.selectedContractTypeName =
-                navigationContract.tenLoaiHD;
+            return;
         }
+
+        this.form.maHD =
+            contractId;
+
+        this.loadContractData();
+    }
+    loadContractData(): void {
+        if (
+            this.form.maHD <=
+            0
+        ) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        forkJoin({
+            contract:
+                this.hopDongService
+                    .getById(
+                        this.form.maHD,
+                    ),
+
+            employees:
+                this.nhanVienService
+                    .getAll(),
+
+            contractTypes:
+                this.hopDongService
+                    .getContractTypes(),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    contract,
+                    employees,
+                    contractTypes,
+                }) => {
+
+                    this.employees =
+                        employees.map(
+                            (
+                                employee,
+                            ) => ({
+                                maNV:
+                                    employee
+                                        .maNV,
+
+                                hoTen:
+                                    employee
+                                        .hoTen,
+                            }),
+                        );
+
+                    this.contractTypes =
+                        contractTypes.map(
+                            (
+                                contractType,
+                            ) => ({
+                                maLoaiHD:
+                                    contractType
+                                        .maLoaiHD,
+
+                                tenLoaiHD:
+                                    contractType
+                                        .tenLoaiHD,
+                            }),
+                        );
+
+                    this.form = {
+                        maHD:
+                            contract.maHD,
+
+                        maNV:
+                            contract.maNV,
+
+                        maLoaiHD:
+                            contract
+                                .maLoaiHD,
+
+                        ngayBatDau:
+                            contract
+                                .ngayBatDau,
+
+                        ngayKetThuc:
+                            contract
+                                .ngayKetThuc ??
+                            '',
+
+                        luongCoBan:
+                            contract
+                                .luongCoBan,
+
+                        trangThai:
+                            contract
+                                .trangThai,
+                    };
+
+                    this.updateSelectedNames();
+
+                    console.log(
+                        'CONTRACT DETAIL:',
+                        contract,
+                    );
+
+                    console.log(
+                        'EMPLOYEE OPTIONS:',
+                        this.employees,
+                    );
+
+                    console.log(
+                        'CONTRACT TYPE OPTIONS:',
+                        this.contractTypes,
+                    );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    console.error(
+                        'LOAD EDIT CONTRACT ERROR:',
+                        error,
+                    );
+
+                    if (
+                        error.status ===
+                        404
+                    ) {
+                        this.errorMessage =
+                            'Không tìm thấy hợp đồng.';
+                    } else if (
+                        error.status ===
+                        401
+                    ) {
+                        this.errorMessage =
+                            'Phiên đăng nhập đã hết hạn.';
+                    } else if (
+                        error.status ===
+                        403
+                    ) {
+                        this.errorMessage =
+                            'Bạn không có quyền xem hợp đồng này.';
+                    } else if (
+                        error.status ===
+                        0
+                    ) {
+                        this.errorMessage =
+                            'Không thể kết nối đến API.';
+                    } else {
+                        this.errorMessage =
+                            `Không thể tải hợp đồng (${error.status}).`;
+                    }
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+            });
     }
 
-    get contractCode(): string {
+    get contractCode():
+        string {
+
         return `HD-${this.form.maHD
             .toString()
-            .padStart(5, '0')}`;
+            .padStart(
+                5,
+                '0',
+            )}`;
     }
 
-    get isEmployeeInvalid(): boolean {
+    get isEmployeeInvalid():
+        boolean {
+
         return (
             this.submitted &&
-            this.form.maNV === null
+            this.form.maNV ===
+            null
         );
     }
 
-    get isContractTypeInvalid(): boolean {
+    get isContractTypeInvalid():
+        boolean {
+
         return (
             this.submitted &&
-            this.form.maLoaiHD === null
+            this.form.maLoaiHD ===
+            null
         );
     }
 
-    get isStartDateInvalid(): boolean {
+    get isStartDateInvalid():
+        boolean {
+
         return (
             this.submitted &&
-            !this.form.ngayBatDau
+            !this.form
+                .ngayBatDau
         );
     }
 
-    get isEndDateInvalid(): boolean {
+    get isEndDateInvalid():
+        boolean {
+
         if (
             !this.submitted ||
-            !this.form.ngayBatDau ||
-            !this.form.ngayKetThuc
+            !this.form
+                .ngayBatDau ||
+            !this.form
+                .ngayKetThuc
         ) {
             return false;
         }
 
         return (
             new Date(
-                this.form.ngayKetThuc,
+                this.form
+                    .ngayKetThuc,
             ).getTime() <
             new Date(
-                this.form.ngayBatDau,
+                this.form
+                    .ngayBatDau,
             ).getTime()
         );
     }
 
-    get isBaseSalaryInvalid(): boolean {
+    get isBaseSalaryInvalid():
+        boolean {
+
         return (
             this.submitted &&
             (
-                this.form.luongCoBan ===
+                this.form
+                    .luongCoBan ===
                 null ||
-                this.form.luongCoBan <= 0
+                this.form
+                    .luongCoBan <=
+                0
             )
         );
     }
 
-    get isFormInvalid(): boolean {
+    get isFormInvalid():
+        boolean {
+
         return (
             this.isEmployeeInvalid ||
-            this.isContractTypeInvalid ||
-            this.isStartDateInvalid ||
-            this.isEndDateInvalid ||
-            this.isBaseSalaryInvalid
+            this
+                .isContractTypeInvalid ||
+            this
+                .isStartDateInvalid ||
+            this
+                .isEndDateInvalid ||
+            this
+                .isBaseSalaryInvalid
         );
     }
 
-    toggleSidebar(): void {
-        this.sidebarOpen =
-            !this.sidebarOpen;
+    onEmployeeChange():
+        void {
+
+        this.updateSelectedNames();
     }
 
-    closeSidebar(): void {
-        this.sidebarOpen = false;
-    }
+    onContractTypeChange():
+        void {
 
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
+        this.updateSelectedNames();
     }
 
     cancel(): void {
-        void this.router.navigate([
-            '/contracts',
-            this.form.maHD,
-        ]);
+        void this.router
+            .navigate([
+                '/contracts',
+                this.form.maHD,
+            ]);
     }
-
     saveChanges(): void {
         this.submitted = true;
 
@@ -283,36 +430,335 @@ export class EditContractComponent {
             this.isFormInvalid ||
             this.isSaving
         ) {
+            this.changeDetectorRef
+                .markForCheck();
+
             return;
         }
 
+        if (
+            this.form.maNV ===
+            null ||
+            this.form.maLoaiHD ===
+            null ||
+            this.form.luongCoBan ===
+            null
+        ) {
+            return;
+        }
+
+        const payload = {
+            maNV:
+                this.form.maNV,
+
+            maLoaiHD:
+                this.form
+                    .maLoaiHD,
+
+            ngayBatDau:
+                this.form
+                    .ngayBatDau,
+
+            ngayKetThuc:
+                this.form
+                    .ngayKetThuc ||
+                null,
+
+            luongCoBan:
+                Number(
+                    this.form
+                        .luongCoBan,
+                ),
+
+            trangThai:
+                this.form
+                    .trangThai,
+        };
+
+        console.log(
+            'UPDATE CONTRACT PAYLOAD:',
+            payload,
+        );
+
         this.isSaving = true;
 
-        window.setTimeout(() => {
-            this.isSaving = false;
+        this.hopDongService
+            .update(
+                this.form.maHD,
+                payload,
+            )
+            .pipe(
+                finalize(() => {
+                    this.isSaving =
+                        false;
 
-            this.showToast(
-                'Giao diện đã hợp lệ. Thay đổi sẽ được lưu khi kết nối API.',
-            );
-        }, 700);
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (
+                    contract,
+                ) => {
+
+                    console.log(
+                        'UPDATE CONTRACT SUCCESS:',
+                        contract,
+                    );
+
+                    this.form = {
+                        maHD:
+                            contract.maHD,
+
+                        maNV:
+                            contract.maNV,
+
+                        maLoaiHD:
+                            contract
+                                .maLoaiHD,
+
+                        ngayBatDau:
+                            contract
+                                .ngayBatDau,
+
+                        ngayKetThuc:
+                            contract
+                                .ngayKetThuc ??
+                            '',
+
+                        luongCoBan:
+                            contract
+                                .luongCoBan,
+
+                        trangThai:
+                            contract
+                                .trangThai,
+                    };
+
+                    this.updateSelectedNames();
+
+                    this.showToast(
+                        'Cập nhật hợp đồng thành công.',
+                    );
+
+                    window.setTimeout(
+                        () => {
+                            void this.router
+                                .navigate([
+                                    '/contracts',
+                                    this.form
+                                        .maHD,
+                                ]);
+                        },
+                        700,
+                    );
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    console.error(
+                        'UPDATE CONTRACT ERROR:',
+                        error,
+                    );
+
+                    if (
+                        error.status ===
+                        400
+                    ) {
+                        this.showToast(
+                            this.getApiErrorMessage(
+                                error,
+                                'Dữ liệu hợp đồng không hợp lệ.',
+                            ),
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        error.status ===
+                        401
+                    ) {
+                        this.showToast(
+                            'Phiên đăng nhập đã hết hạn.',
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        error.status ===
+                        403
+                    ) {
+                        this.showToast(
+                            'Bạn không có quyền cập nhật hợp đồng.',
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        error.status ===
+                        404
+                    ) {
+                        this.showToast(
+                            'Không tìm thấy hợp đồng.',
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        error.status ===
+                        409
+                    ) {
+                        this.showToast(
+                            this.getApiErrorMessage(
+                                error,
+                                'Dữ liệu hợp đồng bị xung đột.',
+                            ),
+                        );
+
+                        return;
+                    }
+
+                    if (
+                        error.status ===
+                        0
+                    ) {
+                        this.showToast(
+                            'Không thể kết nối đến API.',
+                        );
+
+                        return;
+                    }
+
+                    this.showToast(
+                        this.getApiErrorMessage(
+                            error,
+                            `Không thể cập nhật hợp đồng (${error.status}).`,
+                        ),
+                    );
+                },
+            });
     }
 
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
+    private updateSelectedNames():
+        void {
 
-        void this.router.navigate([
-            '/login',
-        ]);
+        const employee =
+            this.employees
+                .find(
+                    (
+                        item,
+                    ) =>
+                        item.maNV ===
+                        this.form.maNV,
+                );
+
+        this.selectedEmployeeName =
+            employee?.hoTen ??
+            '';
+
+        const contractType =
+            this.contractTypes
+                .find(
+                    (
+                        item,
+                    ) =>
+                        item.maLoaiHD ===
+                        this.form
+                            .maLoaiHD,
+                );
+
+        this.selectedContractTypeName =
+            contractType
+                ?.tenLoaiHD ??
+            '';
+    }
+
+    private getApiErrorMessage(
+        error:
+            HttpErrorResponse,
+
+        fallback:
+            string,
+    ): string {
+
+        if (
+            typeof error.error ===
+            'string'
+        ) {
+            return (
+                error.error ||
+                fallback
+            );
+        }
+
+        if (
+            error.error
+                ?.message
+        ) {
+            return error.error
+                .message;
+        }
+
+        const errors =
+            error.error
+                ?.errors;
+
+        if (
+            errors &&
+            typeof errors ===
+            'object'
+        ) {
+            const messages =
+                Object.values(
+                    errors,
+                )
+                    .flat()
+                    .filter(
+                        (
+                            message,
+                        ) =>
+                            typeof message ===
+                            'string',
+                    );
+
+            if (
+                messages.length >
+                0
+            ) {
+                return messages
+                    .join(' ');
+            }
+        }
+
+        return fallback;
     }
 
     private showToast(
         message: string,
     ): void {
-        this.toastMessage = message;
 
-        window.setTimeout(() => {
-            this.toastMessage = '';
-        }, 2800);
+        this.toastMessage =
+            message;
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        window.setTimeout(
+            () => {
+                this.toastMessage =
+                    '';
+
+                this.changeDetectorRef
+                    .markForCheck();
+            },
+            2800,
+        );
     }
 }

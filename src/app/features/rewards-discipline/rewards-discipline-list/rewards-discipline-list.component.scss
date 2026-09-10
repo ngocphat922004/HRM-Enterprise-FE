@@ -2,10 +2,6 @@
     display: block;
 }
 
-.rewards-discipline-list-page {
-    min-height: 100vh;
-}
-
 .payroll-heading {
     display        : flex;
     align-items    : flex-end;
@@ -49,6 +45,14 @@
     font-size: 14px;
 }
 
+.payroll-heading__actions {
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+    flex       : 0 0 auto;
+}
+
+.create-button,
 .export-button {
     min-height     : 46px;
     display        : inline-flex;
@@ -59,8 +63,6 @@
     padding        : 0 17px;
     border         : 1px solid var(--color-border);
     border-radius  : var(--radius-small);
-    color          : var(--color-text-primary);
-    background     : var(--color-surface);
     font-size      : 13px;
     font-weight    : 600;
     cursor         : pointer;
@@ -69,12 +71,28 @@
         background 160ms ease;
 }
 
-.export-button:hover {
+.create-button {
+    border-color: var(--color-primary);
+    color       : #fff;
+    background  : var(--color-primary);
+}
+
+.create-button:hover:not(:disabled) {
+    filter: brightness(.97);
+}
+
+.export-button {
+    color     : var(--color-text-primary);
+    background: var(--color-surface);
+}
+
+.export-button:hover:not(:disabled) {
     border-color: var(--color-primary);
     color       : var(--color-primary);
     background  : var(--color-primary-light);
 }
 
+.create-button .lucide-icon,
 .export-button .lucide-icon {
     width : 18px;
     height: 18px;
@@ -804,6 +822,183 @@
     animation    : payroll-toast-in 220ms ease-out;
 }
 
+.rewards-discipline-alert {
+    display      : flex;
+    align-items  : flex-start;
+    gap          : 12px;
+    margin-bottom: 20px;
+    padding      : 14px 16px;
+    border       : 1px solid #fecaca;
+    border-radius: 10px;
+    background   : #fef2f2;
+    color        : #991b1b;
+    font-size    : 13px;
+    line-height  : 1.5;
+
+    svg {
+        width     : 18px;
+        height    : 18px;
+        flex      : 0 0 18px;
+        margin-top: 1px;
+        color     : #dc2626;
+    }
+
+    >div {
+        min-width: 0;
+        flex     : 1;
+    }
+
+    strong {
+        display      : block;
+        margin-bottom: 3px;
+        color        : #7f1d1d;
+        font-size    : 13px;
+        font-weight  : 700;
+    }
+
+    p {
+        margin     : 0;
+        color      : inherit;
+        line-height: 1.55;
+    }
+
+    button {
+        display        : inline-flex;
+        align-items    : center;
+        justify-content: center;
+        flex           : 0 0 auto;
+        min-height     : 34px;
+        margin-left    : auto;
+        padding        : 7px 12px;
+        border         : 1px solid #fca5a5;
+        border-radius  : 7px;
+        background     : #ffffff;
+        color          : #991b1b;
+        font-size      : 12px;
+        font-weight    : 600;
+        cursor         : pointer;
+
+        &:hover:not(:disabled) {
+            border-color: #ef4444;
+            background  : #fff7f7;
+        }
+
+        &:disabled {
+            cursor : not-allowed;
+            opacity: 0.6;
+        }
+    }
+}
+
+.rewards-discipline-loading {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 14px;
+    min-height     : 120px;
+    margin-bottom  : 20px;
+    padding        : 24px;
+    border         : 1px solid #e2e8f0;
+    border-radius  : 12px;
+    background     : #ffffff;
+    box-shadow     : 0 4px 16px rgb(15 23 42 / 5%);
+
+    >div {
+        display       : flex;
+        flex-direction: column;
+        gap           : 4px;
+    }
+
+    strong {
+        color      : #0f172a;
+        font-size  : 14px;
+        font-weight: 700;
+    }
+
+    p {
+        margin     : 0;
+        color      : #64748b;
+        font-size  : 12px;
+        line-height: 1.5;
+    }
+}
+
+.rewards-discipline-spinner {
+    display         : inline-block;
+    width           : 24px;
+    height          : 24px;
+    flex            : 0 0 24px;
+    border          : 3px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius   : 50%;
+    animation       : rewards-discipline-spin 0.75s linear infinite;
+}
+
+.decision-action-spinner {
+    display         : inline-block;
+    width           : 14px;
+    height          : 14px;
+    flex            : 0 0 14px;
+    border          : 2px solid rgb(100 116 139 / 25%);
+    border-top-color: currentColor;
+    border-radius   : 50%;
+    animation       : rewards-discipline-spin 0.7s linear infinite;
+}
+
+.rewards-discipline-list-page {
+    button:disabled {
+        cursor : not-allowed;
+        opacity: 0.6;
+    }
+}
+
+@keyframes rewards-discipline-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 700px) {
+    .rewards-discipline-loading {
+        align-items: flex-start;
+        min-height : auto;
+        padding    : 18px;
+    }
+
+    .rewards-discipline-alert {
+        padding: 12px 14px;
+    }
+}
+
+@media (max-width: 520px) {
+    .rewards-discipline-alert {
+        flex-direction: column;
+        gap           : 10px;
+
+        button {
+            width      : 100%;
+            margin-left: 0;
+        }
+    }
+
+    .rewards-discipline-loading {
+        gap    : 12px;
+        padding: 16px;
+    }
+
+    .rewards-discipline-spinner {
+        width     : 20px;
+        height    : 20px;
+        flex-basis: 20px;
+    }
+
+    .decision-action-spinner {
+        width     : 13px;
+        height    : 13px;
+        flex-basis: 13px;
+    }
+}
+
 @keyframes payroll-toast-in {
     from {
         opacity  : 0;
@@ -850,7 +1045,13 @@
         font-size: 25px;
     }
 
+    .payroll-heading__actions {
+        width: 100%;
+    }
+
+    .create-button,
     .export-button {
+        flex : 1 1 0;
         width: 100%;
     }
 

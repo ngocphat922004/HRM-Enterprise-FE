@@ -1,513 +1,491 @@
-<div class="dashboard-shell employee-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="
-      sidebarOpen
-    " (click)="closeSidebar()" aria-hidden="true"></div>
+<section class="page-heading">
+    <div>
+        <h1>Danh sách nhân viên</h1>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">
-                HR
-            </div>
+        <p>
+            Quản lý thông tin hồ sơ nhân viên
+            trong toàn hệ thống
+        </p>
+    </div>
 
+    <div class="page-actions">
+        <input #importFileInput type="file" accept=".xlsx,.xls,.csv" hidden (change)="onImportFileSelected($event)" />
+
+        @if (canManageEmployees) {
+        <button class="import-button" type="button" [disabled]="isPreviewingImport || isImporting"
+            (click)="openImportFilePicker(importFileInput)">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 21V9"></path>
+                <path d="m17 14-5-5-5 5"></path>
+                <path d="M5 3h14"></path>
+            </svg>
+
+            Nhập Excel
+        </button>
+        }
+
+        <button class="export-button" type="button" (click)="exportExcel()">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
+
+            Xuất Excel
+        </button>
+    </div>
+</section>
+
+<section class="filter-card" aria-label="Bộ lọc nhân viên">
+    <label class="filter-field">
+        <span>Tìm kiếm</span>
+
+        <div class="filter-input">
+            <span aria-hidden="true">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+            </span>
+
+            <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+                placeholder="Tên hoặc Mã NV..." />
+        </div>
+    </label>
+
+    <label class="filter-field">
+        <span>Phòng ban</span>
+
+        <select [(ngModel)]="selectedDepartmentId" (ngModelChange)="applyFilters()" [disabled]="isManagerView">
+            <option [ngValue]="null">
+                Tất cả phòng ban
+            </option>
+
+            @for (
+            department of departments;
+            track department.id
+            ) {
+            <option [ngValue]="department.id">
+                {{ department.name }}
+            </option>
+            }
+        </select>
+    </label>
+
+    <label class="filter-field">
+        <span>Chức vụ</span>
+
+        <select [(ngModel)]="selectedPosition" (ngModelChange)="applyFilters()">
+            <option value="">
+                Tất cả chức vụ
+            </option>
+
+            @for (
+            position of positions;
+            track position
+            ) {
+            <option [value]="position">
+                {{ position }}
+            </option>
+            }
+        </select>
+    </label>
+
+    <label class="filter-field">
+        <span>Trạng thái</span>
+
+        <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+            <option value="">
+                Tất cả trạng thái
+            </option>
+
+            <option value="working">
+                Đang làm việc
+            </option>
+
+            <option value="on-leave">
+                Tạm nghỉ
+            </option>
+
+            <option value="resigned">
+                Đã nghỉ việc
+            </option>
+        </select>
+    </label>
+
+    <div class="filter-actions">
+        <button class="reset-filter-button" type="button" [disabled]="!hasActiveFilters" (click)="resetFilters()">
+            Đặt lại
+        </button>
+    </div>
+</section>
+
+<section class="employee-table-card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="checkbox-column">
+                        <input type="checkbox" [checked]="allCurrentPageSelected" (change)="toggleSelectAll()"
+                            aria-label="Chọn tất cả" />
+                    </th>
+
+                    <th>Nhân viên</th>
+                    <th>Mã NV</th>
+                    <th>Phòng ban</th>
+                    <th>Chức vụ</th>
+                    <th>Ngày vào làm</th>
+                    <th>Trạng thái</th>
+                    <th class="action-column"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (isLoading) {
+                <tr>
+                    <td colspan="8" class="empty-table">
+                        Đang tải danh sách nhân viên...
+                    </td>
+                </tr>
+                } @else if (loadError) {
+                <tr>
+                    <td colspan="8" class="empty-table">
+                        <div>
+                            <strong>Không thể tải danh sách nhân viên</strong>
+                            <p>{{ loadError }}</p>
+                            <button class="table-state-action" type="button" (click)="retry()">
+                                Thử lại
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                } @else {
+                @for (
+                employee of paginatedEmployees;
+                track employee.id
+                ) {
+                <tr>
+                    <td class="checkbox-column">
+                        <input type="checkbox" [checked]="
+                    selectedEmployeeIds.has(
+                        employee.id
+                    )
+                " (change)="
+                    toggleEmployeeSelection(
+                        employee.id
+                    )
+                " [attr.aria-label]="
+                    'Chọn ' +
+                    employee.fullName
+                " />
+                    </td>
+
+                    <td>
+                        <div class="employee-info">
+                            <span class="employee-avatar">
+                                {{ employee.initials }}
+                            </span>
+
+                            <div>
+                                <button type="button" class="employee-name-button" (click)="
+                            viewEmployee(
+                                employee
+                            )
+                        ">
+                                    {{ employee.fullName }}
+                                </button>
+
+                                <span>
+                                    {{ employee.email }}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        {{ employee.employeeCode }}
+                    </td>
+
+                    <td>
+                        {{ employee.department }}
+                    </td>
+
+                    <td>
+                        {{ employee.position }}
+                    </td>
+
+                    <td>
+                        {{ employee.joinDate }}
+                    </td>
+
+                    <td>
+                        <span class="status-badge" [class]="
+                    'status-badge ' +
+                    getStatusClass(
+                        employee.status
+                    )
+                ">
+                            {{
+                            getStatusLabel(
+                            employee.status
+                            )
+                            }}
+                        </span>
+                    </td>
+
+                    <td class="action-column">
+                        <div class="row-menu-wrapper" (click)="$event.stopPropagation()">
+                            <button class="row-menu-button" type="button" (click)="
+                        toggleRowMenu(
+                            employee.id
+                        )
+                    " aria-label="Tùy chọn nhân viên">
+                                ⋮
+                            </button>
+
+                            @if (
+                            openedMenuId ===
+                            employee.id
+                            ) {
+                            <div class="row-menu">
+                                <button type="button" (click)="
+                            viewEmployee(
+                                employee
+                            )
+                        ">
+                                    Xem chi tiết
+                                </button>
+
+                                @if (canManageEmployees) {
+                                <button type="button" (click)="
+                            editEmployee(
+                                employee
+                            )
+                        ">
+                                    Chỉnh sửa
+                                </button>
+
+                                <button class="delete-action" type="button" (click)="
+                            deleteEmployee(
+                                employee
+                            )
+                        ">
+                                    Xóa
+                                </button>
+                                }
+                            </div>
+                            }
+                        </div>
+                    </td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="8" class="empty-table">
+                        Không có dữ liệu nhân viên.
+                    </td>
+                </tr>
+                }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="table-footer">
+        <p>
+            Hiển thị
+            {{ firstDisplayedRow }} -
+            {{ lastDisplayedRow }}
+            trên tổng số
+            {{ filteredEmployees.length }}
+            nhân viên
+        </p>
+
+        <div class="pagination">
+            <button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)"
+                aria-label="Trang trước">
+                ‹
+            </button>
+
+            @for (
+            page of visiblePages;
+            track page
+            ) {
+            <button type="button" [class.pagination__active]="currentPage === page" (click)="goToPage(page)">
+                {{ page }}
+            </button>
+            }
+
+            <button type="button" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)"
+                aria-label="Trang sau">
+                ›
+            </button>
+        </div>
+
+        <label class="page-size">
+            <span>Số dòng mỗi trang</span>
+
+            <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()">
+                <option [ngValue]="5">
+                    5
+                </option>
+
+                <option [ngValue]="10">
+                    10
+                </option>
+
+                <option [ngValue]="20">
+                    20
+                </option>
+            </select>
+        </label>
+    </footer>
+</section>
+
+@if (isImportModalOpen) {
+<div class="import-modal-backdrop" (click)="closeImportModal()">
+    <section class="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title"
+        (click)="$event.stopPropagation()">
+        <header class="import-modal__header">
             <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
+                <h2 id="import-modal-title">Xem trước dữ liệu import</h2>
+
+                <p>
+                    {{ selectedImportFile?.name }}
+                </p>
             </div>
 
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+            <button class="import-modal__close" type="button" aria-label="Đóng"
+                [disabled]="isPreviewingImport || isImporting" (click)="closeImportModal()">
                 ×
             </button>
-        </div>
-
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (
-            item of sidebarItems;
-            track item.label
-            ) {
-            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="
-            activeMenu === item.label
-          " (click)="setActiveMenu(item.label)">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <rect width="7" height="9" x="3" y="3" rx="1" />
-                        <rect width="7" height="5" x="14" y="3" rx="1" />
-                        <rect width="7" height="9" x="14" y="12" rx="1" />
-                        <rect width="7" height="5" x="3" y="16" rx="1" />
-                    </svg>
-                    }
-
-                    @case ('employees') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                    }
-
-                    @case ('department') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18" />
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2" />
-                        <path d="M10 6h4" />
-                        <path d="M10 10h4" />
-                        <path d="M10 14h4" />
-                        <path d="M10 18h4" />
-                    </svg>
-                    }
-
-                    @case ('contract') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <path d="M14 2v6h6" />
-                        <path d="M8 13h8" />
-                        <path d="M8 17h8" />
-                    </svg>
-                    }
-
-                    @case ('attendance') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7v5l3 2" />
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M8 2v4" />
-                        <path d="M16 2v4" />
-                        <rect width="18" height="18" x="3" y="4" rx="2" />
-                        <path d="M3 10h18" />
-                        <path d="m9 16 2 2 4-4" />
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7" />
-                        <path d="M16 14h2" />
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path d="M3 3v18h18" />
-                        <path d="m7 16 4-4 3 3 5-6" />
-                    </svg>
-                    }
-
-                    @default {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
-                        <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    }
-                    }
-                </span>
-
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
-
-        <div class="sidebar__footer">
-            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
-
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
-
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
-
-            <label class="search-box">
-                <span aria-hidden="true">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-                </span>
-
-                <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
-                    placeholder="Tìm kiếm nhân viên, hồ sơ..." aria-label="Tìm kiếm nhân viên" />
-            </label>
-
-            <div class="top-header__actions">
-                <a class="header-add-button" routerLink="/employees/add">
-                    <span aria-hidden="true">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M5 12h14"></path>
-                            <path d="M12 5v14"></path>
-                        </svg>
-                    </span>
-
-                    Thêm mới
-                </a>
-
-                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-
-                    <span class="notification-dot"></span>
-                </button>
-
-                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
-
-                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
-
-                    <span class="header-profile__avatar">
-                        TN
-                    </span>
-
-                    <span class="header-profile__arrow" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </span>
-                </button>
-            </div>
         </header>
 
-        <main class="main-content">
-            <section class="page-heading">
-                <div>
-                    <h1>Danh sách nhân viên</h1>
+        @if (isPreviewingImport) {
+        <div class="import-loading">
+            <span class="import-spinner" aria-hidden="true"></span>
+            <strong>Đang kiểm tra file...</strong>
+            <p>Hệ thống đang kiểm tra từng dòng dữ liệu trong file.</p>
+        </div>
+        } @else {
+        <div class="import-summary">
+            <div>
+                <span>Tổng số dòng</span>
+                <strong>{{ importPreviewRows.length }}</strong>
+            </div>
 
-                    <p>
-                        Quản lý thông tin hồ sơ nhân viên
-                        trong toàn hệ thống
-                    </p>
-                </div>
+            <div class="import-summary__valid">
+                <span>Hợp lệ</span>
+                <strong>{{ importValidCount }}</strong>
+            </div>
 
-                <div class="page-actions">
-                    <button class="export-button" type="button" (click)="exportExcel()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v12"></path>
-                            <path d="m7 10 5 5 5-5"></path>
-                            <path d="M5 21h14"></path>
-                        </svg>
+            <div class="import-summary__invalid">
+                <span>Có lỗi</span>
+                <strong>{{ importInvalidCount }}</strong>
+            </div>
+        </div>
 
-                        Xuất Excel
-                    </button>
-                </div>
-            </section>
+        @if (importPreviewRows.length > 0) {
+        <div class="import-preview-wrapper">
+            <table class="import-preview-table">
+                <thead>
+                    <tr>
+                        <th>Dòng</th>
+                        <th>Họ tên</th>
+                        <th>Giới tính</th>
+                        <th>Ngày sinh</th>
+                        <th>CCCD</th>
+                        <th>Địa chỉ</th>
+                        <th>SĐT</th>
+                        <th>Email</th>
+                        <th>Ngày vào làm</th>
+                        <th>Mã PB</th>
+                        <th>Mã CV</th>
+                        <th>Mã TĐ</th>
+                        <th>Trạng thái</th>
+                        <th>Kết quả</th>
+                    </tr>
+                </thead>
 
-            <section class="filter-card" aria-label="Bộ lọc nhân viên">
-                <label class="filter-field">
-                    <span>Tìm kiếm</span>
+                <tbody>
+                    @for (row of importPreviewRows; track row.dong) {
+                    <tr [class.import-preview-row--invalid]="!row.hopLe">
+                        <td>{{ row.dong }}</td>
+                        <td>{{ row.hoTen || '—' }}</td>
+                        <td>{{ row.gioiTinh || '—' }}</td>
+                        <td>{{ row.ngaySinh || '—' }}</td>
+                        <td>{{ row.cccd || '—' }}</td>
+                        <td>{{ row.diaChi || '—' }}</td>
+                        <td>{{ row.sdt || '—' }}</td>
+                        <td>{{ row.email || '—' }}</td>
+                        <td>{{ row.ngayVaoLam || '—' }}</td>
+                        <td>{{ row.maPB || '—' }}</td>
+                        <td>{{ row.maCV || '—' }}</td>
+                        <td>{{ row.maTD || '—' }}</td>
+                        <td>{{ row.trangThai || '—' }}</td>
+                        <td class="import-result-cell">
+                            @if (row.hopLe) {
+                            <span class="import-result-badge import-result-badge--valid">
+                                Hợp lệ
+                            </span>
+                            } @else {
+                            <span class="import-result-badge import-result-badge--invalid">
+                                Có lỗi
+                            </span>
 
-                    <div class="filter-input">
-                        <span aria-hidden="true">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.3-4.3"></path>
-                            </svg>
-                        </span>
-
-                        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
-                            placeholder="Tên hoặc Mã NV..." />
-                    </div>
-                </label>
-
-                <label class="filter-field">
-                    <span>Phòng ban</span>
-
-                    <select [(ngModel)]="selectedDepartment" (ngModelChange)="applyFilters()">
-                        <option value="">
-                            Tất cả phòng ban
-                        </option>
-
-                        @for (
-                        department of departments;
-                        track department
-                        ) {
-                        <option [value]="department">
-                            {{ department }}
-                        </option>
-                        }
-                    </select>
-                </label>
-
-                <label class="filter-field">
-                    <span>Chức vụ</span>
-
-                    <select [(ngModel)]="selectedPosition" (ngModelChange)="applyFilters()">
-                        <option value="">
-                            Tất cả chức vụ
-                        </option>
-
-                        @for (
-                        position of positions;
-                        track position
-                        ) {
-                        <option [value]="position">
-                            {{ position }}
-                        </option>
-                        }
-                    </select>
-                </label>
-
-                <label class="filter-field">
-                    <span>Trạng thái</span>
-
-                    <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
-                        <option value="">
-                            Tất cả trạng thái
-                        </option>
-
-                        <option value="working">
-                            Đang làm việc
-                        </option>
-
-                        <option value="probation">
-                            Thử việc
-                        </option>
-
-                        <option value="on-leave">
-                            Nghỉ phép
-                        </option>
-
-                        <option value="resigned">
-                            Đã nghỉ
-                        </option>
-                    </select>
-                </label>
-            </section>
-
-            <section class="employee-table-card">
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th class="checkbox-column">
-                                    <input type="checkbox" [checked]="allCurrentPageSelected"
-                                        (change)="toggleSelectAll()" aria-label="Chọn tất cả" />
-                                </th>
-
-                                <th>Nhân viên</th>
-                                <th>Mã NV</th>
-                                <th>Phòng ban</th>
-                                <th>Chức vụ</th>
-                                <th>Ngày vào làm</th>
-                                <th>Trạng thái</th>
-                                <th class="action-column"></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @for (
-                            employee of paginatedEmployees;
-                            track employee.id
-                            ) {
-                            <tr>
-                                <td class="checkbox-column">
-                                    <input type="checkbox" [checked]="selectedEmployeeIds.has(employee.id)"
-                                        (change)="toggleEmployeeSelection(employee.id)"
-                                        [attr.aria-label]="'Chọn ' + employee.fullName" />
-                                </td>
-
-                                <td>
-                                    <div class="employee-info">
-                                        <span class="employee-avatar">
-                                            {{ employee.initials }}
-                                        </span>
-
-                                        <div>
-                                            <button type="button" class="employee-name-button"
-                                                (click)="viewEmployee(employee)">
-                                                {{ employee.fullName }}
-                                            </button>
-
-                                            <span>
-                                                {{ employee.email }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    {{ employee.employeeCode }}
-                                </td>
-
-                                <td>
-                                    {{ employee.department }}
-                                </td>
-
-                                <td>
-                                    {{ employee.position }}
-                                </td>
-
-                                <td>
-                                    {{ employee.joinDate }}
-                                </td>
-
-                                <td>
-                                    <span class="status-badge"
-                                        [class]="'status-badge ' + getStatusClass(employee.status)">
-                                        {{ getStatusLabel(employee.status) }}
-                                    </span>
-                                </td>
-
-                                <td class="action-column">
-                                    <div class="row-menu-wrapper">
-                                        <button class="row-menu-button" type="button"
-                                            (click)="toggleRowMenu(employee.id)" aria-label="Tùy chọn nhân viên">
-                                            ⋮
-                                        </button>
-
-                                        @if (
-                                        openedMenuId ===
-                                        employee.id
-                                        ) {
-                                        <div class="row-menu">
-                                            <button type="button" (click)="viewEmployee(employee)">
-                                                Xem chi tiết
-                                            </button>
-
-                                            <button type="button" (click)="editEmployee(employee)">
-                                                Chỉnh sửa
-                                            </button>
-
-                                            <button class="delete-action" type="button"
-                                                (click)="deleteEmployee(employee)">
-                                                Xóa
-                                            </button>
-                                        </div>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                            } @empty {
-                            <tr>
-                                <td colspan="8" class="empty-table">
-                                    Không tìm thấy nhân viên phù hợp.
-                                </td>
-                            </tr>
+                            <ul>
+                                @for (error of row.loi; track error) {
+                                <li>{{ error }}</li>
+                                }
+                            </ul>
                             }
-                        </tbody>
-                    </table>
-                </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        } @else {
+        <div class="import-empty">
+            Không có dữ liệu xem trước để hiển thị.
+        </div>
+        }
+        }
 
-                <footer class="table-footer">
-                    <p>
-                        Hiển thị
-                        {{ firstDisplayedRow }} -
-                        {{ lastDisplayedRow }}
-                        trên tổng số
-                        {{ filteredEmployees.length }}
-                        nhân viên
-                    </p>
+        @if (!isPreviewingImport && importInvalidCount > 0) {
+        <div class="import-warning">
+            File đang có {{ importInvalidCount }} dòng lỗi. Hãy sửa dữ liệu rồi chọn lại file trước khi nhập.
+        </div>
+        }
 
-                    <div class="pagination">
-                        <button type="button" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)"
-                            aria-label="Trang trước">
-                            ‹
-                        </button>
+        <footer class="import-modal__footer">
+            <button class="import-secondary-button" type="button" [disabled]="isPreviewingImport || isImporting"
+                (click)="chooseAnotherImportFile(importFileInput)">
+                Chọn file khác
+            </button>
 
-                        @for (
-                        page of visiblePages;
-                        track page
-                        ) {
-                        <button type="button" [class.pagination__active]="currentPage === page"
-                            (click)="goToPage(page)">
-                            {{ page }}
-                        </button>
-                        }
+            <div>
+                <button class="import-secondary-button" type="button" [disabled]="isPreviewingImport || isImporting"
+                    (click)="closeImportModal()">
+                    Hủy
+                </button>
 
-                        <button type="button" [disabled]="currentPage === totalPages"
-                            (click)="goToPage(currentPage + 1)" aria-label="Trang sau">
-                            ›
-                        </button>
-                    </div>
-
-                    <label class="page-size">
-                        <span>Số dòng mỗi trang</span>
-
-                        <select [(ngModel)]="pageSize" (ngModelChange)="changePageSize()">
-                            <option [ngValue]="5">
-                                5
-                            </option>
-
-                            <option [ngValue]="10">
-                                10
-                            </option>
-
-                            <option [ngValue]="20">
-                                20
-                            </option>
-                        </select>
-                    </label>
-                </footer>
-            </section>
-        </main>
+                <button class="import-confirm-button" type="button" [disabled]="!canConfirmImport"
+                    (click)="confirmImport()">
+                    @if (isImporting) {
+                    Đang nhập...
+                    } @else {
+                    Xác nhận nhập
+                    }
+                </button>
+            </div>
+        </footer>
     </section>
-
-    @if (toastMessage) {
-    <div class="toast-message" role="status">
-        {{ toastMessage }}
-    </div>
-    }
 </div>
+}
+
+@if (toastMessage) {
+<div class="toast-message" role="status">{{ toastMessage }}</div>
+}

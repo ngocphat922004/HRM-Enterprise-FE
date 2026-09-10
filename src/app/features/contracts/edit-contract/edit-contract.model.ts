@@ -33,9 +33,3 @@ export interface ContractTypeOption {
     maLoaiHD: number;
     tenLoaiHD: string;
 }
-
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

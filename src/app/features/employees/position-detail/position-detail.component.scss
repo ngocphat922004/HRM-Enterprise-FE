@@ -431,6 +431,69 @@ th {
     }
 }
 
+/* =========================
+   TOAST MESSAGE
+========================= */
+
+.toast-message {
+    position     : fixed;
+    right        : 24px;
+    bottom       : 24px;
+    z-index      : 1200;
+    display      : flex;
+    align-items  : center;
+    gap          : 10px;
+    max-width    : min(420px, calc(100vw - 32px));
+    padding      : 13px 16px;
+    border       : 1px solid #dbeafe;
+    border-radius: 10px;
+    background   : #ffffff;
+    color        : #1e3a8a;
+    box-shadow   : 0 12px 30px rgb(15 23 42 / 14%);
+    font-size    : 13px;
+    font-weight  : 600;
+    line-height  : 1.45;
+    animation    : position-detail-toast-in 0.2s ease-out;
+
+    &::before {
+        width        : 8px;
+        height       : 8px;
+        flex         : 0 0 8px;
+        border-radius: 50%;
+        background   : #2563eb;
+        content      : '';
+    }
+}
+
+
+@keyframes position-detail-toast-in {
+    from {
+        transform: translateY(8px);
+        opacity  : 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity  : 1;
+    }
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+    .toast-message {
+        right    : 16px;
+        bottom   : 16px;
+        left     : 16px;
+        max-width: none;
+        padding  : 12px 14px;
+        font-size: 12px;
+    }
+}
+
 @media (max-width: 760px) {
     .detail-heading {
         flex-direction: column;

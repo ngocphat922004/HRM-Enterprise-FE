@@ -1,45 +1,41 @@
-export type EmployeeEditTab =
-    | 'personal'
-    | 'work'
-    | 'salary'
-    | 'documents'
-    | 'rewards';
+import { NhanVienPhuCapTrangThai } from '../../../core/constants/status.constants';
+
+export type EmployeeEditTab = 'personal' | 'work' | 'allowances';
 
 export interface EditEmployeeForm {
     id: number;
     employeeCode: string;
     fullName: string;
-    status:
-    | 'working'
-    | 'probation'
-    | 'on-leave'
-    | 'resigned';
-
+    status: 'working' | 'on-leave' | 'resigned';
     dateOfBirth: string;
     gender: string;
+    identityNumber: string;
+    permanentAddress: string;
     personalEmail: string;
     phoneNumber: string;
-
-    department: string;
-    position: string;
-    manager: string;
-
-    baseSalary: number;
-    salaryLevel: string;
-    bankAccount: string;
-    bankName: string;
-
     avatarPreview: string;
-}
-
-export interface EmployeeDocument {
-    id: number;
-    name: string;
-    updatedAt: string;
-    type: 'pdf' | 'image';
+    maPB: number | null;
+    maCV: number | null;
+    maTD: number | null;
+    joinDate: string;
 }
 
 export interface EditEmployeeTab {
     id: EmployeeEditTab;
     label: string;
+}
+
+export interface EditEmployeeAllowanceItem {
+    maPC: number;
+    tenPC: string;
+    soTien: number;
+    moTa: string | null;
+    ngayApDung: string;
+    trangThai: NhanVienPhuCapTrangThai;
+}
+
+export interface EditEmployeeAllowanceForm {
+    maPC: number | null;
+    ngayApDung: string;
+    trangThai: NhanVienPhuCapTrangThai;
 }

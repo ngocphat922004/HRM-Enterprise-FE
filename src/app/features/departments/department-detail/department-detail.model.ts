@@ -28,9 +28,3 @@ export interface DepartmentActivity {
     title: string;
     time: string;
 }
-
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

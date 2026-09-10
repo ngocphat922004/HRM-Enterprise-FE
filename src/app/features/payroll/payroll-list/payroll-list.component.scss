@@ -2,10 +2,6 @@
     display: block;
 }
 
-.payroll-list-page {
-    min-height: 100vh;
-}
-
 .payroll-heading {
     display        : flex;
     align-items    : flex-end;
@@ -715,6 +711,183 @@
     font-size    : 12px;
     font-weight  : 600;
     animation    : payroll-toast-in 220ms ease-out;
+}
+
+.payroll-alert {
+    display      : flex;
+    align-items  : flex-start;
+    gap          : 12px;
+    margin-bottom: 20px;
+    padding      : 14px 16px;
+    border       : 1px solid #fecaca;
+    border-radius: 10px;
+    background   : #fef2f2;
+    color        : #991b1b;
+    font-size    : 13px;
+    line-height  : 1.5;
+
+    svg {
+        width     : 18px;
+        height    : 18px;
+        flex      : 0 0 18px;
+        margin-top: 1px;
+        color     : #dc2626;
+    }
+
+    >div {
+        min-width: 0;
+        flex     : 1;
+    }
+
+    strong {
+        display      : block;
+        margin-bottom: 3px;
+        color        : #7f1d1d;
+        font-size    : 13px;
+        font-weight  : 700;
+    }
+
+    p {
+        margin     : 0;
+        color      : inherit;
+        line-height: 1.55;
+    }
+
+    button {
+        display        : inline-flex;
+        align-items    : center;
+        justify-content: center;
+        flex           : 0 0 auto;
+        min-height     : 34px;
+        margin-left    : auto;
+        padding        : 7px 12px;
+        border         : 1px solid #fca5a5;
+        border-radius  : 7px;
+        background     : #ffffff;
+        color          : #991b1b;
+        font-size      : 12px;
+        font-weight    : 600;
+        cursor         : pointer;
+
+        &:hover:not(:disabled) {
+            border-color: #ef4444;
+            background  : #fff7f7;
+        }
+
+        &:disabled {
+            cursor : not-allowed;
+            opacity: 0.6;
+        }
+    }
+}
+
+.payroll-loading {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 14px;
+    min-height     : 120px;
+    margin-bottom  : 20px;
+    padding        : 24px;
+    border         : 1px solid var(--color-border);
+    border-radius  : 12px;
+    background     : var(--color-surface);
+    box-shadow     : 0 4px 16px rgb(15 23 42 / 5%);
+
+    >div {
+        display       : flex;
+        flex-direction: column;
+        gap           : 4px;
+    }
+
+    strong {
+        color      : var(--color-text-primary);
+        font-size  : 14px;
+        font-weight: 700;
+    }
+
+    p {
+        margin     : 0;
+        color      : var(--color-text-secondary);
+        font-size  : 12px;
+        line-height: 1.5;
+    }
+}
+
+.payroll-loading__spinner {
+    display         : inline-block;
+    width           : 24px;
+    height          : 24px;
+    flex            : 0 0 24px;
+    border          : 3px solid #e2e8f0;
+    border-top-color: var(--color-primary);
+    border-radius   : 50%;
+    animation       : payroll-list-spin 0.75s linear infinite;
+}
+
+.payroll-action-spinner {
+    display         : inline-block;
+    width           : 14px;
+    height          : 14px;
+    flex            : 0 0 14px;
+    border          : 2px solid rgb(100 116 139 / 25%);
+    border-top-color: currentColor;
+    border-radius   : 50%;
+    animation       : payroll-list-spin 0.7s linear infinite;
+}
+
+.payroll-list-page {
+    button:disabled {
+        cursor : not-allowed;
+        opacity: 0.6;
+    }
+}
+
+@keyframes payroll-list-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 700px) {
+    .payroll-loading {
+        align-items: flex-start;
+        min-height : auto;
+        padding    : 18px;
+    }
+
+    .payroll-alert {
+        padding: 12px 14px;
+    }
+}
+
+@media (max-width: 520px) {
+    .payroll-alert {
+        flex-direction: column;
+        gap           : 10px;
+
+        button {
+            width      : 100%;
+            margin-left: 0;
+        }
+    }
+
+    .payroll-loading {
+        gap    : 12px;
+        padding: 16px;
+    }
+
+    .payroll-loading__spinner {
+        width     : 20px;
+        height    : 20px;
+        flex-basis: 20px;
+    }
+
+    .payroll-action-spinner {
+        width     : 13px;
+        height    : 13px;
+        flex-basis: 13px;
+    }
 }
 
 @keyframes payroll-toast-in {

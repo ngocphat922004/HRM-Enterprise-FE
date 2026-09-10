@@ -5,11 +5,10 @@ export interface TaiKhoan {
     tenDangNhap: string;
     maNV: number;
     maQuyen: number;
-    trangThai: TaiKhoanTrangThai;
+    trangThai: string;
 }
 
-export interface TaiKhoanChiTiet
-    extends TaiKhoan {
+export interface TaiKhoanChiTiet extends TaiKhoan {
     tenQuyen: string;
 }
 
@@ -23,6 +22,7 @@ export interface CreateTaiKhoanRequest {
 
 export interface UpdateTaiKhoanRequest {
     tenDangNhap: string;
+    matKhau: string;
     maNV: number;
     maQuyen: number;
     trangThai: TaiKhoanTrangThai;

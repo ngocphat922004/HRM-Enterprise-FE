@@ -35,6 +35,19 @@
     --shadow-card: 0 8px 24px rgb(38 27 84 / 4%);
 }
 
+html.dark-theme {
+    color-scheme          : dark;
+    --color-primary       : #9b8cff;
+    --color-primary-hover : #b2a7ff;
+    --color-primary-light : #28233f;
+    --color-background    : #14121d;
+    --color-surface       : #1d1a29;
+    --color-border        : #373248;
+    --color-text-primary  : #f4f1ff;
+    --color-text-secondary: #b8b2c8;
+    --shadow-card         : 0 8px 24px rgb(0 0 0 / 24%);
+}
+
 *,
 *::before,
 *::after {
@@ -243,9 +256,10 @@ svg {
     font-weight  : 600;
     text-align   : left;
     cursor       : pointer;
-    transition   : background 160ms ease, color 160ms ease;
+    transition   :
+        background 160ms ease,
+        color 160ms ease;
 }
-
 
 .logout-button:hover {
     background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
@@ -428,7 +442,7 @@ svg {
     color         : var(--color-text-secondary);
     font-size     : 10px;
     line-height   : 14px;
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
@@ -512,7 +526,10 @@ svg {
     line-height    : 1;
     white-space    : nowrap;
     cursor         : pointer;
-    transition     : background 150ms ease, border-color 150ms ease, color 150ms ease;
+    transition     :
+        background 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease;
 }
 
 .cancel-button,
@@ -542,7 +559,7 @@ svg {
 }
 
 .save-button:disabled {
-    opacity: .65;
+    opacity: 0.65;
     cursor : not-allowed;
 }
 
@@ -608,7 +625,6 @@ svg {
     display   : none;
     background: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
 }
-
 
 @media (max-width: 860px) {
     .workspace {

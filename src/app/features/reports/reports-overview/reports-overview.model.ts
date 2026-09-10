@@ -56,8 +56,3 @@ export interface ReportsMonthOption {
     label: string;
 }
 
-export interface ReportsSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

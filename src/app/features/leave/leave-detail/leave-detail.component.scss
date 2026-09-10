@@ -2,10 +2,6 @@
     display: block;
 }
 
-.leave-detail-page {
-    min-height: 100vh;
-}
-
 .leave-detail-heading {
     margin-bottom: 24px;
 }
@@ -372,38 +368,6 @@
     white-space: pre-line;
 }
 
-.database-note {
-    display      : flex;
-    align-items  : flex-start;
-    gap          : 11px;
-    padding      : 14px 16px;
-    border       : 1px solid rgb(37 99 235 / 16%);
-    border-radius: var(--radius-medium);
-    color        : var(--color-info);
-    background   : rgb(37 99 235 / 6%);
-}
-
-.database-note>.lucide-icon {
-    width     : 18px;
-    height    : 18px;
-    flex      : 0 0 auto;
-    margin-top: 1px;
-}
-
-.database-note strong {
-    display    : block;
-    color      : var(--color-text-primary);
-    font-size  : 11px;
-    font-weight: 700;
-}
-
-.database-note p {
-    margin     : 3px 0 0;
-    color      : var(--color-text-secondary);
-    font-size  : 9px;
-    line-height: 1.55;
-}
-
 .decision-card,
 .process-card,
 .approver-card {
@@ -716,9 +680,17 @@
     height: 29px;
 }
 
-.detail-empty>button {
+
+
+.detail-empty__actions {
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+    margin-top : 18px;
+}
+
+.detail-empty__actions button {
     min-height   : 42px;
-    margin-top   : 18px;
     padding      : 0 17px;
     border-radius: var(--radius-small);
     color        : #fff;
@@ -728,8 +700,23 @@
     cursor       : pointer;
 }
 
-.detail-empty>button:hover {
+.detail-empty__actions button:hover {
     background: var(--color-primary-hover);
+}
+
+.detail-empty__actions button:disabled {
+    cursor : not-allowed;
+    opacity: .6;
+}
+
+.detail-empty__actions .detail-empty__secondary {
+    color     : var(--color-text-primary);
+    background: var(--color-surface);
+    border    : 1px solid var(--color-border);
+}
+
+.detail-empty__actions .detail-empty__secondary:hover {
+    background: var(--color-background);
 }
 
 .page-toast {
@@ -747,6 +734,126 @@
     font-size    : 12px;
     font-weight  : 600;
     animation    : leave-detail-toast-in 220ms ease-out;
+}
+
+.leave-detail-alert {
+    display      : flex;
+    align-items  : flex-start;
+    gap          : 12px;
+    margin-bottom: 20px;
+    padding      : 14px 16px;
+    border       : 1px solid #fecaca;
+    border-radius: 10px;
+    background   : #fef2f2;
+    color        : #991b1b;
+    font-size    : 13px;
+    line-height  : 1.5;
+
+    svg {
+        width     : 18px;
+        height    : 18px;
+        flex      : 0 0 18px;
+        margin-top: 1px;
+        color     : #dc2626;
+    }
+
+    strong {
+        display      : block;
+        margin-bottom: 3px;
+        color        : #7f1d1d;
+        font-size    : 13px;
+        font-weight  : 700;
+    }
+
+    p {
+        margin: 0;
+        color : inherit;
+    }
+
+    button {
+        flex         : 0 0 auto;
+        margin-left  : auto;
+        padding      : 7px 12px;
+        border       : 1px solid #fca5a5;
+        border-radius: 7px;
+        background   : #ffffff;
+        color        : #991b1b;
+        font-size    : 12px;
+        font-weight  : 600;
+        cursor       : pointer;
+
+        &:hover:not(:disabled) {
+            border-color: #ef4444;
+            background  : #fff7f7;
+        }
+
+        &:disabled {
+            cursor : not-allowed;
+            opacity: 0.6;
+        }
+    }
+}
+
+.decision-spinner {
+    display         : inline-block;
+    width           : 16px;
+    height          : 16px;
+    flex            : 0 0 16px;
+    border          : 2px solid rgb(255 255 255 / 45%);
+    border-top-color: currentColor;
+    border-radius   : 50%;
+    animation       : leave-decision-spin 0.7s linear infinite;
+}
+
+button:not(.approve-button):not(.reject-button) {
+    .decision-spinner {
+        border-color    : rgb(100 116 139 / 25%);
+        border-top-color: currentColor;
+    }
+}
+
+@keyframes leave-decision-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.approve-button,
+.reject-button {
+    &:disabled {
+        cursor : not-allowed;
+        opacity: 0.65;
+    }
+
+    .decision-spinner {
+        margin-right: 2px;
+    }
+}
+
+@media (max-width: 700px) {
+    .leave-detail-alert {
+        gap    : 10px;
+        padding: 12px 14px;
+
+        button {
+            margin-left: 0;
+        }
+    }
+}
+
+@media (max-width: 520px) {
+    .leave-detail-alert {
+        flex-direction: column;
+
+        svg {
+            margin-top: 0;
+        }
+
+        button {
+            width          : 100%;
+            justify-content: center;
+        }
+    }
 }
 
 @keyframes leave-detail-spin {

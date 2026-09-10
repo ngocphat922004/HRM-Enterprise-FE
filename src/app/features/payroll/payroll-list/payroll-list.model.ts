@@ -37,8 +37,3 @@ export interface PayrollMonthOption {
     label: string;
 }
 
-export interface PayrollSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

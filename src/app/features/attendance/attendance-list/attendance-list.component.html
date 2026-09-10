@@ -1,555 +1,398 @@
-<div class="dashboard-shell attendance-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true">
-    </div>
-
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">HR</div>
-
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
-
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
-                ×
-            </button>
-        </div>
-
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="activeMenu === item.label"
-                (click)="setActiveMenu(item.label)">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
-
-                    @case ('employees') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
-
-                    @case ('department') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4"></path>
-                        <path d="M10 10h4"></path>
-                        <path d="M10 14h4"></path>
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    }
-
-                    @case ('contract') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M8 13h8"></path>
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
-
-                    @case ('attendance') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="m9 16 2 2 4-4"></path>
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
-                        <path d="M16 14h2"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
-                </span>
-
-                <span>{{ item.label }}</span>
+<section class="attendance-heading">
+    <div>
+        <nav class="breadcrumb" aria-label="Điều hướng">
+            <a routerLink="/dashboard">
+                Tổng quan
             </a>
-            }
+
+            <span>/</span>
+
+            <strong>Chấm công</strong>
         </nav>
 
-        <div class="sidebar__footer">
-            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
+        <h1>Bảng chấm công chi tiết</h1>
 
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
+        <p>
+            Theo dõi ngày công, giờ làm và trạng
+            thái chấm công của nhân viên.
+        </p>
+    </div>
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
+    <div class="attendance-heading__actions">
+        <button class="secondary-button" type="button" (click)="viewAttendanceOverview()">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18"></path>
+                <path d="m7 16 4-4 3 3 5-6"></path>
+            </svg>
 
-            <label class="search-box">
-                <span aria-hidden="true">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-                </span>
+            Tổng quan chấm công
+        </button>
 
-                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm kiếm nhân viên, chấm công..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+        <button class="primary-button" type="button" (click)="exportExcel()" [disabled]="isLoading">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
 
-            <div class="top-header__actions">
-                <a class="header-add-button" routerLink="/employees/add">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5v14"></path>
-                    </svg>
-                    Thêm nhân viên
-                </a>
-                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
-                </button>
+            Xuất Excel
+        </button>
+    </div>
+</section>
 
-                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+@if (errorMessage) {
+<section class="attendance-error" role="alert">
+    <div>
+        <strong>Không thể tải dữ liệu chấm công</strong>
+        <p>{{ errorMessage }}</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="retryLoad()" [disabled]="isLoading">
+        Thử lại
+    </button>
+</section>
+}
 
-                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
+<section class="attendance-toolbar" aria-label="Bộ lọc chấm công">
+    <label class="attendance-filter">
+        <span>Thời gian</span>
 
-                    <span class="header-profile__avatar">TN</span>
+        <input type="month" [(ngModel)]="selectedMonth" (change)="applyFilters()" [disabled]="isLoading" />
+    </label>
 
-                    <span class="header-profile__arrow" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </span>
-                </button>
-            </div>
-        </header>
+    <label class="attendance-filter">
+        <span>Phòng ban</span>
 
-        <main class="main-content">
-            <section class="attendance-heading">
-                <div>
-                    <nav class="breadcrumb" aria-label="Điều hướng">
-                        <a routerLink="/dashboard">
-                            Tổng quan
-                        </a>
+        <select [(ngModel)]="selectedDepartment" (change)="applyFilters()" [disabled]="isLoading">
+            <option value="">
+                Tất cả phòng ban
+            </option>
 
-                        <span>/</span>
+            @for (
+            department of departments;
+            track department.maPB
+            ) {
+            <option [value]="department.maPB">
+                {{ department.tenPB }}
+            </option>
+            }
+        </select>
+    </label>
+</section>
 
-                        <strong>Chấm công</strong>
-                    </nav>
-
-                    <h1>Bảng chấm công chi tiết</h1>
-
-                    <p>
-                        Theo dõi ngày công, giờ làm và trạng
-                        thái chấm công của nhân viên.
-                    </p>
-                </div>
-
-                <div class="attendance-heading__actions">
-                    <button class="secondary-button" type="button" (click)="viewAttendanceOverview()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 3v18h18"></path>
-                            <path d="m7 16 4-4 3 3 5-6"></path>
-                        </svg>
-
-                        Tổng quan chấm công
-                    </button>
-
-                    <button class="primary-button" type="button" (click)="exportExcel()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v12"></path>
-                            <path d="m7 10 5 5 5-5"></path>
-                            <path d="M5 21h14"></path>
-                        </svg>
-
-                        Xuất Excel
-                    </button>
-                </div>
-            </section>
-
-            <section class="attendance-toolbar" aria-label="Bộ lọc chấm công">
-                <label class="attendance-filter">
-                    <span>Thời gian</span>
-
-                    <input type="month" [(ngModel)]="selectedMonth" (change)="applyFilters()" />
-                </label>
-
-                <label class="attendance-filter">
-                    <span>Phòng ban</span>
-
-                    <select [(ngModel)]="selectedDepartment" (change)="applyFilters()">
-                        <option value="">
-                            Tất cả phòng ban
-                        </option>
-
-                        @for (
-                        department of departments;
-                        track department.maPB
-                        ) {
-                        <option [value]="department.maPB">
-                            {{ department.tenPB }}
-                        </option>
-                        }
-                    </select>
-                </label>
-            </section>
-
-            <section class="attendance-legend" aria-label="Chú thích trạng thái">
-                @for (
-                legend of legends;
-                track legend.code
-                ) {
-                <article class="legend-card" [ngClass]="
+<section class="attendance-legend" aria-label="Chú thích trạng thái">
+    @for (
+    legend of legends;
+    track legend.code
+    ) {
+    <article class="legend-card" [ngClass]="
                     'legend-card--' +
                     legend.className
                 ">
-                    <span class="legend-card__code">
-                        {{ legend.code }}
-                    </span>
+        <span class="legend-card__code">
+            {{ legend.code }}
+        </span>
 
-                    <div>
-                        <strong>{{ legend.label }}</strong>
-                        <small>{{ legend.status }}</small>
-                    </div>
-                </article>
+        <div>
+            <strong>{{ legend.label }}</strong>
+            <small>{{ legend.status }}</small>
+        </div>
+    </article>
+    }
+</section>
+
+<section class="attendance-table-card">
+    <div class="attendance-table-card__header">
+        <div>
+            <h2>Bảng công nhân viên</h2>
+
+            <p>
+                Dữ liệu chấm công trong tháng
+                {{ selectedMonth }}
+            </p>
+        </div>
+
+        <span class="attendance-table-card__total">
+            {{ filteredRows.length }}
+            nhân viên
+        </span>
+    </div>
+
+    <div class="attendance-table-wrapper">
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th class="attendance-table__employee-column">
+                        Nhân viên
+                    </th>
+
+                    @for (
+                    day of daysInSelectedMonth;
+                    track day
+                    ) {
+                    <th class="attendance-table__day-column">
+                        {{ day }}
+                    </th>
+                    }
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (isLoading) {
+
+                <tr>
+                    <td class="attendance-empty-state" [attr.colspan]="
+                daysInSelectedMonth.length + 1
+            ">
+                        <div class="empty-state">
+                            <span class="attendance-loading-spinner" aria-hidden="true"></span>
+
+                            <strong>
+                                Đang tải dữ liệu chấm công...
+                            </strong>
+
+                            <p>
+                                Vui lòng chờ trong giây lát.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+
+                } @else {
+
+                @for (
+                row of paginatedRows;
+                track row.maNV
+                ) {
+
+                <tr>
+                    <td class="attendance-table__employee-column">
+                        <div class="attendance-employee">
+                            <span class="attendance-employee__avatar" aria-hidden="true">
+                                {{
+                                row.hoTen
+                                .charAt(0)
+                                .toUpperCase()
+                                }}
+                            </span>
+
+                            <div>
+                                <strong>
+                                    {{ row.hoTen }}
+                                </strong>
+
+                                <span>
+                                    Mã NV:
+                                    {{ row.maNV }}
+                                </span>
+
+                                <small>
+                                    {{
+                                    row.tenPB ||
+                                    'Chưa phân phòng'
+                                    }}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+
+                    @for (
+                    day of daysInSelectedMonth;
+                    track day
+                    ) {
+
+                    <td class="attendance-table__day-column">
+                        <span class="attendance-cell" [ngClass]="
+                    'attendance-cell--' +
+                    getStatusClass(
+                        findCell(
+                            row,
+                            day
+                        )
+                    )
+                " [title]="
+                    getAttendanceCellTitle(
+                        findCell(
+                            row,
+                            day
+                        )
+                    )
+                " [attr.aria-label]="
+                    getAttendanceCellTitle(
+                        findCell(
+                            row,
+                            day
+                        )
+                    )
+                ">
+                            {{
+                            getStatusCode(
+                            findCell(
+                            row,
+                            day
+                            )
+                            )
+                            }}
+                        </span>
+                    </td>
+
+                    }
+
+                </tr>
+
+                } @empty {
+
+                <tr>
+                    <td class="attendance-empty-state" [attr.colspan]="
+                daysInSelectedMonth.length + 1
+            ">
+                        <div class="empty-state">
+                            <span class="empty-state__icon" aria-hidden="true">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+
+                                    <path d="M16 2v4"></path>
+                                    <path d="M8 2v4"></path>
+                                    <path d="M3 10h18"></path>
+                                    <path d="M8 14h.01"></path>
+                                    <path d="M12 14h.01"></path>
+                                    <path d="M16 14h.01"></path>
+                                </svg>
+                            </span>
+
+                            <strong>
+                                Chưa có dữ liệu chấm công
+                            </strong>
+
+                            <p>
+                                Không có dữ liệu chấm công
+                                phù hợp với tháng hoặc
+                                phòng ban đang chọn.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+
                 }
-            </section>
 
-            <section class="attendance-table-card">
-                <div class="attendance-table-card__header">
-                    <div>
-                        <h2>Bảng công nhân viên</h2>
+                }
+            </tbody>
+        </table>
+    </div>
 
-                        <p>
-                            Dữ liệu chấm công trong tháng
-                            {{ selectedMonth }}
-                        </p>
-                    </div>
+    <footer class="attendance-table-footer">
+        <p>
+            Hiển thị
+            {{ firstDisplayedRow }} -
+            {{ lastDisplayedRow }}
+            trong tổng số
+            {{ filteredRows.length }}
+            nhân viên
+        </p>
 
-                    <span class="attendance-table-card__total">
-                        {{ filteredRows.length }}
-                        nhân viên
-                    </span>
-                </div>
+        <nav class="pagination" aria-label="Phân trang chấm công">
+            <button type="button" class="pagination__button" [disabled]="currentPage === 1"
+                (click)="goToPage(currentPage - 1)" aria-label="Trang trước">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6"></path>
+                </svg>
+            </button>
 
-                <div class="attendance-table-wrapper">
-                    <table class="attendance-table">
-                        <thead>
-                            <tr>
-                                <th class="attendance-table__employee-column">
-                                    Nhân viên
-                                </th>
-
-                                @for (
-                                day of daysInSelectedMonth;
-                                track day
-                                ) {
-                                <th class="attendance-table__day-column">
-                                    {{ day }}
-                                </th>
-                                }
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @for (
-                            row of paginatedRows;
-                            track row.maNV
-                            ) {
-                            <tr>
-                                <td class="attendance-table__employee-column">
-                                    <div class="attendance-employee">
-                                        <span class="attendance-employee__avatar" aria-hidden="true">
-                                            {{
-                                            row.hoTen
-                                            .charAt(0)
-                                            .toUpperCase()
-                                            }}
-                                        </span>
-
-                                        <div>
-                                            <strong>
-                                                {{ row.hoTen }}
-                                            </strong>
-
-                                            <span>
-                                                Mã NV:
-                                                {{ row.maNV }}
-                                            </span>
-
-                                            <small>
-                                                {{
-                                                row.tenPB ||
-                                                'Chưa phân phòng'
-                                                }}
-                                            </small>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                @for (
-                                day of daysInSelectedMonth;
-                                track day
-                                ) {
-                                <td class="attendance-table__day-column">
-                                    <span class="attendance-cell" [ngClass]="
-                                            'attendance-cell--' +
-                                            getStatusClass(
-                                                findCell(row, day)
-                                            )
-                                        " [title]="
-                                            findCell(row, day)
-                                                ?.trangThai ||
-                                            'Chưa có dữ liệu'
-                                        ">
-                                        {{
-                                        getStatusCode(
-                                        findCell(row, day)
-                                        )
-                                        }}
-                                    </span>
-                                </td>
-                                }
-                            </tr>
-                            } @empty {
-                            <tr>
-                                <td class="attendance-empty-state" [attr.colspan]="
-                                    daysInSelectedMonth.length +
-                                    1
-                                ">
-                                    <div class="empty-state">
-                                        <span class="empty-state__icon" aria-hidden="true">
-                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-
-                                                <path d="M16 2v4"></path>
-                                                <path d="M8 2v4"></path>
-                                                <path d="M3 10h18"></path>
-                                                <path d="M8 14h.01"></path>
-                                                <path d="M12 14h.01"></path>
-                                                <path d="M16 14h.01"></path>
-                                            </svg>
-                                        </span>
-
-                                        <strong>
-                                            Chưa có dữ liệu chấm công
-                                        </strong>
-
-                                        <p>
-                                            Dữ liệu sẽ được hiển thị
-                                            sau khi kết nối mock hoặc API.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <footer class="attendance-table-footer">
-                    <p>
-                        Hiển thị
-                        {{ firstDisplayedRow }} -
-                        {{ lastDisplayedRow }}
-                        trong tổng số
-                        {{ filteredRows.length }}
-                        nhân viên
-                    </p>
-
-                    <nav class="pagination" aria-label="Phân trang chấm công">
-                        <button type="button" class="pagination__button" [disabled]="currentPage === 1"
-                            (click)="goToPage(currentPage - 1)" aria-label="Trang trước">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m15 18-6-6 6-6"></path>
-                            </svg>
-                        </button>
-
-                        @for (
-                        page of visiblePages;
-                        track page
-                        ) {
-                        <button type="button" class="pagination__button" [class.pagination__button--active]="
+            @for (
+            page of visiblePages;
+            track page
+            ) {
+            <button type="button" class="pagination__button" [class.pagination__button--active]="
                             currentPage === page
                         " (click)="goToPage(page)">
-                            {{ page }}
-                        </button>
-                        }
+                {{ page }}
+            </button>
+            }
 
-                        <button type="button" class="pagination__button" [disabled]="
+            <button type="button" class="pagination__button" [disabled]="
                         currentPage === totalPages
                     " (click)="goToPage(currentPage + 1)" aria-label="Trang sau">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m9 18 6-6-6-6"></path>
-                            </svg>
-                        </button>
-                    </nav>
-                </footer>
-            </section>
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </button>
+        </nav>
+    </footer>
+</section>
 
-            <section class="attendance-summary" aria-label="Tổng hợp chấm công">
-                <article class="summary-card summary-card--primary">
-                    <div class="summary-card__heading">
-                        <span>Tỷ lệ chuyên cần</span>
+<section class="attendance-summary" aria-label="Tổng hợp chấm công">
+    <article class="summary-card summary-card--primary">
+        <div class="summary-card__heading">
+            <span>Tỷ lệ chuyên cần</span>
 
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 3v18h18"></path>
-                            <path d="m7 16 4-4 3 3 5-6"></path>
-                        </svg>
-                    </div>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18"></path>
+                <path d="m7 16 4-4 3 3 5-6"></path>
+            </svg>
+        </div>
 
-                    <strong>
-                        {{ attendanceRate | number: '1.0-1' }}%
-                    </strong>
+        <strong>
+            {{ attendanceRate | number: '1.0-1' }}%
+        </strong>
 
-                    <small>
-                        Tỷ lệ ngày công hợp lệ trong tháng
-                    </small>
-                </article>
+        <small>
+            Tỷ lệ ngày công hợp lệ trong tháng
+        </small>
+    </article>
 
-                <article class="summary-card summary-card--warning">
-                    <div class="summary-card__heading">
-                        <span>Tổng giờ làm việc</span>
+    <article class="summary-card summary-card--warning">
+        <div class="summary-card__heading">
+            <span>Tổng giờ làm việc</span>
 
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
 
-                            <path d="M12 7v5l3 2"></path>
-                        </svg>
-                    </div>
+                <path d="M12 7v5l3 2"></path>
+            </svg>
+        </div>
 
-                    <strong>
-                        {{
-                        totalWorkHours |
-                        number: '1.0-1'
-                        }}h
-                    </strong>
+        <strong>
+            {{
+            totalWorkHours |
+            number: '1.0-1'
+            }}h
+        </strong>
 
-                    <small>
-                        Tổng số giờ làm trong kỳ đã chọn
-                    </small>
-                </article>
+        <small>
+            Tổng số giờ làm trong kỳ đã chọn
+        </small>
+    </article>
 
-                <article class="summary-card summary-card--danger">
-                    <div class="summary-card__heading">
-                        <span>Đi muộn / Về sớm</span>
+    <article class="summary-card summary-card--danger">
+        <div class="summary-card__heading">
+            <span>Đi muộn / Về sớm</span>
 
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z">
-                            </path>
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z">
+                </path>
 
-                            <path d="M12 9v4"></path>
-                            <path d="M12 17h.01"></path>
-                        </svg>
-                    </div>
+                <path d="M12 9v4"></path>
+                <path d="M12 17h.01"></path>
+            </svg>
+        </div>
 
-                    <strong>
-                        {{ lateEarlyCount }}
-                    </strong>
+        <strong>
+            {{ lateEarlyCount }}
+        </strong>
 
-                    <small>
-                        Vắng không phép:
-                        {{ absenceCount }} lượt
-                    </small>
-                </article>
-            </section>
-        </main>
-    </section>
-
-    @if (toastMessage) {
-    <div class="page-toast" role="status">{{ toastMessage }}</div>
-    }
-</div>
+        <small>
+            Vắng không phép:
+            {{ absenceCount }} lượt
+        </small>
+    </article>
+</section>
+@if (toastMessage) {
+<div class="page-toast" role="status">{{ toastMessage }}</div>
+}

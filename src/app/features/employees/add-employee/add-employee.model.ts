@@ -5,7 +5,6 @@ export interface PersonalInformationForm {
     employeeCode: string;
     dateOfBirth: string;
     gender: Gender | '';
-    nationality: string;
     identityNumber: string;
     permanentAddress: string;
     phoneNumber: string;
@@ -13,10 +12,25 @@ export interface PersonalInformationForm {
     avatarPreview: string;
 }
 
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
+export interface WorkInformationForm {
+    maPB: number | null;
+    maCV: number | null;
+    maTD: number | null;
+    ngayVaoLam: string;
+}
+
+export interface SalaryInformationForm {
+    selectedAllowanceIds: number[];
+    allowanceStartDate: string;
+}
+
+export interface AccountInformationForm {
+    createAccount: boolean;
+    username: string;
+    password: string;
+    confirmPassword: string;
+    maQuyen: number | null;
+    status: string;
 }
 
 export interface FormTab {

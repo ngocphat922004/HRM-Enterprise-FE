@@ -1,19 +1,48 @@
-import { CommonModule } from '@angular/common';
+import {
+    CommonModule,
+} from '@angular/common';
+
+import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
+    OnDestroy,
+    OnInit,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
 import {
     Router,
     RouterLink,
 } from '@angular/router';
 
 import {
-    PositionAllowanceFilter,
+    finalize,
+    forkJoin,
+} from 'rxjs';
+
+import {
+    NhanVienChiTiet,
+} from '../models/nhan-vien.model';
+
+import {
+    ChucVuService,
+} from '../services/chuc-vu.service';
+
+import {
+    NhanVienService,
+} from '../services/nhan-vien.service';
+
+import {
     PositionListItem,
     PositionStaffingFilter,
-    SidebarItem,
 } from './position-list.model';
 
 @Component({
@@ -31,217 +60,144 @@ import {
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
-export class PositionListComponent {
-    sidebarOpen = false;
-    activeMenu = 'Nhân viên';
+export class PositionListComponent
+    implements OnInit, OnDestroy {
 
-    globalSearchTerm = '';
     searchTerm = '';
 
     selectedStaffing:
         PositionStaffingFilter = '';
 
-    selectedAllowance:
-        PositionAllowanceFilter = '';
-
     currentPage = 1;
+
     pageSize = 5;
+
+    positions:
+        PositionListItem[] = [];
+
+    isLoading = false;
+
+    errorMessage = '';
+
+    deletingPositionId:
+        number | null = null;
+
     toastMessage = '';
 
-    readonly sidebarItems: SidebarItem[] = [
-        {
-            label: 'Tổng quan',
-            icon: 'dashboard',
-            route: '/dashboard',
-        },
-        {
-            label: 'Nhân viên',
-            icon: 'employees',
-            route: '/employees',
-        },
-        {
-            label: 'Phòng ban',
-            icon: 'department',
-            route: '/departments',
-        },
-        {
-            label: 'Hợp đồng',
-            icon: 'contract',
-            route: '/contracts',
-        },
-        {
-            label: 'Chấm công',
-            icon: 'attendance',
-            route: '/attendance',
-        },
-        {
-            label: 'Nghỉ phép',
-            icon: 'leave',
-            route: '/leave',
-        },
-        {
-            label: 'Bảng lương',
-            icon: 'payroll',
-            route: '/payroll',
-        },
-        {
-            label: 'Báo cáo',
-            icon: 'report',
-            route: '/reports',
-        },
-        {
-            label: 'Cài đặt',
-            icon: 'settings',
-            route: '/settings',
-        },
-    ];
-
-    positions: PositionListItem[] = [
-        {
-            maCV: 1,
-            tenCV: 'Giám đốc',
-            moTa:
-                'Quản lý và điều hành toàn bộ hoạt động của doanh nghiệp.',
-            heSoPhuCap: 1,
-            employeeCount: 1,
-        },
-        {
-            maCV: 2,
-            tenCV: 'Trưởng phòng',
-            moTa:
-                'Quản lý, phân công và chịu trách nhiệm về hoạt động của phòng ban.',
-            heSoPhuCap: 0.5,
-            employeeCount: 6,
-        },
-        {
-            maCV: 3,
-            tenCV:
-                'Chuyên viên nhân sự',
-            moTa:
-                'Thực hiện tuyển dụng, đào tạo và các nghiệp vụ quản trị nhân sự.',
-            heSoPhuCap: 0.2,
-            employeeCount: 8,
-        },
-        {
-            maCV: 4,
-            tenCV: 'Kế toán viên',
-            moTa:
-                'Theo dõi chứng từ, hạch toán và lập báo cáo kế toán.',
-            heSoPhuCap: 0.15,
-            employeeCount: 5,
-        },
-        {
-            maCV: 5,
-            tenCV: 'Kỹ sư phần mềm',
-            moTa:
-                'Phân tích, phát triển và bảo trì các hệ thống phần mềm nội bộ.',
-            heSoPhuCap: 0.3,
-            employeeCount: 18,
-        },
-        {
-            maCV: 6,
-            tenCV:
-                'Nhân viên kinh doanh',
-            moTa:
-                'Tìm kiếm khách hàng, tư vấn và thực hiện kế hoạch kinh doanh.',
-            heSoPhuCap: 0.1,
-            employeeCount: 24,
-        },
-        {
-            maCV: 7,
-            tenCV:
-                'Chuyên viên pháp chế',
-            moTa:
-                'Tư vấn và kiểm soát các vấn đề pháp lý của doanh nghiệp.',
-            heSoPhuCap: 0.2,
-            employeeCount: 0,
-        },
-        {
-            maCV: 8,
-            tenCV: 'Thực tập sinh',
-            moTa: null,
-            heSoPhuCap: 0,
-            employeeCount: 0,
-        },
-    ];
+    private toastTimer:
+        ReturnType<typeof setTimeout> |
+        null = null;
 
     constructor(
-        private readonly router: Router,
+        private readonly router:
+            Router,
+
+        private readonly chucVuService:
+            ChucVuService,
+
+        private readonly nhanVienService:
+            NhanVienService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
     ) { }
+
+    ngOnInit(): void {
+        this.loadPositions();
+    }
+
+    ngOnDestroy(): void {
+        if (
+            this.toastTimer
+        ) {
+            clearTimeout(
+                this.toastTimer,
+            );
+        }
+    }
 
     get filteredPositions():
         PositionListItem[] {
+
         const keyword =
             this.searchTerm
                 .trim()
-                .toLocaleLowerCase('vi');
-
-        return this.positions.filter(
-            (position) => {
-                const matchesKeyword =
-                    !keyword ||
-                    position.tenCV
-                        .toLocaleLowerCase(
-                            'vi',
-                        )
-                        .includes(keyword) ||
-                    (position.moTa ?? '')
-                        .toLocaleLowerCase(
-                            'vi',
-                        )
-                        .includes(keyword) ||
-                    this.formatPositionCode(
-                        position.maCV,
-                    )
-                        .toLocaleLowerCase(
-                            'vi',
-                        )
-                        .includes(keyword);
-
-                const matchesStaffing =
-                    !this.selectedStaffing ||
-                    (
-                        this.selectedStaffing ===
-                            'filled'
-                            ? position.employeeCount >
-                            0
-                            : position.employeeCount ===
-                            0
-                    );
-
-                const matchesAllowance =
-                    !this.selectedAllowance ||
-                    (
-                        this.selectedAllowance ===
-                            'with'
-                            ? position.heSoPhuCap >
-                            0
-                            : position.heSoPhuCap ===
-                            0
-                    );
-
-                return (
-                    matchesKeyword &&
-                    matchesStaffing &&
-                    matchesAllowance
+                .toLocaleLowerCase(
+                    'vi',
                 );
-            },
-        );
+
+        return this.positions
+            .filter(
+                position => {
+                    const matchesKeyword =
+                        !keyword ||
+                        position.tenCV
+                            .toLocaleLowerCase(
+                                'vi',
+                            )
+                            .includes(
+                                keyword,
+                            ) ||
+                        (
+                            position.moTa ??
+                            ''
+                        )
+                            .toLocaleLowerCase(
+                                'vi',
+                            )
+                            .includes(
+                                keyword,
+                            ) ||
+                        this.formatPositionCode(
+                            position.maCV,
+                        )
+                            .toLocaleLowerCase(
+                                'vi',
+                            )
+                            .includes(
+                                keyword,
+                            );
+
+                    const matchesStaffing =
+                        !this.selectedStaffing ||
+                        (
+                            this.selectedStaffing ===
+                                'filled'
+                                ? position.employeeCount >
+                                0
+                                : position.employeeCount ===
+                                0
+                        );
+
+                    return (
+                        matchesKeyword &&
+                        matchesStaffing
+                    );
+                },
+            );
     }
 
     get paginatedPositions():
         PositionListItem[] {
+
         const start =
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize;
 
-        return this.filteredPositions.slice(
-            start,
-            start + this.pageSize,
-        );
+        return this.filteredPositions
+            .slice(
+                start,
+                start +
+                this.pageSize,
+            );
     }
 
-    get totalPages(): number {
+    get totalPages():
+        number {
+
         return Math.max(
             1,
             Math.ceil(
@@ -252,72 +208,87 @@ export class PositionListComponent {
         );
     }
 
-    get visiblePages(): number[] {
+    get visiblePages():
+        number[] {
+
         return Array.from(
             {
-                length: this.totalPages,
+                length:
+                    this.totalPages,
             },
-            (_, index) => index + 1,
+            (
+                _,
+                index,
+            ) =>
+                index + 1,
         );
     }
 
-    get firstDisplayedRow(): number {
+    get firstDisplayedRow():
+        number {
+
         if (
-            !this.filteredPositions.length
+            this.filteredPositions
+                .length ===
+            0
         ) {
             return 0;
         }
 
         return (
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize +
             1
         );
     }
 
-    get lastDisplayedRow(): number {
+    get lastDisplayedRow():
+        number {
+
         return Math.min(
             this.currentPage *
             this.pageSize,
-            this.filteredPositions.length,
+            this.filteredPositions
+                .length,
         );
     }
 
-    get vacantPositionCount(): number {
-        return this.positions.filter(
-            (position) =>
-                position.employeeCount === 0,
-        ).length;
+    get vacantPositionCount():
+        number {
+
+        return this.positions
+            .filter(
+                position =>
+                    position.employeeCount ===
+                    0,
+            )
+            .length;
     }
 
-    get staffedPositionRate(): number {
-        if (!this.positions.length) {
+    get staffedPositionRate():
+        number {
+
+        if (
+            this.positions.length ===
+            0
+        ) {
             return 0;
         }
 
+        const staffed =
+            this.positions.length -
+            this.vacantPositionCount;
+
         return Math.round(
             (
-                (
-                    this.positions.length -
-                    this.vacantPositionCount
-                ) /
+                staffed /
                 this.positions.length
-            ) * 100,
+            ) *
+            100,
         );
-    }
-
-    toggleSidebar(): void {
-        this.sidebarOpen =
-            !this.sidebarOpen;
-    }
-
-    closeSidebar(): void {
-        this.sidebarOpen = false;
-    }
-
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
     }
 
     applyFilters(): void {
@@ -327,60 +298,100 @@ export class PositionListComponent {
     resetFilters(): void {
         this.searchTerm = '';
         this.selectedStaffing = '';
-        this.selectedAllowance = '';
         this.currentPage = 1;
     }
 
-    goToPage(page: number): void {
+    goToPage(
+        page:
+            number,
+    ): void {
+
         if (
             page < 1 ||
-            page > this.totalPages
+            page >
+            this.totalPages
         ) {
             return;
         }
 
-        this.currentPage = page;
+        this.currentPage =
+            page;
     }
 
     formatPositionCode(
-        maCV: number,
+        maCV:
+            number,
     ): string {
+
         return `CV-${maCV
             .toString()
-            .padStart(3, '0')}`;
+            .padStart(
+                3,
+                '0',
+            )}`;
     }
 
     viewPosition(
-        position: PositionListItem,
+        position:
+            PositionListItem,
     ): void {
-        void this.router.navigate(
-            [
-                '/positions',
-                position.maCV,
-            ],
-            {
-                state: {
-                    position,
+
+        if (
+            this.deletingPositionId !==
+            null
+        ) {
+            return;
+        }
+
+        void this.router
+            .navigate(
+                [
+                    '/positions',
+                    position.maCV,
+                ],
+                {
+                    state: {
+                        position,
+                    },
                 },
-            },
-        );
+            );
     }
 
     editPosition(
-        position: PositionListItem,
+        position:
+            PositionListItem,
     ): void {
-        void this.router.navigate([
-            '/positions',
-            position.maCV,
-            'edit',
-        ]);
+
+        if (
+            this.deletingPositionId !==
+            null
+        ) {
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/positions',
+                position.maCV,
+                'edit',
+            ]);
     }
 
     deletePosition(
-        position: PositionListItem,
+        position:
+            PositionListItem,
     ): void {
+
         if (
-            position.employeeCount > 0
+            this.deletingPositionId !==
+            null
+        ) {
+            return;
+        }
+
+        if (
+            position.employeeCount >
+            0
         ) {
             this.showToast(
                 'Không thể xóa chức vụ đang được nhân viên sử dụng.',
@@ -389,48 +400,478 @@ export class PositionListComponent {
             return;
         }
 
-        this.positions =
-            this.positions.filter(
-                (item) =>
-                    item.maCV !==
-                    position.maCV,
-            );
+        const confirmed =
+            typeof window ===
+                'undefined'
+                ? true
+                : window.confirm(
+                    `Bạn có chắc muốn xóa chức vụ "${position.tenCV}"?`,
+                );
 
         if (
-            this.currentPage >
-            this.totalPages
+            !confirmed
         ) {
-            this.currentPage =
-                this.totalPages;
+            return;
         }
 
-        this.showToast(
-            `Đã xóa chức vụ ${position.tenCV}.`,
-        );
+        this.deletingPositionId =
+            position.maCV;
+
+        this.errorMessage = '';
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        this.chucVuService
+            .delete(
+                position.maCV,
+            )
+            .pipe(
+                finalize(
+                    () => {
+                        this.deletingPositionId =
+                            null;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: () => {
+                    this.positions =
+                        this.positions
+                            .filter(
+                                item =>
+                                    item.maCV !==
+                                    position.maCV,
+                            );
+
+                    if (
+                        this.currentPage >
+                        this.totalPages
+                    ) {
+                        this.currentPage =
+                            this.totalPages;
+                    }
+
+                    this.showToast(
+                        `Đã xóa chức vụ ${position.tenCV}.`,
+                    );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    console.error(
+                        'DELETE POSITION ERROR:',
+                        error,
+                    );
+
+                    this.showToast(
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể xóa chức vụ.',
+                        ),
+                    );
+                },
+            });
+    }
+
+    retry(): void {
+        if (
+            this.isLoading
+        ) {
+            return;
+        }
+
+        this.loadPositions();
     }
 
     exportReport(): void {
+        if (
+            this.isLoading
+        ) {
+            return;
+        }
+
+        if (
+            this.filteredPositions
+                .length ===
+            0
+        ) {
+            this.showToast(
+                'Không có dữ liệu chức vụ để xuất.',
+            );
+
+            return;
+        }
+
+        if (
+            typeof window ===
+            'undefined' ||
+            typeof document ===
+            'undefined'
+        ) {
+            return;
+        }
+
+        const rows:
+            Array<
+                Array<
+                    string | number
+                >
+            > = [
+                [
+                    'Mã chức vụ',
+                    'Tên chức vụ',
+                    'Mô tả',
+                    'Số nhân viên',
+                ],
+
+                ...this.filteredPositions
+                    .map(
+                        position => [
+                            this.formatPositionCode(
+                                position.maCV,
+                            ),
+                            position.tenCV,
+                            position.moTa ??
+                            '',
+                            position.employeeCount,
+                        ],
+                    ),
+            ];
+
+        const csv =
+            rows
+                .map(
+                    row =>
+                        row
+                            .map(
+                                value =>
+                                    this.escapeCsvValue(
+                                        value,
+                                    ),
+                            )
+                            .join(
+                                ',',
+                            ),
+                )
+                .join(
+                    '\r\n',
+                );
+
+        const blob =
+            new Blob(
+                [
+                    '\uFEFF',
+                    csv,
+                ],
+                {
+                    type:
+                        'text/csv;charset=utf-8;',
+                },
+            );
+
+        const url =
+            URL.createObjectURL(
+                blob,
+            );
+
+        const link =
+            document.createElement(
+                'a',
+            );
+
+        link.href =
+            url;
+
+        link.download =
+            'danh-sach-chuc-vu.csv';
+
+        document.body
+            .appendChild(
+                link,
+            );
+
+        link.click();
+
+        link.remove();
+
+        URL.revokeObjectURL(
+            url,
+        );
+
         this.showToast(
-            'Chức năng xuất danh sách chức vụ sẽ được kết nối sau.',
+            'Đã xuất danh sách chức vụ.',
         );
     }
 
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
+    private loadPositions():
+        void {
 
-        void this.router.navigate([
-            '/login',
-        ]);
+        this.isLoading = true;
+
+        this.errorMessage = '';
+
+        forkJoin({
+            positions:
+                this.chucVuService
+                    .getAll(),
+
+            employees:
+                this.nhanVienService
+                    .getAll(),
+        })
+            .pipe(
+                finalize(
+                    () => {
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: ({
+                    positions,
+                    employees,
+                }) => {
+                    this.positions =
+                        positions
+                            .map(
+                                position => ({
+                                    maCV:
+                                        position.maCV,
+
+                                    tenCV:
+                                        position.tenCV,
+
+                                    moTa:
+                                        position.moTa,
+
+                                    employeeCount:
+                                        this.countEmployeesByPosition(
+                                            employees,
+                                            position.maCV,
+                                        ),
+                                }),
+                            )
+                            .sort(
+                                (
+                                    a,
+                                    b,
+                                ) =>
+                                    a.maCV -
+                                    b.maCV,
+                            );
+
+                    this.currentPage =
+                        1;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    console.error(
+                        'LOAD POSITIONS ERROR:',
+                        error,
+                    );
+
+                    this.positions = [];
+
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải danh sách chức vụ.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
+    }
+
+    private countEmployeesByPosition(
+        employees:
+            NhanVienChiTiet[],
+
+        maCV:
+            number,
+    ): number {
+
+        return employees
+            .filter(
+                employee =>
+                    employee.maCV ===
+                    maCV,
+            )
+            .length;
+    }
+
+    private escapeCsvValue(
+        value:
+            string | number,
+    ): string {
+
+        const text =
+            String(
+                value ??
+                '',
+            );
+
+        return `"${text.replace(
+            /"/g,
+            '""',
+        )}"`;
+    }
+
+    private getApiErrorMessage(
+        error:
+            HttpErrorResponse,
+
+        fallback:
+            string,
+    ): string {
+
+        const backendMessage =
+            typeof error.error
+                ?.message ===
+                'string'
+                ? error.error
+                    .message
+                : '';
+
+        if (
+            backendMessage
+        ) {
+            return backendMessage;
+        }
+
+        const backendErrors =
+            error.error
+                ?.errors;
+
+        if (
+            backendErrors &&
+            typeof backendErrors ===
+            'object'
+        ) {
+            const messages =
+                Object.values(
+                    backendErrors as
+                    Record<
+                        string,
+                        unknown
+                    >,
+                )
+                    .flatMap(
+                        value => {
+                            if (
+                                Array.isArray(
+                                    value,
+                                )
+                            ) {
+                                return value.map(
+                                    item =>
+                                        String(
+                                            item,
+                                        ),
+                                );
+                            }
+
+                            return [
+                                String(
+                                    value,
+                                ),
+                            ];
+                        },
+                    )
+                    .filter(
+                        Boolean,
+                    );
+
+            if (
+                messages.length >
+                0
+            ) {
+                return messages
+                    .join(
+                        ' ',
+                    );
+            }
+        }
+
+        switch (
+        error.status
+        ) {
+            case 0:
+                return 'Không thể kết nối đến Backend.';
+
+            case 400:
+                return 'Dữ liệu chức vụ không hợp lệ.';
+
+            case 401:
+                return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+
+            case 403:
+                return 'Bạn không có quyền thực hiện thao tác này.';
+
+            case 404:
+                return 'Không tìm thấy chức vụ.';
+
+            case 409:
+                return 'Không thể xóa chức vụ vì đang có dữ liệu liên quan.';
+
+            default:
+                return fallback;
+        }
     }
 
     private showToast(
-        message: string,
+        message:
+            string,
     ): void {
-        this.toastMessage = message;
 
-        window.setTimeout(() => {
-            this.toastMessage = '';
-        }, 2500);
+        this.toastMessage =
+            message;
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        if (
+            this.toastTimer
+        ) {
+            clearTimeout(
+                this.toastTimer,
+            );
+        }
+
+        this.toastTimer =
+            setTimeout(
+                () => {
+                    this.toastMessage =
+                        '';
+
+                    this.toastTimer =
+                        null;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+                3000,
+            );
     }
 }

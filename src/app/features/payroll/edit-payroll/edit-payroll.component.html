@@ -1,554 +1,275 @@
-<div class="dashboard-shell edit-payroll-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true"></div>
+<section class="edit-payroll-heading">
+    <nav class="breadcrumb" aria-label="Điều hướng">
+        <a routerLink="/payroll">Bảng lương</a>
+        <span>/</span>
+        @if (payrollId) {
+        <a [routerLink]="['/payroll', payrollId]">Chi tiết</a>
+        <span>/</span>
+        }
+        <strong>Chỉnh sửa</strong>
+    </nav>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">HR</div>
-
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
-
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
-                ×
-            </button>
+    <div class="edit-payroll-heading__title">
+        <div>
+            <h1>Chỉnh sửa bảng lương</h1>
+            <p>Chọn nhân viên và kỳ lương, tính lại kết quả rồi kiểm tra trước khi cập nhật.</p>
         </div>
 
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
-                (click)="closeSidebar()">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('layout-dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
+        <span class="identity-note">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+            </svg>
+            {{ payrollCode }}
+        </span>
+    </div>
+</section>
 
-                    @case ('users') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
+@if (saveError) {
+<div class="edit-payroll-alert" role="alert">
+    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 8v4"></path>
+        <path d="M12 16h.01"></path>
+    </svg>
+    <span>{{ saveError }}</span>
+</div>
+}
+
+@if (isLoading) {
+<section class="page-state" aria-live="polite">
+    <span class="state-spinner" aria-hidden="true"></span>
+    <strong>Đang tải bảng lương...</strong>
+    <p>Đang lấy thông tin bảng lương và danh sách nhân viên.</p>
+</section>
+} @else if (loadError && !payroll) {
+<section class="page-state">
+    <span class="page-state__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
+        </svg>
+    </span>
+    <strong>Không thể tải bảng lương</strong>
+    <p>{{ loadError }}</p>
+    <div class="page-state__actions">
+        <button class="secondary-button" type="button" (click)="cancel()">Quay lại</button>
+        @if (payrollId) {
+        <button class="primary-button" type="button" (click)="retry()">Thử lại</button>
+        }
+    </div>
+</section>
+} @else if (!payroll) {
+<section class="page-state">
+    <span class="page-state__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect width="20" height="14" x="2" y="5" rx="2"></rect>
+            <circle cx="12" cy="12" r="2"></circle>
+            <path d="M6 9h.01"></path>
+            <path d="M18 15h.01"></path>
+        </svg>
+    </span>
+    <strong>Không có dữ liệu bảng lương</strong>
+    <p>Không tìm thấy bảng lương cần chỉnh sửa.</p>
+    <button class="secondary-button" type="button" (click)="cancel()">Quay lại</button>
+</section>
+} @else {
+<form class="edit-payroll-layout" (ngSubmit)="savePayroll()" novalidate>
+    <div class="edit-payroll-main">
+        <section class="form-card">
+            <header class="form-card__header">
+                <span class="form-card__icon">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                         <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    }
-
-                    @case ('building-2') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4"></path>
-                        <path d="M10 10h4"></path>
-                        <path d="M10 14h4"></path>
-                    </svg>
-                    }
-
-                    @case ('file-text') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M8 13h8"></path>
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
-
-                    @case ('clock-3') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('calendar-days') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="M8 14h.01"></path>
-                        <path d="M12 14h.01"></path>
-                        <path d="M16 14h.01"></path>
-                    </svg>
-                    }
-
-                    @case ('banknote') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="20" height="14" x="2" y="5" rx="2"></rect>
-                        <circle cx="12" cy="12" r="2"></circle>
-                        <path d="M6 9h.01"></path>
-                        <path d="M18 15h.01"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="8" r="6"></circle>
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
-                    </svg>
-                    }
-
-                    @case ('chart-no-axes-combined') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
                 </span>
+                <div>
+                    <h2>Thông tin nhân viên và kỳ lương</h2>
+                    <p>Chọn thông tin cần tính lại trước khi cập nhật bảng lương.</p>
+                </div>
+            </header>
 
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
+            <div class="form-grid">
+                <label class="form-field form-field--full">
+                    <span>Nhân viên <b>*</b></span>
+                    <select name="maNV" [(ngModel)]="form.maNV" (ngModelChange)="onCalculationInputChange()"
+                        [class.form-control--invalid]="employeeInvalid" [disabled]="isCalculating || isSaving">
+                        <option [ngValue]="null">Chọn nhân viên</option>
+                        @for (employee of employees; track employee.maNV) {
+                        <option [ngValue]="employee.maNV">
+                            {{ employee.hoTen }} · Mã NV {{ employee.maNV }} · {{ employee.tenPB || 'Chưa phân phòng' }}
+                        </option>
+                        }
+                    </select>
 
-        <div class="sidebar__footer">
-            <button class="logout-button" type="button" (click)="logout()">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
+                    @if (employeeInvalid) {
+                    <small class="field-error">Vui lòng chọn nhân viên.</small>
+                    }
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
+                    @if (employees.length === 0) {
+                    <small class="field-hint">Không có nhân viên để lựa chọn.</small>
+                    }
+                </label>
 
-            <label class="search-box">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.3-4.3"></path>
-                </svg>
+                @if (selectedEmployee) {
+                <div class="selected-employee form-field--full">
+                    <span class="selected-employee__avatar">{{ getInitials(selectedEmployee.hoTen) }}</span>
+                    <div>
+                        <strong>{{ selectedEmployee.hoTen }}</strong>
+                        <span>
+                            Mã NV {{ selectedEmployee.maNV }} · {{ selectedEmployee.tenPB || 'Chưa phân phòng' }} ·
+                            {{ selectedEmployee.tenCV || 'Chưa có chức vụ' }}
+                        </span>
+                        <small>{{ selectedEmployee.email || 'Chưa có email' }}</small>
+                    </div>
+                </div>
+                }
 
-                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm nhân viên, bảng lương..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+                <label class="form-field">
+                    <span>Tháng <b>*</b></span>
+                    <select name="thang" [(ngModel)]="form.thang" (ngModelChange)="onCalculationInputChange()"
+                        [class.form-control--invalid]="periodInvalid" [disabled]="isCalculating || isSaving">
+                        @for (month of months; track month.value) {
+                        <option [ngValue]="month.value">{{ month.label }}</option>
+                        }
+                    </select>
+                </label>
 
-            <div class="top-header__actions">
-                <a class="header-add-button" routerLink="/payroll">
+                <label class="form-field">
+                    <span>Năm <b>*</b></span>
+                    <select name="nam" [(ngModel)]="form.nam" (ngModelChange)="onCalculationInputChange()"
+                        [class.form-control--invalid]="periodInvalid" [disabled]="isCalculating || isSaving">
+                        @for (year of years; track year) {
+                        <option [ngValue]="year">{{ year }}</option>
+                        }
+                    </select>
+                </label>
+
+                @if (periodInvalid) {
+                <div class="form-field form-field--full">
+                    <small class="field-error">Kỳ lương không hợp lệ.</small>
+                </div>
+                }
+            </div>
+
+            <footer class="form-actions">
+                <button class="submit-button" type="button" (click)="calculatePayroll()"
+                    [disabled]="isCalculating || isSaving || employees.length === 0">
+                    @if (isCalculating) {
+                    <span class="button-spinner" aria-hidden="true"></span>
+                    Đang tính lại...
+                    } @else {
                     <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M8 6h13"></path>
-                        <path d="M8 12h13"></path>
-                        <path d="M8 18h13"></path>
-                        <path d="M3 6h.01"></path>
-                        <path d="M3 12h.01"></path>
-                        <path d="M3 18h.01"></path>
+                        <path d="M21 12a9 9 0 0 1-15.22 6.5L3 16"></path>
+                        <path d="M3 21v-5h5"></path>
+                        <path d="M3 12A9 9 0 0 1 18.22 5.5L21 8"></path>
+                        <path d="M16 8h5V3"></path>
                     </svg>
-                    Danh sách bảng lương
-                </a>
-
-                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
+                    Tính lại lương
+                    }
                 </button>
+            </footer>
+        </section>
 
-                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+        @if (calculationError) {
+        <div class="edit-payroll-alert" role="alert">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 8v4"></path>
+                <path d="M12 16h.01"></path>
+            </svg>
+            <span>{{ calculationError }}</span>
+            <button class="cancel-button" type="button" (click)="retryCalculation()"
+                [disabled]="isCalculating || isSaving">
+                Thử lại
+            </button>
+        </div>
+        }
 
-                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
-                    <span class="header-profile__avatar">TN</span>
-                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6"></path>
-                    </svg>
-                </button>
-            </div>
-        </header>
-
-        <main class="main-content">
-            <section class="edit-payroll-heading">
-                <nav class="breadcrumb" aria-label="Điều hướng">
-                    <a routerLink="/payroll">Bảng lương</a>
-                    <span>/</span>
-                    <strong>Chỉnh sửa</strong>
-                </nav>
-
-                <div class="edit-payroll-heading__title">
-                    <div>
-                        <h1>Chỉnh sửa bảng lương</h1>
-                        <p>
-                            Điều chỉnh dữ liệu lương của nhân viên theo tháng
-                            và kiểm tra tổng thực lĩnh dự kiến trước khi lưu.
-                        </p>
-                    </div>
-
-                    <span class="identity-note">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 16v-4"></path>
-                            <path d="M12 8h.01"></path>
-                        </svg>
-                        Mã bảng lương chỉ dùng để nhận diện
-                    </span>
-                </div>
-            </section>
-
-            <form class="edit-payroll-layout" (ngSubmit)="savePayroll()" novalidate>
-                <div class="edit-payroll-main">
-                    <section class="form-card">
-                        <header class="form-card__header">
-                            <span class="form-card__icon">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                </svg>
-                            </span>
-
-                            <div>
-                                <h2>Thông tin nhân viên và kỳ lương</h2>
-                                <p>Chọn nhân viên, tháng và năm cần lập bảng lương.</p>
-                            </div>
-                        </header>
-
-                        <div class="form-grid">
-                            <label class="form-field form-field--full">
-                                <span>Nhân viên <b>*</b></span>
-                                <select name="maNV" [(ngModel)]="form.maNV"
-                                    [class.form-control--invalid]="employeeInvalid">
-                                    <option [ngValue]="null">Chọn nhân viên</option>
-                                    @for (employee of employees; track employee.maNV) {
-                                    <option [ngValue]="employee.maNV">
-                                        {{ employee.hoTen }} · Mã NV {{ employee.maNV }}
-                                        · {{ employee.tenPB || 'Chưa phân phòng' }}
-                                    </option>
-                                    }
-                                </select>
-
-                                @if (employees.length === 0) {
-                                <small class="field-hint">
-                                    Danh sách nhân viên sẽ được tải từ API cùng hợp đồng đang hiệu lực.
-                                </small>
-                                }
-
-                                @if (employeeInvalid) {
-                                <small class="field-error">Vui lòng chọn nhân viên.</small>
-                                }
-                            </label>
-
-                            @if (selectedEmployee) {
-                            <div class="selected-employee form-field--full">
-                                <span class="selected-employee__avatar">
-                                    {{ getInitials(selectedEmployee.hoTen) }}
-                                </span>
-
-                                <div>
-                                    <strong>{{ selectedEmployee.hoTen }}</strong>
-                                    <span>
-                                        Mã NV {{ selectedEmployee.maNV }}
-                                        · {{ selectedEmployee.tenPB || 'Chưa phân phòng' }}
-                                        · {{ selectedEmployee.tenCV || 'Chưa có chức vụ' }}
-                                    </span>
-                                    <small>{{ selectedEmployee.email || 'Chưa có email' }}</small>
-                                </div>
-                            </div>
-                            }
-
-                            <label class="form-field">
-                                <span>Tháng <b>*</b></span>
-                                <select name="thang" [(ngModel)]="form.thang">
-                                    @for (month of months; track month.value) {
-                                    <option [ngValue]="month.value">{{ month.label }}</option>
-                                    }
-                                </select>
-                            </label>
-
-                            <label class="form-field">
-                                <span>Năm <b>*</b></span>
-                                <select name="nam" [(ngModel)]="form.nam">
-                                    @for (year of years; track year) {
-                                    <option [ngValue]="year">{{ year }}</option>
-                                    }
-                                </select>
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="form-card">
-                        <header class="form-card__header">
-                            <span class="form-card__icon form-card__icon--salary">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <rect width="20" height="14" x="2" y="5" rx="2"></rect>
-                                    <circle cx="12" cy="12" r="2"></circle>
-                                    <path d="M6 9h.01"></path>
-                                    <path d="M18 15h.01"></path>
-                                </svg>
-                            </span>
-
-                            <div>
-                                <h2>Dữ liệu tính lương</h2>
-                                <p>Nhập số ngày công và các khoản cộng, trừ trong tháng.</p>
-                            </div>
-                        </header>
-
-                        <div class="form-grid">
-                            <label class="form-field">
-                                <span>Lương cơ bản <b>*</b></span>
-                                <div class="money-control">
-                                    <input name="luongCoBan" type="number" min="0" step="1000"
-                                        [(ngModel)]="form.luongCoBan" (blur)="normalizeAmount('luongCoBan')"
-                                        [class.form-control--invalid]="baseSalaryInvalid"
-                                        placeholder="Nhập lương cơ bản" />
-                                    <span>đ</span>
-                                </div>
-
-                                @if (baseSalaryInvalid) {
-                                <small class="field-error">Lương cơ bản phải lớn hơn 0.</small>
-                                } @else {
-                                <small class="field-hint">
-                                    Sẽ tự lấy từ hợp đồng hiệu lực khi nối API.
-                                </small>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>Số ngày công <b>*</b></span>
-                                <div class="unit-control">
-                                    <input name="soNgayCong" type="number" min="0" max="31" step="0.5"
-                                        [(ngModel)]="form.soNgayCong" [class.form-control--invalid]="workDaysInvalid"
-                                        placeholder="Ví dụ: 22" />
-                                    <span>ngày</span>
-                                </div>
-
-                                @if (workDaysInvalid) {
-                                <small class="field-error">Số ngày công phải từ 0 đến 31.</small>
-                                } @else {
-                                <small class="field-hint">Ngày công chuẩn đang áp dụng: {{ standardWorkDays }}
-                                    ngày.</small>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>Tổng phụ cấp</span>
-                                <div class="money-control">
-                                    <input name="tongPhuCap" type="number" min="0" step="1000"
-                                        [(ngModel)]="form.tongPhuCap" (blur)="normalizeAmount('tongPhuCap')"
-                                        [class.form-control--invalid]="allowanceInvalid" />
-                                    <span>đ</span>
-                                </div>
-
-                                @if (allowanceInvalid) {
-                                <small class="field-error">Phụ cấp không được nhỏ hơn 0.</small>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>Tổng thưởng</span>
-                                <div class="money-control">
-                                    <input name="tongThuong" type="number" min="0" step="1000"
-                                        [(ngModel)]="form.tongThuong" (blur)="normalizeAmount('tongThuong')"
-                                        [class.form-control--invalid]="rewardInvalid" />
-                                    <span>đ</span>
-                                </div>
-
-                                @if (rewardInvalid) {
-                                <small class="field-error">Tiền thưởng không được nhỏ hơn 0.</small>
-                                }
-                            </label>
-
-                            <label class="form-field form-field--full">
-                                <span>Tổng khấu trừ</span>
-                                <div class="money-control">
-                                    <input name="tongKhauTru" type="number" min="0" step="1000"
-                                        [(ngModel)]="form.tongKhauTru" (blur)="normalizeAmount('tongKhauTru')"
-                                        [class.form-control--invalid]="deductionInvalid" />
-                                    <span>đ</span>
-                                </div>
-
-                                @if (deductionInvalid) {
-                                <small class="field-error">Khoản khấu trừ không được nhỏ hơn 0.</small>
-                                }
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="form-note">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 16v-4"></path>
-                            <path d="M12 8h.01"></path>
-                        </svg>
-
-                        <div>
-                            <strong>Lưu ý về kết quả tính lương</strong>
-                            <p>
-                                Tổng lương trên giao diện chỉ là số dự kiến. Khi kết nối API,
-                                Backend phải kiểm tra hợp đồng, chấm công, phụ cấp và tính lại
-                                tổng lương trước khi lưu vào cơ sở dữ liệu.
-                            </p>
-                        </div>
-                    </section>
-
-                    <footer class="form-actions">
-                        <button class="cancel-button" type="button" (click)="cancel()">
-                            Hủy bỏ
-                        </button>
-
-                        <button class="submit-button" type="submit" [disabled]="isSaving">
-                            @if (isSaving) {
-                            <span class="button-spinner" aria-hidden="true"></span>
-                            Đang cập nhật...
-                            } @else {
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
-                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                                <polyline points="7 3 7 8 15 8"></polyline>
-                            </svg>
-                            Cập nhật bảng lương
-                            }
-                        </button>
-                    </footer>
-                </div>
-
-                <aside class="edit-payroll-aside">
-                    <section class="summary-card">
-                        <header>
-                            <span>
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M12 2v20"></path>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                            </span>
-                            <div>
-                                <h2>Tóm tắt bảng lương</h2>
-                                <p>Tháng {{ form.thang }}/{{ form.nam }}</p>
-                            </div>
-                        </header>
-
-                        <div class="summary-lines">
-                            <div>
-                                <span>Lương theo ngày công</span>
-                                <strong>{{ summary.luongTheoNgayCong | number: '1.0-0' }} đ</strong>
-                            </div>
-                            <div>
-                                <span>Tổng khoản cộng</span>
-                                <strong class="summary-positive">+ {{ summary.tongKhoanCong | number: '1.0-0' }}
-                                    đ</strong>
-                            </div>
-                            <div>
-                                <span>Tổng khấu trừ</span>
-                                <strong class="summary-negative">- {{ summary.tongKhauTru | number: '1.0-0' }}
-                                    đ</strong>
-                            </div>
-                        </div>
-
-                        <div class="summary-total">
-                            <span>Tổng thực lĩnh dự kiến</span>
-                            <strong>{{ summary.tongLuongDuKien | number: '1.0-0' }} đ</strong>
-                        </div>
-                    </section>
-
-                    <section class="formula-card">
-                        <header>
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 17 10 11"></path>
-                                <path d="m4 7 6 6"></path>
-                                <path d="M14 5h6"></path>
-                                <path d="M17 2v6"></path>
-                                <path d="M14 17h6"></path>
-                            </svg>
-                            <h2>Công thức dự kiến</h2>
-                        </header>
-
-                        <p>
-                            (Lương cơ bản ÷ {{ standardWorkDays }} × số ngày công)
-                            + phụ cấp + thưởng − khấu trừ.
-                        </p>
-                    </section>
-
-                    <section class="data-source-card">
-                        <header>
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-                                <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path>
-                                <path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
-                            </svg>
-                            <h2>Nguồn dữ liệu</h2>
-                        </header>
-
-                        <ul>
-                            <li>
-                                <span>Nhân viên và hợp đồng</span>
-                                <strong>Chờ kết nối API</strong>
-                            </li>
-                            <li>
-                                <span>Ngày công trong tháng</span>
-                                <strong>Chờ kết nối API</strong>
-                            </li>
-                            <li>
-                                <span>Phụ cấp đang áp dụng</span>
-                                <strong>Chờ kết nối API</strong>
-                            </li>
-                        </ul>
-                    </section>
-                </aside>
-            </form>
-        </main>
-    </section>
-
-    @if (toastMessage) {
-    <div class="page-toast" role="status">
-        {{ toastMessage }}
+        <footer class="form-actions">
+            <button class="cancel-button" type="button" (click)="cancel()" [disabled]="isSaving">Hủy bỏ</button>
+            <button class="submit-button" type="submit" [disabled]="!canSave">
+                @if (isSaving) {
+                <span class="button-spinner" aria-hidden="true"></span>
+                Đang cập nhật...
+                } @else {
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Cập nhật bảng lương
+                }
+            </button>
+        </footer>
     </div>
-    }
-</div>
+
+    <aside class="edit-payroll-aside">
+        <section class="summary-card">
+            <header>
+                <span>
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2v20"></path>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </span>
+                <div>
+                    <h2>{{ calculationMatchesSelection ? 'Kết quả tính lại' : 'Bảng lương hiện tại' }}</h2>
+                    <p>Tháng {{ form.thang }}/{{ form.nam }}</p>
+                </div>
+            </header>
+
+            @if (calculatedPayroll && calculationMatchesSelection) {
+            <div class="summary-lines">
+                <div><span>Lương cơ bản</span><strong>{{ calculatedPayroll.luongCoBan | number:'1.0-0' }} đ</strong>
+                </div>
+                <div><span>Số ngày công</span><strong>{{ calculatedPayroll.soNgayCong | number:'1.0-2' }} ngày</strong>
+                </div>
+                <div><span>Tổng phụ cấp</span><strong class="summary-positive">+ {{ calculatedPayroll.tongPhuCap |
+                        number:'1.0-0' }} đ</strong></div>
+                <div><span>Tổng thưởng</span><strong class="summary-positive">+ {{ calculatedPayroll.tongThuong |
+                        number:'1.0-0' }} đ</strong></div>
+                <div><span>Tổng khấu trừ</span><strong class="summary-negative">- {{ calculatedPayroll.tongKhauTru |
+                        number:'1.0-0' }} đ</strong></div>
+            </div>
+            <div class="summary-total">
+                <span>Tổng thực lĩnh</span>
+                <strong>{{ calculatedPayroll.tongLuong | number:'1.0-0' }} đ</strong>
+            </div>
+            } @else {
+            <div class="summary-lines">
+                <div><span>Lương cơ bản</span><strong>{{ payroll.luongCoBan | number:'1.0-0' }} đ</strong></div>
+                <div><span>Số ngày công</span><strong>{{ payroll.soNgayCong | number:'1.0-2' }} ngày</strong></div>
+                <div><span>Tổng phụ cấp</span><strong class="summary-positive">+ {{ payroll.tongPhuCap | number:'1.0-0'
+                        }} đ</strong></div>
+                <div><span>Tổng thưởng</span><strong class="summary-positive">+ {{ payroll.tongThuong | number:'1.0-0'
+                        }} đ</strong></div>
+                <div><span>Tổng khấu trừ</span><strong class="summary-negative">- {{ payroll.tongKhauTru |
+                        number:'1.0-0' }} đ</strong></div>
+            </div>
+            <div class="summary-total">
+                <span>Tổng thực lĩnh hiện tại</span>
+                <strong>{{ payroll.tongLuong | number:'1.0-0' }} đ</strong>
+            </div>
+            }
+        </section>
+    </aside>
+</form>
+}
+
+@if (toastMessage) {
+<div class="page-toast" role="status">{{ toastMessage }}</div>
+}

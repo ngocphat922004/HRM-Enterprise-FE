@@ -1,0 +1,120 @@
+<aside class="sidebar">
+    <div class="sidebar__brand">
+        <div class="brand-mark" aria-hidden="true">HR</div>
+
+        <div>
+            <strong>HRM Admin</strong>
+            <span>Quản lý nhân sự</span>
+        </div>
+
+        <button class="sidebar__close" type="button" (click)="close()" aria-label="Đóng menu">×</button>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Điều hướng chính">
+        @for (item of items; track item.route) {
+        <a class="nav-item" [routerLink]="item.route" routerLinkActive="nav-item--active"
+            [routerLinkActiveOptions]="{ exact: item.exact }" (click)="close()">
+            <span class="nav-item__icon" aria-hidden="true">
+                @switch (item.icon) {
+                @case ('dashboard') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                    <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                    <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                    <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                </svg>
+                }
+                @case ('employees') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                }
+                @case ('department') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
+                    <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
+                    <path d="M10 6h4M10 10h4M10 14h4M10 18h4"></path>
+                </svg>
+                }
+                @case ('position') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <rect width="18" height="14" x="3" y="7" rx="2"></rect>
+                    <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <path d="M3 13h18"></path>
+                </svg>
+                }
+                @case ('qualification') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"></path>
+                    <path d="M8 7h8M8 11h6"></path>
+                </svg>
+                }
+                @case ('contract') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <path d="M14 2v6h6M8 13h8M8 17h8"></path>
+                </svg>
+                }
+                @case ('attendance') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                </svg>
+                }
+                @case ('leave') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M8 2v4M16 2v4"></path>
+                    <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                    <path d="M3 10h18M9 16l2 2 4-4"></path>
+                </svg>
+                }
+                @case ('payroll') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
+                    <path d="M16 14h2"></path>
+                </svg>
+                }
+                @case ('award') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="6"></circle>
+                    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                </svg>
+                }
+                @case ('report') {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M3 3v18h18"></path>
+                    <path d="m7 16 4-4 3 3 5-6"></path>
+                </svg>
+                }
+                @default {
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 0-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
+                    </path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                }
+                }
+            </span>
+
+            <span>{{ item.label }}</span>
+        </a>
+        }
+    </nav>
+
+    <div class="sidebar__footer">
+        <button type="button" class="logout-button" (click)="logout()">
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 17l5-5-5-5"></path>
+                <path d="M15 12H3"></path>
+                <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+            </svg>
+
+            <span>Đăng xuất</span>
+        </button>
+    </div>
+</aside>

@@ -16,8 +16,3 @@ export interface Department {
     status: DepartmentStatus;
 }
 
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

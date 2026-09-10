@@ -1,544 +1,706 @@
-<div class="dashboard-shell attendance-overview-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true"></div>
+<section class="overview-heading">
+    <div>
+        <nav class="breadcrumb" aria-label="Điều hướng">
+            <a routerLink="/dashboard">
+                Tổng quan
+            </a>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">
-                HR
+            <span>/</span>
+
+            <strong>
+                Chấm công
+            </strong>
+        </nav>
+
+        <h1>
+            Tổng quan Chấm công
+        </h1>
+
+        <p>
+            Theo dõi tình hình đi làm
+            và trạng thái chấm công
+            của nhân viên theo ngày.
+        </p>
+    </div>
+
+    <div class="overview-heading__actions">
+        <button class="secondary-button" type="button" (click)="selectToday()" [disabled]="isLoading">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+
+                <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+
+                <path d="M3 10h18"></path>
+            </svg>
+
+            Hôm nay
+        </button>
+
+        <button class="primary-button" type="button" (click)="exportReport()" [disabled]="isLoading">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
+
+            Xuất Excel
+        </button>
+    </div>
+</section>
+
+@if (errorMessage) {
+<section class="overview-error" role="alert">
+    <div>
+        <strong>Không thể tải tổng quan chấm công</strong>
+        <p>{{ errorMessage }}</p>
+    </div>
+    <button class="secondary-button" type="button" (click)="retryLoad()" [disabled]="isLoading">
+        Thử lại
+    </button>
+</section>
+}
+
+<section class="overview-toolbar" aria-label="Bộ lọc tổng quan chấm công">
+    <label class="overview-filter">
+        <span>
+            Ngày theo dõi
+        </span>
+
+        <input type="date" [(ngModel)]="selectedDate" (change)="applyFilters()" [disabled]="isLoading" />
+    </label>
+
+    <label class="overview-filter">
+        <span>
+            Phòng ban
+        </span>
+
+        <select [(ngModel)]="
+                            selectedDepartment
+                        " (change)="applyFilters()" [disabled]="isLoading">
+            <option value="">
+                Tất cả phòng ban
+            </option>
+
+            @for (
+            department of departments;
+            track department.maPB
+            ) {
+            <option [value]="department.maPB">
+                {{ department.tenPB }}
+            </option>
+            }
+        </select>
+    </label>
+
+    <button class="table-link-button" type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
+        Xem bảng chấm công
+
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14"></path>
+            <path d="m13 6 6 6-6 6"></path>
+        </svg>
+    </button>
+</section>
+
+@if (isLoading) {
+<section class="overview-loading" aria-live="polite">
+    <span class="overview-loading__spinner" aria-hidden="true"></span>
+
+    <div>
+        <strong>
+            Đang tải dữ liệu chấm công...
+        </strong>
+
+        <p>
+            Đang lấy dữ liệu nhân viên,
+            phòng ban, ca làm và chấm công.
+        </p>
+    </div>
+</section>
+}
+
+<section class="overview-stats">
+    <article class="
+                        stat-card
+                        stat-card--present
+                    ">
+        <span class="stat-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+
+                <circle cx="9" cy="7" r="4"></circle>
+
+                <path d="m16 11 2 2 4-4"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Nhân viên có mặt
+            </span>
+
+            <strong>
+                {{ stats.coMat }}
+
+                <small>
+                    /
+                    {{ stats.tongNhanVien }}
+                </small>
+            </strong>
+
+        </div>
+    </article>
+
+    <article class="
+                        stat-card
+                        stat-card--late
+                    ">
+        <span class="stat-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="M12 7v5l3 2"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Đi muộn trong ngày
+            </span>
+
+            <strong>
+                {{ stats.diMuon }}
+            </strong>
+
+        </div>
+    </article>
+
+    <article class="
+                        stat-card
+                        stat-card--absent
+                    ">
+        <span class="stat-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="m9 9 6 6"></path>
+
+                <path d="m15 9-6 6"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Vắng không phép
+            </span>
+
+            <strong>
+                {{ stats.vangKhongPhep }}
+            </strong>
+
+        </div>
+    </article>
+
+    <article class="
+                        stat-card
+                        stat-card--overtime
+                    ">
+        <span class="stat-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="M12 7v5h5"></path>
+
+                <path d="M12 3v2"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Làm thêm giờ (OT)
+            </span>
+
+            <strong>
+                {{ stats.lamThemGio }}
+            </strong>
+
+        </div>
+    </article>
+</section>
+
+<section class="
+                    overview-grid
+                    overview-grid--charts
+                ">
+    <article class="
+                        overview-card
+                        trend-card
+                    ">
+        <div class="card-heading">
+            <div>
+                <h2>
+                    Tình hình chấm công
+                </h2>
+
+                <p>
+                    Thống kê 7 ngày gần nhất
+                </p>
+            </div>
+
+            <div class="chart-legend">
+                <span>
+                    <i class="
+                                        legend-dot
+                                        legend-dot--present
+                                    "></i>
+
+                    Đúng giờ
+                </span>
+
+                <span>
+                    <i class="
+                                        legend-dot
+                                        legend-dot--late
+                                    "></i>
+
+                    Đi muộn
+                </span>
+
+                <span>
+                    <i class="
+                                        legend-dot
+                                        legend-dot--absent
+                                    "></i>
+
+                    Vắng
+                </span>
+            </div>
+        </div>
+
+        @if (isLoading) {
+
+        <div class="
+                            empty-state
+                            empty-state--chart
+                        ">
+            <span class="overview-loading__spinner" aria-hidden="true"></span>
+
+            <strong>
+                Đang tải thống kê...
+            </strong>
+
+            <span>
+                Đang tổng hợp dữ liệu
+                7 ngày.
+            </span>
+        </div>
+
+        } @else if (
+        trendItems.length > 0
+        ) {
+
+        <div class="trend-chart">
+            @for (
+            item of trendItems;
+            track item.ngay
+            ) {
+            <div class="trend-column">
+                <div class="trend-column__bars">
+                    <span class="
+                                        trend-bar
+                                        trend-bar--present
+                                    " [style.height.%]="
+                                        getTrendHeight(
+                                            item.dungGio
+                                        )
+                                    " [title]="
+                                        item.dungGio +
+                                        ' đúng giờ'
+                                    "></span>
+
+                    <span class="
+                                        trend-bar
+                                        trend-bar--late
+                                    " [style.height.%]="
+                                        getTrendHeight(
+                                            item.diMuon
+                                        )
+                                    " [title]="
+                                        item.diMuon +
+                                        ' đi muộn'
+                                    "></span>
+
+                    <span class="
+                                        trend-bar
+                                        trend-bar--absent
+                                    " [style.height.%]="
+                                        getTrendHeight(
+                                            item.vang
+                                        )
+                                    " [title]="
+                                        item.vang +
+                                        ' vắng'
+                                    "></span>
+                </div>
+
+                <strong>
+                    {{ item.nhanNgay }}
+                </strong>
+            </div>
+            }
+        </div>
+
+        } @else {
+
+        <div class="
+                            empty-state
+                            empty-state--chart
+                        ">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18"></path>
+
+                <path d="m7 16 4-4 3 3 5-6"></path>
+            </svg>
+
+            <strong>
+                Chưa có dữ liệu thống kê
+            </strong>
+
+            <span>
+                Không có dữ liệu chấm công
+                trong khoảng thời gian này.
+            </span>
+        </div>
+
+        }
+    </article>
+
+    <article class="
+                        overview-card
+                        rate-card
+                    ">
+        <div class="card-heading">
+            <div>
+                <h2>
+                    Tỷ lệ đúng giờ
+                </h2>
+
+                <p>
+                    Trong ngày đã chọn
+                </p>
+            </div>
+        </div>
+
+        <div class="rate-ring" [style.--rate]="
+                            stats.tyLeDungGio + '%'
+                        ">
+            <div class="rate-ring__inner">
+                <strong>
+                    {{
+                    stats.tyLeDungGio
+                    | number:'1.0-1'
+                    }}%
+                </strong>
+
+                <span>
+                    Đúng giờ
+                </span>
+            </div>
+        </div>
+
+        <div class="rate-details">
+            <div>
+                <span>
+                    <i class="
+                                        legend-dot
+                                        legend-dot--present
+                                    "></i>
+
+                    Có mặt
+                </span>
+
+                <strong>
+                    {{ stats.coMat }}
+                </strong>
             </div>
 
             <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
+                <span>
+                    <i class="
+                                        legend-dot
+                                        legend-dot--late
+                                    "></i>
 
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
-                ×
-            </button>
-        </div>
-
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a class="nav-item" [routerLink]="item.route" [class.nav-item--active]="activeMenu === item.label"
-                (click)="setActiveMenu(item.label)">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
-
-                    @case ('employees') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
-
-                    @case ('department') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4"></path>
-                        <path d="M10 10h4"></path>
-                        <path d="M10 14h4"></path>
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    }
-
-                    @case ('contract') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M8 13h8"></path>
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
-
-                    @case ('attendance') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="m9 16 2 2 4-4"></path>
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
-                        <path d="M16 14h2"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
+                    Đi muộn
                 </span>
 
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
+                <strong>
+                    {{ stats.diMuon }}
+                </strong>
+            </div>
+        </div>
+    </article>
+</section>
 
-        <div class="sidebar__footer">
-            <button class="logout-button" type="button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
+<section class="
+                    overview-grid
+                    overview-grid--details
+                ">
+    <article class="
+                        overview-card
+                        attention-card
+                    ">
+        <div class="card-heading">
+            <div>
+                <h2>
+                    Nhân viên cần chú ý
+                </h2>
 
-                <span>Đăng xuất</span>
+                <p>
+                    Theo trạng thái chấm công
+                    trong ngày
+                </p>
+            </div>
+
+            <button class="text-button" type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
+                Xem tất cả
             </button>
         </div>
-    </aside>
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
+        @if (isLoading) {
 
-            <label class="search-box">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.3-4.3"></path>
-                </svg>
+        <div class="empty-state">
+            <span class="overview-loading__spinner" aria-hidden="true"></span>
 
-                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm kiếm nhân viên, chấm công..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+            <strong>
+                Đang kiểm tra dữ liệu...
+            </strong>
 
-            <div class="top-header__actions">
-                <a class="header-add-button" routerLink="/employees/add">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5v14"></path>
-                    </svg>
+            <span>
+                Đang xác định nhân viên
+                cần chú ý.
+            </span>
+        </div>
 
-                    Thêm nhân viên
-                </a>
+        } @else if (
+        attentionEmployees.length > 0
+        ) {
 
-                <button class="icon-button notification-button" type="button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
-                </button>
+        <div class="attention-list">
+            @for (
+            employee of
+            attentionEmployees;
+            track employee.maNV
+            ) {
+            <article class="attention-item">
+                <span class="employee-avatar">
+                    {{
+                    employee.hoTen
+                    .charAt(0)
+                    .toUpperCase()
+                    }}
+                </span>
 
-                <button class="icon-button" type="button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+                <div class="employee-info">
+                    <strong>
+                        {{ employee.hoTen }}
+                    </strong>
 
-                <button class="header-profile" type="button" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
+                    <span>
+                        Mã NV:
+                        {{ employee.maNV }}
 
-                    <span class="header-profile__avatar">TN</span>
+                        ·
 
-                    <svg class="header-profile__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6"></path>
-                    </svg>
-                </button>
+                        {{
+                        employee.tenPB ||
+                        'Chưa phân phòng'
+                        }}
+                    </span>
+                </div>
+
+                <div class="employee-time">
+                    <span>
+                        Giờ vào
+                    </span>
+
+                    <strong>
+                        {{
+                        formatTime(
+                        employee.gioVao
+                        )
+                        }}
+                    </strong>
+                </div>
+
+                <span class="status-badge" [ngClass]="
+                                    'status-badge--' +
+                                    getStatusClass(
+                                        employee.trangThai
+                                    )
+                                ">
+                    {{
+                    employee.trangThai
+                    }}
+                </span>
+            </article>
+            }
+        </div>
+
+        } @else {
+
+        <div class="empty-state">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+
+                <path d="m9 12 2 2 4-4"></path>
+            </svg>
+
+            <strong>
+                Không có nhân viên
+                cần chú ý
+            </strong>
+
+            <span>
+                Không phát hiện trường hợp
+                đi trễ, về sớm hoặc
+                vắng không phép trong ngày.
+            </span>
+        </div>
+
+        }
+    </article>
+
+    <article class="
+                        overview-card
+                        daily-summary-card
+                    ">
+        <div class="card-heading">
+            <div>
+                <h2>
+                    Tổng hợp trạng thái
+                    trong ngày
+                </h2>
+
+                <p>
+                    {{
+                    selectedDate
+                    | date:'dd/MM/yyyy'
+                    }}
+                </p>
             </div>
-        </header>
+        </div>
 
-        <main class="main-content">
-            <section class="overview-heading">
-                <div>
-                    <nav class="breadcrumb" aria-label="Điều hướng">
-                        <a routerLink="/dashboard">Tổng quan</a>
-                        <span>/</span>
-                        <strong>Chấm công</strong>
-                    </nav>
-
-                    <h1>Tổng quan Chấm công</h1>
-                    <p>
-                        Theo dõi tình hình đi làm và trạng thái
-                        chấm công của nhân viên trong ngày.
-                    </p>
-                </div>
-
-                <div class="overview-heading__actions">
-                    <button class="secondary-button" type="button" (click)="selectToday()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M8 2v4"></path>
-                            <path d="M16 2v4"></path>
-                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                            <path d="M3 10h18"></path>
-                        </svg>
-                        Hôm nay
-                    </button>
-
-                    <button class="primary-button" type="button" (click)="exportReport()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v12"></path>
-                            <path d="m7 10 5 5 5-5"></path>
-                            <path d="M5 21h14"></path>
-                        </svg>
-                        Xuất báo cáo
-                    </button>
-                </div>
-            </section>
-
-            <section class="overview-toolbar" aria-label="Bộ lọc tổng quan chấm công">
-                <label class="overview-filter">
-                    <span>Ngày theo dõi</span>
-                    <input type="date" [(ngModel)]="selectedDate" (change)="applyFilters()" />
-                </label>
-
-                <label class="overview-filter">
-                    <span>Phòng ban</span>
-                    <select [(ngModel)]="selectedDepartment" (change)="applyFilters()">
-                        <option value="">Tất cả phòng ban</option>
-                        @for (department of departments; track department.maPB) {
-                        <option [value]="department.maPB">
-                            {{ department.tenPB }}
-                        </option>
-                        }
-                    </select>
-                </label>
-
-                <button class="table-link-button" type="button" (click)="viewAttendanceTable()">
-                    Xem bảng chấm công
+        <div class="daily-summary-list">
+            <div class="daily-summary-item">
+                <span class="
+                                    summary-icon
+                                    summary-icon--present
+                                ">
                     <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M5 12h14"></path>
-                        <path d="m13 6 6 6-6 6"></path>
+                        <path d="m5 12 4 4L19 6"></path>
                     </svg>
-                </button>
-            </section>
+                </span>
 
-            <section class="overview-stats">
-                <article class="stat-card stat-card--present">
-                    <span class="stat-card__icon">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="m16 11 2 2 4-4"></path>
-                        </svg>
-                    </span>
-                    <div>
-                        <span>Nhân viên có mặt</span>
-                        <strong>
-                            {{ stats.coMat }}
-                            <small>/ {{ stats.tongNhanVien }}</small>
-                        </strong>
-                        <p>Nhân viên đã chấm công</p>
-                    </div>
-                </article>
+                <span>
+                    Nhân viên có mặt
+                </span>
 
-                <article class="stat-card stat-card--late">
-                    <span class="stat-card__icon">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 7v5l3 2"></path>
-                        </svg>
-                    </span>
-                    <div>
-                        <span>Đi muộn hôm nay</span>
-                        <strong>{{ stats.diMuon }}</strong>
-                        <p>Cần theo dõi và nhắc nhở</p>
-                    </div>
-                </article>
+                <strong>
+                    {{ stats.coMat }}
+                </strong>
+            </div>
 
-                <article class="stat-card stat-card--absent">
-                    <span class="stat-card__icon">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="m9 9 6 6"></path>
-                            <path d="m15 9-6 6"></path>
-                        </svg>
-                    </span>
-                    <div>
-                        <span>Vắng không phép</span>
-                        <strong>{{ stats.vangKhongPhep }}</strong>
-                        <p>Không có đơn nghỉ được duyệt</p>
-                    </div>
-                </article>
+            <div class="daily-summary-item">
+                <span class="
+                                    summary-icon
+                                    summary-icon--late
+                                ">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"></circle>
 
-                <article class="stat-card stat-card--overtime">
-                    <span class="stat-card__icon">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 7v5h5"></path>
-                            <path d="M12 3v2"></path>
-                        </svg>
-                    </span>
-                    <div>
-                        <span>Làm thêm giờ (OT)</span>
-                        <strong>{{ stats.lamThemGio }}</strong>
-                        <p>{{ stats.tongGioLamThem | number: '1.0-1' }} giờ đăng ký</p>
-                    </div>
-                </article>
-            </section>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                </span>
 
-            <section class="overview-grid overview-grid--charts">
-                <article class="overview-card trend-card">
-                    <div class="card-heading">
-                        <div>
-                            <h2>Tình hình chấm công</h2>
-                            <p>Thống kê 7 ngày gần nhất</p>
-                        </div>
+                <span>
+                    Nhân viên đi muộn
+                </span>
 
-                        <div class="chart-legend">
-                            <span><i class="legend-dot legend-dot--present"></i>Đúng giờ</span>
-                            <span><i class="legend-dot legend-dot--late"></i>Đi muộn</span>
-                            <span><i class="legend-dot legend-dot--absent"></i>Vắng</span>
-                        </div>
-                    </div>
+                <strong>
+                    {{ stats.diMuon }}
+                </strong>
+            </div>
 
-                    @if (trendItems.length > 0) {
-                    <div class="trend-chart">
-                        @for (item of trendItems; track item.ngay) {
-                        <div class="trend-column">
-                            <div class="trend-column__bars">
-                                <span class="trend-bar trend-bar--present"
-                                    [style.height.%]="getTrendHeight(item.dungGio)"
-                                    [title]="item.dungGio + ' đúng giờ'"></span>
-                                <span class="trend-bar trend-bar--late" [style.height.%]="getTrendHeight(item.diMuon)"
-                                    [title]="item.diMuon + ' đi muộn'"></span>
-                                <span class="trend-bar trend-bar--absent" [style.height.%]="getTrendHeight(item.vang)"
-                                    [title]="item.vang + ' vắng'"></span>
-                            </div>
-                            <strong>{{ item.nhanNgay }}</strong>
-                        </div>
-                        }
-                    </div>
-                    } @else {
-                    <div class="empty-state empty-state--chart">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 3v18h18"></path>
-                            <path d="m7 16 4-4 3 3 5-6"></path>
-                        </svg>
-                        <strong>Chưa có dữ liệu thống kê</strong>
-                        <span>Dữ liệu sẽ hiển thị sau khi kết nối API.</span>
-                    </div>
-                    }
-                </article>
+            <div class="daily-summary-item">
+                <span class="
+                                    summary-icon
+                                    summary-icon--absent
+                                ">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18"></path>
 
-                <article class="overview-card rate-card">
-                    <div class="card-heading">
-                        <div>
-                            <h2>Tỷ lệ đúng giờ</h2>
-                            <p>Trong ngày đã chọn</p>
-                        </div>
-                    </div>
+                        <path d="m6 6 12 12"></path>
+                    </svg>
+                </span>
 
-                    <div class="rate-ring" [style.--rate]="stats.tyLeDungGio + '%'">
-                        <div class="rate-ring__inner">
-                            <strong>{{ stats.tyLeDungGio | number: '1.0-1' }}%</strong>
-                            <span>Đúng giờ</span>
-                        </div>
-                    </div>
+                <span>
+                    Vắng không phép
+                </span>
 
-                    <div class="rate-details">
-                        <div>
-                            <span><i class="legend-dot legend-dot--present"></i>Đúng giờ</span>
-                            <strong>{{ stats.coMat }}</strong>
-                        </div>
-                        <div>
-                            <span><i class="legend-dot legend-dot--late"></i>Đi muộn</span>
-                            <strong>{{ stats.diMuon }}</strong>
-                        </div>
-                    </div>
-                </article>
-            </section>
+                <strong>
+                    {{
+                    stats.vangKhongPhep
+                    }}
+                </strong>
+            </div>
 
-            <section class="overview-grid overview-grid--details">
-                <article class="overview-card attention-card">
-                    <div class="card-heading">
-                        <div>
-                            <h2>Nhân viên cần chú ý</h2>
-                            <p>Theo trạng thái chấm công trong ngày</p>
-                        </div>
+            <div class="daily-summary-item">
+                <span class="
+                                    summary-icon
+                                    summary-icon--overtime
+                                ">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2v10l4 2"></path>
 
-                        <button class="text-button" type="button" (click)="viewAttendanceTable()">
-                            Xem tất cả
-                        </button>
-                    </div>
+                        <circle cx="12" cy="12" r="9"></circle>
+                    </svg>
+                </span>
 
-                    @if (filteredAttentionEmployees.length > 0) {
-                    <div class="attention-list">
-                        @for (employee of filteredAttentionEmployees; track employee.maNV) {
-                        <article class="attention-item">
-                            <span class="employee-avatar">
-                                {{ employee.hoTen.charAt(0) }}
-                            </span>
+                <span>
+                    Nhân viên làm thêm giờ
+                </span>
 
-                            <div class="employee-info">
-                                <strong>{{ employee.hoTen }}</strong>
-                                <span>
-                                    Mã NV: {{ employee.maNV }}
-                                    · {{ employee.tenPB || 'Chưa phân phòng' }}
-                                </span>
-                            </div>
+                <strong>
+                    {{ stats.lamThemGio }}
+                </strong>
+            </div>
+        </div>
 
-                            <div class="employee-time">
-                                <span>Giờ vào</span>
-                                <strong>{{ formatTime(employee.gioVao) }}</strong>
-                            </div>
-
-                            <span class="status-badge"
-                                [ngClass]="'status-badge--' + getStatusClass(employee.trangThai)">
-                                {{ employee.trangThai }}
-                            </span>
-                        </article>
-                        }
-                    </div>
-                    } @else {
-                    <div class="empty-state">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="m9 12 2 2 4-4"></path>
-                        </svg>
-                        <strong>Chưa có nhân viên cần chú ý</strong>
-                        <span>Dữ liệu sẽ được cập nhật từ API.</span>
-                    </div>
-                    }
-                </article>
-
-                <article class="overview-card daily-summary-card">
-                    <div class="card-heading">
-                        <div>
-                            <h2>Tổng hợp trạng thái hôm nay</h2>
-                            <p>{{ selectedDate | date: 'dd/MM/yyyy' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="daily-summary-list">
-                        <div class="daily-summary-item">
-                            <span class="summary-icon summary-icon--present">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m5 12 4 4L19 6"></path>
-                                </svg>
-                            </span>
-                            <span>Nhân viên có mặt</span>
-                            <strong>{{ stats.coMat }}</strong>
-                        </div>
-
-                        <div class="daily-summary-item">
-                            <span class="summary-icon summary-icon--late">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="9"></circle>
-                                    <path d="M12 7v5l3 2"></path>
-                                </svg>
-                            </span>
-                            <span>Nhân viên đi muộn</span>
-                            <strong>{{ stats.diMuon }}</strong>
-                        </div>
-
-                        <div class="daily-summary-item">
-                            <span class="summary-icon summary-icon--absent">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M18 6 6 18"></path>
-                                    <path d="m6 6 12 12"></path>
-                                </svg>
-                            </span>
-                            <span>Vắng không phép</span>
-                            <strong>{{ stats.vangKhongPhep }}</strong>
-                        </div>
-
-                        <div class="daily-summary-item">
-                            <span class="summary-icon summary-icon--overtime">
-                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M12 2v10l4 2"></path>
-                                    <circle cx="12" cy="12" r="9"></circle>
-                                </svg>
-                            </span>
-                            <span>Nhân viên làm thêm giờ</span>
-                            <strong>{{ stats.lamThemGio }}</strong>
-                        </div>
-                    </div>
-
-                    <button class="primary-button daily-summary-card__button" type="button"
-                        (click)="viewAttendanceTable()">
-                        Mở bảng chấm công chi tiết
-                    </button>
-                </article>
-            </section>
-        </main>
-    </section>
-
-    @if (toastMessage) {
-    <div class="page-toast" role="status">
-        {{ toastMessage }}
-    </div>
-    }
+        <button class="
+                            primary-button
+                            daily-summary-card__button
+                        " type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
+            Mở bảng chấm công chi tiết
+        </button>
+    </article>
+</section>
+@if (toastMessage) {
+<div class="page-toast" role="status">
+    {{ toastMessage }}
 </div>
+}

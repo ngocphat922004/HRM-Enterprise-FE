@@ -1,10 +1,6 @@
 :host {
-    display   : block;
-    min-height: 100vh;
-}
-
-.contract-page {
-    background: var(--color-background);
+    display: block;
+    width  : 100%;
 }
 
 .page-breadcrumb {
@@ -19,10 +15,6 @@
         var(--color-border-strong,
             #c7c2d3);
 }
-
-/* ================================
-   ACTION BUTTON
-================================ */
 
 .export-button {
     min-height     : 48px;
@@ -56,10 +48,6 @@
     width : 18px;
     height: 18px;
 }
-
-/* ================================
-   STATISTIC CARDS
-================================ */
 
 .contract-stats {
     display: grid;
@@ -146,10 +134,6 @@
     font-size  : 12px;
     font-weight: 600;
 }
-
-/* ================================
-   FILTER
-================================ */
 
 .contract-filter-card {
     display: grid;
@@ -266,10 +250,6 @@
     height: 18px;
 }
 
-/* ================================
-   TABLE
-================================ */
-
 .contract-table-card {
     overflow: visible;
     border  :
@@ -331,10 +311,6 @@ tbody tr:hover {
 tbody tr:last-child td {
     border-bottom: 0;
 }
-
-/* ================================
-   CONTRACT INFORMATION
-================================ */
 
 .contract-code {
     display    : block;
@@ -431,10 +407,6 @@ tbody tr:last-child td {
     font-weight: 700;
 }
 
-/* ================================
-   STATUS
-================================ */
-
 .status-badge {
     min-height     : 30px;
     display        : inline-flex;
@@ -485,10 +457,6 @@ tbody tr:last-child td {
             var(--color-surface));
 }
 
-/* ================================
-   ACTIONS
-================================ */
-
 .action-column {
     text-align: right;
 }
@@ -525,10 +493,6 @@ tbody tr:last-child td {
     height: 17px;
 }
 
-/* ================================
-   EMPTY STATE
-================================ */
-
 .empty-table {
     height    : 250px;
     text-align: center;
@@ -558,10 +522,6 @@ tbody tr:last-child td {
     color    : var(--color-text-secondary);
     font-size: 13px;
 }
-
-/* ================================
-   TABLE FOOTER
-================================ */
 
 .table-footer {
     min-height           : 72px;
@@ -621,9 +581,33 @@ tbody tr:last-child td {
     height: 16px;
 }
 
-/* ================================
-   TOAST
-================================ */
+.contract-actions .delete-action {
+    color: #dc2626;
+}
+
+.contract-actions .delete-action:hover {
+    background: #fef2f2;
+    color     : #b91c1c;
+}
+
+.empty-contracts .spinner {
+    width : 20px;
+    height: 20px;
+
+    display: inline-block;
+
+    border          : 2px solid #ddd6fe;
+    border-top-color: #6366f1;
+    border-radius   : 50%;
+
+    animation: contract-spin 0.7s linear infinite;
+}
+
+@keyframes contract-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 .toast-message {
     position     : fixed;
@@ -640,10 +624,6 @@ tbody tr:last-child td {
     font-size  : 14px;
     font-weight: 650;
 }
-
-/* ================================
-   RESPONSIVE
-================================ */
 
 @media (max-width: 1200px) {
     .contract-filter-card {

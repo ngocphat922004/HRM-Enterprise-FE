@@ -1,15 +1,7 @@
 :host {
-    display   : block;
-    min-height: 100vh;
+    display: block;
+    width  : 100%;
 }
-
-.contract-detail-page {
-    background: var(--color-background);
-}
-
-/* ================================
-   PAGE HEADING
-================================ */
 
 .detail-heading {
     display        : flex;
@@ -135,10 +127,6 @@
     height: 18px;
 }
 
-/* ================================
-   LAYOUT
-================================ */
-
 .contract-detail-grid {
     display: grid;
     grid-template-columns:
@@ -168,10 +156,6 @@
     padding: 25px;
 }
 
-/* ================================
-   CARD HEADING
-================================ */
-
 .card-heading {
     display       : flex;
     align-items   : center;
@@ -195,10 +179,6 @@
     font-size  : 17px;
     font-weight: 750;
 }
-
-/* ================================
-   GENERAL INFORMATION
-================================ */
 
 .information-grid {
     display: grid;
@@ -265,10 +245,6 @@
     color : var(--color-text-secondary);
     cursor: not-allowed;
 }
-
-/* ================================
-   CONTRACT TIMELINE
-================================ */
 
 .timeline-grid {
     display: grid;
@@ -367,10 +343,6 @@
     line-height: 1.45;
 }
 
-/* ================================
-   SALARY
-================================ */
-
 .salary-panel {
     min-height     : 128px;
     display        : flex;
@@ -430,10 +402,6 @@
     height: 27px;
 }
 
-/* ================================
-   SUMMARY
-================================ */
-
 .contract-summary-card {
     overflow    : hidden;
     border-color: var(--color-primary);
@@ -484,10 +452,6 @@
     text-align : right;
 }
 
-/* ================================
-   STATUS
-================================ */
-
 .status-badge {
     min-height     : 28px;
     display        : inline-flex;
@@ -524,10 +488,6 @@
     color     : #b42318 !important;
     background: #fee4e2;
 }
-
-/* ================================
-   DATA NOTE
-================================ */
 
 .data-note-card {
     padding: 22px;
@@ -579,10 +539,6 @@
     border-radius: 50%;
     background   : var(--color-primary);
 }
-
-/* ================================
-   RESPONSIVE
-================================ */
 
 @media (max-width: 1120px) {
     .contract-detail-grid {

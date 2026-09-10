@@ -1,652 +1,425 @@
-<div class="dashboard-shell add-contract-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="
-            sidebarOpen
-        " (click)="closeSidebar()" aria-hidden="true"></div>
+<section class="contract-form-heading">
+    <div>
+        <p class="breadcrumb">
+            <a routerLink="/employees">
+                Nhân sự
+            </a>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">
-                HR
-            </div>
+            <span>/</span>
 
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
+            <a routerLink="/contracts">
+                Hợp đồng
+            </a>
 
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
+            <span>/</span>
+
+            @if (isRenewalMode) {
+            Gia hạn
+            } @else {
+            Thêm mới
+            }
+        </p>
+
+        <h1>
+            @if (isRenewalMode) {
+            Gia hạn hợp đồng
+            } @else {
+            Thêm hợp đồng mới
+            }
+        </h1>
+
+        <p class="contract-form-heading__description">
+            @if (isRenewalMode) {
+            Tạo hợp đồng mới kế tiếp từ
+            {{ renewalSourceCode }}.
+            Hợp đồng cũ vẫn được giữ trong lịch sử.
+            } @else {
+            Nhập thông tin để tạo hợp đồng lao động mới.
+            }
+        </p>
+    </div>
+
+    <div class="heading-actions">
+        <button class="cancel-button" type="button" (click)="cancel()" [disabled]="isSaving">
+            Hủy bỏ
+        </button>
+
+        <button class="save-button" type="submit" form="add-contract-form" [disabled]="
+                isSaving ||
+                isLoadingData ||
+                isRenewalSourceInvalid
+            ">
+            @if (isSaving) {
+            <span class="spinner" aria-hidden="true"></span>
+
+            Đang lưu...
+            } @else {
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15.2 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.8z"></path>
+
+                <path d="M17 21v-8H7v8"></path>
+
+                <path d="M7 3v5h8"></path>
+            </svg>
+
+            @if (isRenewalMode) {
+            Lưu hợp đồng gia hạn
+            } @else {
+            Lưu hợp đồng
+            }
+            }
+        </button>
+    </div>
+</section>
+
+<div class="contract-form-layout">
+    <form id="add-contract-form" class="contract-form-card" (ngSubmit)="saveContract()" novalidate>
+        <section class="form-section">
+            <header class="form-section__heading">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M18 6 6 18"></path>
+                    <circle cx="12" cy="12" r="9"></circle>
 
-                    <path d="m6 6 12 12"></path>
+                    <path d="M12 11v5"></path>
+
+                    <path d="M12 8h.01"></path>
                 </svg>
-            </button>
-        </div>
 
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (
-            item of sidebarItems;
-            track item.label
-            ) {
-            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="
-                        activeMenu ===
-                        item.label
-                    " (click)="
-                        setActiveMenu(
-                            item.label
-                        )
-                    ">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                <h2>
+                    Thông tin chung
+                </h2>
+            </header>
 
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+            <div class="identity-note">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 4h16v16H4z"></path>
 
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                    <path d="M9 9h6v6H9z"></path>
+                </svg>
 
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
-
-                    @case ('employees') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-
-                        <circle cx="9" cy="7" r="4"></circle>
-
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
-
-                    @case ('department') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-
-                        <path d="M10 6h4"></path>
-
-                        <path d="M10 10h4"></path>
-
-                        <path d="M10 14h4"></path>
-
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    }
-
-                    @case ('contract') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-
-                        <path d="M14 2v6h6"></path>
-
-                        <path d="M8 13h8"></path>
-
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
-
-                    @case ('attendance') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-
-                        <path d="M16 2v4"></path>
-
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-
-                        <path d="M3 10h18"></path>
-
-                        <path d="m9 16 2 2 4-4"></path>
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
-
-                        <path d="M16 14h2"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
+                <span>
+                    @if (isRenewalSourceInvalid) {
+                    Hợp đồng này không có ngày kết thúc nên không thể gia hạn.
+                    } @else if (isRenewalMode) {
+                    Hợp đồng mới được tạo từ
+                    <strong>
+                        {{ renewalSourceCode }}
+                    </strong>.
+                    Hợp đồng cũ vẫn được giữ trong lịch sử.
+                    } @else {
+                    Mã hợp đồng sẽ được hệ thống tự động tạo sau khi lưu.
                     }
                 </span>
+            </div>
 
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
+            <div class="form-grid">
+                <label class="form-field">
+                    <span>
+                        Nhân viên
+                        <strong>*</strong>
+                    </span>
 
-        <div class="sidebar__footer">
-            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5"></path>
+                    <select [(ngModel)]="form.maNV" name="maNV" [class.input-invalid]="
+                            isEmployeeInvalid
+                        " [disabled]="
+                            isLoadingData ||
+                            isSaving ||
+                            isRenewalMode
+                        ">
+                        <option [ngValue]="null">
+                            Chọn nhân viên
+                        </option>
 
-                    <path d="M15 12H3"></path>
+                        @for (
+                        employee of employees;
+                        track employee.maNV
+                        ) {
+                        <option [ngValue]="employee.maNV">
+                            {{ employee.hoTen }}
+                            —
+                            NV-{{
+                            employee.maNV
+                            .toString()
+                            .padStart(
+                            4,
+                            '0'
+                            )
+                            }}
+                        </option>
+                        }
+                    </select>
 
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
+                    @if (isEmployeeInvalid) {
+                    <p class="field-error">
+                        Vui lòng chọn nhân viên.
+                    </p>
+                    } @else if (isRenewalMode) {
+                    <p class="field-hint">
+                        Nhân viên được giữ nguyên từ hợp đồng cũ.
+                    </p>
+                    } @else if (
+                    employees.length === 0
+                    ) {
+                    <p class="field-hint">
+                        Chưa có nhân viên để lựa chọn.
+                    </p>
+                    }
+                </label>
 
-                <span>Đăng xuất</span>
-            </button>
-        </div>
-    </aside>
+                <label class="form-field">
+                    <span>
+                        Loại hợp đồng
+                        <strong>*</strong>
+                    </span>
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
+                    <select [(ngModel)]="form.maLoaiHD" name="maLoaiHD" [class.input-invalid]="
+                            isContractTypeInvalid
+                        " [disabled]="
+                            isLoadingData ||
+                            isSaving
+                        ">
+                        <option [ngValue]="null">
+                            Chọn loại hợp đồng
+                        </option>
 
-                    <path d="M4 12h16"></path>
+                        @for (
+                        contractType of contractTypes;
+                        track contractType.maLoaiHD
+                        ) {
+                        <option [ngValue]="
+                                    contractType.maLoaiHD
+                                ">
+                            {{ contractType.tenLoaiHD }}
+                        </option>
+                        }
+                    </select>
 
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
+                    @if (
+                    isContractTypeInvalid
+                    ) {
+                    <p class="field-error">
+                        Vui lòng chọn loại hợp đồng.
+                    </p>
+                    } @else if (
+                    contractTypes.length === 0
+                    ) {
+                    <p class="field-hint">
+                        Chưa có loại hợp đồng để lựa chọn.
+                    </p>
+                    }
+                </label>
+            </div>
+        </section>
 
-            <label class="search-box">
+        <section class="form-section">
+            <header class="form-section__heading">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"></circle>
+                    <circle cx="12" cy="12" r="9"></circle>
 
-                    <path d="m21 21-4.3-4.3"></path>
+                    <path d="M12 7v5"></path>
+
+                    <path d="m12 12 3 2"></path>
                 </svg>
 
-                <input type="search" [(ngModel)]="
-                        globalSearchTerm
-                    " placeholder="Tìm kiếm hợp đồng, nhân viên..." aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+                <h2>
+                    Thời hạn hợp đồng
+                </h2>
+            </header>
 
-            <div class="top-header__actions">
-                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+            <div class="form-grid">
+                <label class="form-field">
+                    <span>
+                        Ngày bắt đầu
+                        <strong>*</strong>
+                    </span>
 
-                        <path d="M4 17h16"></path>
+                    <input type="date" [(ngModel)]="form.ngayBatDau" name="ngayBatDau" [min]="
+                            renewalMinimumStartDate ||
+                            null
+                        " [class.input-invalid]="
+                            isStartDateInvalid
+                        " [disabled]="
+                            isLoadingData ||
+                            isSaving
+                        " />
 
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
+                    @if (isStartDateMissing) {
+                    <p class="field-error">
+                        Vui lòng chọn ngày bắt đầu.
+                    </p>
+                    } @else if (
+                    isRenewalStartDateInvalid
+                    ) {
+                    <p class="field-error">
+                        Ngày bắt đầu hợp đồng gia hạn phải sau ngày kết thúc hợp đồng cũ.
+                    </p>
+                    } @else if (
+                    isRenewalMode &&
+                    renewalMinimumStartDate
+                    ) {
+                    <p class="field-hint">
+                        Hệ thống đã đề xuất ngày kế tiếp sau khi hợp đồng cũ kết thúc.
+                    </p>
+                    }
+                </label>
 
-                    <span class="notification-dot"></span>
-                </button>
+                <label class="form-field">
+                    <span>
+                        Ngày kết thúc
+                    </span>
 
-                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+                    <input type="date" [(ngModel)]="form.ngayKetThuc" name="ngayKetThuc" [min]="
+                            form.ngayBatDau ||
+                            null
+                        " [class.input-invalid]="
+                            isEndDateInvalid
+                        " [disabled]="
+                            isLoadingData ||
+                            isSaving
+                        " />
 
-                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>
-                            Trần Hoàng Nam
-                        </strong>
+                    @if (
+                    isEndDateInvalid
+                    ) {
+                    <p class="field-error">
+                        Ngày kết thúc không được nhỏ hơn ngày bắt đầu.
+                    </p>
+                    } @else {
+                    <p class="field-hint">
+                        Để trống nếu là hợp đồng không xác định thời hạn.
+                    </p>
+                    }
+                </label>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <header class="form-section__heading">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
+
+                    <path d="M16 14h2"></path>
+                </svg>
+
+                <h2>
+                    Lương và trạng thái
+                </h2>
+            </header>
+
+            <div class="form-grid">
+                <label class="form-field">
+                    <span>
+                        Lương cơ bản
+                        <strong>*</strong>
+                    </span>
+
+                    <div class="money-input" [class.money-input--invalid]="
+                            isBaseSalaryInvalid
+                        ">
+                        <input type="number" [(ngModel)]="form.luongCoBan" name="luongCoBan" min="1" step="100000"
+                            placeholder="Ví dụ: 15000000" [disabled]="
+                                isLoadingData ||
+                                isSaving
+                            " />
 
                         <span>
-                            Quản trị viên
+                            VNĐ
                         </span>
                     </div>
 
-                    <span class="header-profile__avatar">
-                        TN
+                    @if (
+                    isBaseSalaryInvalid
+                    ) {
+                    <p class="field-error">
+                        Lương cơ bản phải lớn hơn 0.
+                    </p>
+                    }
+                </label>
+
+                <label class="form-field">
+                    <span>
+                        Trạng thái
+                        <strong>*</strong>
                     </span>
 
-                    <span class="header-profile__arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </span>
-                </button>
+                    <select [(ngModel)]="form.trangThai" name="trangThai" [disabled]="
+                            isLoadingData ||
+                            isSaving ||
+                            isRenewalMode
+                        ">
+                        <option [ngValue]="
+                                contractStatus.CON_HIEU_LUC
+                            ">
+                            Còn hiệu lực
+                        </option>
+
+                        <option [ngValue]="
+                                contractStatus.HET_HIEU_LUC
+                            ">
+                            Hết hiệu lực
+                        </option>
+                    </select>
+
+                    <p class="field-hint">
+                        Hợp đồng mới mặc định ở trạng thái còn hiệu lực.
+                    </p>
+                </label>
             </div>
+        </section>
+    </form>
+
+    <aside class="contract-guide-card">
+        <header class="contract-guide-card__heading">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18h6"></path>
+
+                <path d="M10 22h4"></path>
+
+                <path d="M15.09 14c.18-.49.66-.81 1.04-1.17A6 6 0 1 0 7.87 12.83c.39.36.87.69 1.05 1.17"></path>
+            </svg>
+
+            <h2>
+                Lưu ý khi lập hợp đồng
+            </h2>
         </header>
 
-        <main class="main-content">
-            <section class="contract-form-heading">
-                <div>
-                    <p class="breadcrumb">
-                        <a routerLink="/employees">
-                            Nhân sự
-                        </a>
+        <ul>
+            @if (isRenewalMode) {
+            <li>
+                Hợp đồng cũ vẫn được giữ nguyên trong lịch sử.
+            </li>
 
-                        <span>/</span>
+            <li>
+                Nhân viên của hợp đồng gia hạn không được thay đổi.
+            </li>
 
-                        <a routerLink="/contracts">
-                            Hợp đồng
-                        </a>
+            <li>
+                Ngày bắt đầu mới phải sau ngày kết thúc của hợp đồng cũ.
+            </li>
+            } @else {
+            <li>
+                Mỗi hợp đồng phải gắn với một nhân viên và một loại hợp đồng.
+            </li>
+            }
 
-                        <span>/</span>
+            <li>
+                Ngày kết thúc có thể để trống với hợp đồng không xác định thời hạn.
+            </li>
 
-                        Thêm mới
-                    </p>
-
-                    <h1>Thêm hợp đồng mới</h1>
-
-                    <p class="contract-form-heading__description">
-                        Khởi tạo hợp đồng lao động
-                        theo đúng cấu trúc dữ liệu
-                        của hệ thống.
-                    </p>
-                </div>
-
-                <div class="heading-actions">
-                    <button class="cancel-button" type="button" (click)="cancel()">
-                        Hủy bỏ
-                    </button>
-
-                    <button class="save-button" type="submit" form="add-contract-form" [disabled]="isSaving">
-                        @if (isSaving) {
-                        <span class="spinner" aria-hidden="true"></span>
-
-                        Đang lưu...
-                        } @else {
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M15.2 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.8z"></path>
-
-                            <path d="M17 21v-8H7v8"></path>
-
-                            <path d="M7 3v5h8"></path>
-                        </svg>
-
-                        Lưu hợp đồng
-                        }
-                    </button>
-                </div>
-            </section>
-
-            <div class="contract-form-layout">
-                <form id="add-contract-form" class="contract-form-card" (ngSubmit)="saveContract()" novalidate>
-                    <section class="form-section">
-                        <header class="form-section__heading">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"></circle>
-
-                                <path d="M12 11v5"></path>
-
-                                <path d="M12 8h.01"></path>
-                            </svg>
-
-                            <h2>Thông tin chung</h2>
-                        </header>
-
-                        <div class="identity-note">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M4 4h16v16H4z"></path>
-
-                                <path d="M9 9h6v6H9z"></path>
-                            </svg>
-
-                            <span>
-                                <strong>
-                                    Mã hợp đồng (MaHD)
-                                </strong>
-                                là INT IDENTITY và sẽ
-                                được SQL Server tự động
-                                tạo sau khi lưu. Người
-                                dùng không cần nhập.
-                            </span>
-                        </div>
-
-                        <div class="form-grid">
-                            <label class="form-field">
-                                <span>
-                                    Nhân viên
-                                    <strong>*</strong>
-                                </span>
-
-                                <select [(ngModel)]="form.maNV" name="maNV" [class.input-invalid]="
-                                isEmployeeInvalid
-                            ">
-                                    <option [ngValue]="null">
-                                        Chọn nhân viên
-                                    </option>
-
-                                    @for (
-                                    employee of employees;
-                                    track employee.maNV
-                                    ) {
-                                    <option [ngValue]="
-                                        employee.maNV
-                                    ">
-                                        {{
-                                        employee.hoTen
-                                        }}
-                                        —
-                                        NV-{{
-                                        employee.maNV
-                                        .toString()
-                                        .padStart(
-                                        4,
-                                        '0'
-                                        )
-                                        }}
-                                    </option>
-                                    }
-                                </select>
-
-                                @if (isEmployeeInvalid) {
-                                <p class="field-error">
-                                    Vui lòng chọn
-                                    nhân viên.
-                                </p>
-                                } @else if (
-                                employees.length === 0
-                                ) {
-                                <p class="field-hint">
-                                    Danh sách nhân viên
-                                    sẽ được tải từ API.
-                                </p>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>
-                                    Loại hợp đồng
-                                    <strong>*</strong>
-                                </span>
-
-                                <select [(ngModel)]="
-                                form.maLoaiHD
-                            " name="maLoaiHD" [class.input-invalid]="
-                                isContractTypeInvalid
-                            ">
-                                    <option [ngValue]="null">
-                                        Chọn loại hợp đồng
-                                    </option>
-
-                                    @for (
-                                    contractType
-                                    of contractTypes;
-                                    track
-                                    contractType
-                                    .maLoaiHD
-                                    ) {
-                                    <option [ngValue]="
-                                        contractType
-                                            .maLoaiHD
-                                    ">
-                                        {{
-                                        contractType
-                                        .tenLoaiHD
-                                        }}
-                                    </option>
-                                    }
-                                </select>
-
-                                @if (
-                                isContractTypeInvalid
-                                ) {
-                                <p class="field-error">
-                                    Vui lòng chọn
-                                    loại hợp đồng.
-                                </p>
-                                } @else if (
-                                contractTypes.length === 0
-                                ) {
-                                <p class="field-hint">
-                                    Danh sách loại hợp
-                                    đồng sẽ được tải
-                                    từ API.
-                                </p>
-                                }
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="form-section">
-                        <header class="form-section__heading">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9"></circle>
-
-                                <path d="M12 7v5"></path>
-
-                                <path d="m12 12 3 2"></path>
-                            </svg>
-
-                            <h2>
-                                Thời hạn hợp đồng
-                            </h2>
-                        </header>
-
-                        <div class="form-grid">
-                            <label class="form-field">
-                                <span>
-                                    Ngày bắt đầu
-                                    <strong>*</strong>
-                                </span>
-
-                                <input type="date" [(ngModel)]="
-                                form.ngayBatDau
-                            " name="ngayBatDau" [class.input-invalid]="
-                                isStartDateInvalid
-                            " />
-
-                                @if (
-                                isStartDateInvalid
-                                ) {
-                                <p class="field-error">
-                                    Vui lòng chọn
-                                    ngày bắt đầu.
-                                </p>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>
-                                    Ngày kết thúc
-                                </span>
-
-                                <input type="date" [(ngModel)]="
-                                form.ngayKetThuc
-                            " name="ngayKetThuc" [class.input-invalid]="
-                                isEndDateInvalid
-                            " />
-
-                                @if (
-                                isEndDateInvalid
-                                ) {
-                                <p class="field-error">
-                                    Ngày kết thúc không
-                                    được nhỏ hơn ngày
-                                    bắt đầu.
-                                </p>
-                                } @else {
-                                <p class="field-hint">
-                                    Để trống nếu là hợp
-                                    đồng không xác định
-                                    thời hạn.
-                                </p>
-                                }
-                            </label>
-                        </div>
-                    </section>
-
-                    <section class="form-section">
-                        <header class="form-section__heading">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7">
-                                </path>
-
-                                <path d="M16 14h2"></path>
-                            </svg>
-
-                            <h2>
-                                Lương và trạng thái
-                            </h2>
-                        </header>
-
-                        <div class="form-grid">
-                            <label class="form-field">
-                                <span>
-                                    Lương cơ bản
-                                    <strong>*</strong>
-                                </span>
-
-                                <div class="money-input" [class.money-input--invalid]="
-                                isBaseSalaryInvalid
-                            ">
-                                    <input type="number" [(ngModel)]="
-                                    form.luongCoBan
-                                " name="luongCoBan" min="1" step="100000" placeholder="Ví dụ: 15000000" />
-
-                                    <span>VNĐ</span>
-                                </div>
-
-                                @if (
-                                isBaseSalaryInvalid
-                                ) {
-                                <p class="field-error">
-                                    Lương cơ bản phải
-                                    lớn hơn 0.
-                                </p>
-                                }
-                            </label>
-
-                            <label class="form-field">
-                                <span>
-                                    Trạng thái
-                                    <strong>*</strong>
-                                </span>
-
-                                <select [(ngModel)]="
-                                form.trangThai
-                            " name="trangThai">
-                                    <option [ngValue]="
-                                    contractStatus
-                                        .CON_HIEU_LUC
-                                ">
-                                        Còn hiệu lực
-                                    </option>
-
-                                    <option [ngValue]="
-                                    contractStatus
-                                        .HET_HIEU_LUC
-                                ">
-                                        Hết hiệu lực
-                                    </option>
-                                </select>
-
-                                <p class="field-hint">
-                                    Hợp đồng mới mặc định
-                                    ở trạng thái còn hiệu lực.
-                                </p>
-                            </label>
-                        </div>
-                    </section>
-                </form>
-
-                <aside class="contract-guide-card">
-                    <header class="contract-guide-card__heading">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M9 18h6"></path>
-                            <path d="M10 22h4"></path>
-
-                            <path d="M15.09 14c.18-.49.66-.81 1.04-1.17A6 6 0 1 0 7.87 12.83c.39.36.87.69 1.05 1.17">
-                            </path>
-                        </svg>
-
-                        <h2>Lưu ý dữ liệu</h2>
-                    </header>
-
-                    <ul>
-                        <li>
-                            <strong>MaHD</strong>
-                            được DB sinh tự động.
-                        </li>
-
-                        <li>
-                            Mỗi hợp đồng phải gắn với
-                            một nhân viên và một loại
-                            hợp đồng.
-                        </li>
-
-                        <li>
-                            Ngày kết thúc được phép
-                            để trống.
-                        </li>
-
-                        <li>
-                            Lương cơ bản phải là số
-                            lớn hơn 0.
-                        </li>
-
-                        <li>
-                            Phụ cấp được quản lý ở
-                            bảng NhanVienPhuCap,
-                            không nhập tại đây.
-                        </li>
-
-                        <li>
-                            File đính kèm chưa được
-                            hỗ trợ vì DB hiện không
-                            có trường lưu file.
-                        </li>
-                    </ul>
-                </aside>
-            </div>
-        </main>
-    </section>
-
-    @if (toastMessage) {
-    <div class="toast-message" role="status">
-        {{ toastMessage }}
-    </div>
-    }
+            <li>
+                Lương cơ bản phải lớn hơn 0.
+            </li>
+        </ul>
+    </aside>
 </div>
+
+@if (toastMessage) {
+<div class="toast-message" role="status">
+    {{ toastMessage }}
+</div>
+}

@@ -1,352 +1,882 @@
 import { CommonModule } from '@angular/common';
+
 import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
     OnDestroy,
+    OnInit,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
 import {
     Router,
     RouterLink,
 } from '@angular/router';
 
 import {
+    finalize,
+    forkJoin,
+} from 'rxjs';
+
+import {
+    QuyenService,
+} from '../../accounts/services/quyen.service';
+
+import {
+    TaiKhoanService,
+} from '../../accounts/services/tai-khoan.service';
+
+import {
     RoleListItem,
-    RoleListSidebarItem,
     RoleListStats,
 } from './role-list.model';
 
 @Component({
-    selector: 'app-role-list',
-    standalone: true,
+    selector:
+        'app-role-list',
+
+    standalone:
+        true,
+
     imports: [
         CommonModule,
         FormsModule,
         RouterLink,
     ],
+
     templateUrl:
         './role-list.component.html',
+
     styleUrl:
         './role-list.component.scss',
+
+    changeDetection:
+        ChangeDetectionStrategy.OnPush,
 })
 export class RoleListComponent
-    implements OnDestroy {
-    readonly sidebarItems:
-        readonly RoleListSidebarItem[] = [
-            {
-                label: 'Tổng quan',
-                icon: 'layout-dashboard',
-                route: '/dashboard',
-            },
-            {
-                label: 'Nhân viên',
-                icon: 'users',
-                route: '/employees',
-            },
-            {
-                label: 'Phòng ban',
-                icon: 'building-2',
-                route: '/departments',
-            },
-            {
-                label: 'Hợp đồng',
-                icon: 'file-text',
-                route: '/contracts',
-            },
-            {
-                label: 'Chấm công',
-                icon: 'clock-3',
-                route: '/attendance',
-            },
-            {
-                label: 'Nghỉ phép',
-                icon: 'calendar-days',
-                route: '/leave',
-            },
-            {
-                label: 'Bảng lương',
-                icon: 'banknote',
-                route: '/payroll',
-            },
-            {
-                label: 'Khen thưởng, kỷ luật',
-                icon: 'award',
-                route: '/rewards-discipline',
-            },
-            {
-                label: 'Báo cáo',
-                icon: 'chart-no-axes-combined',
-                route: '/reports',
-            },
-            {
-                label: 'Cài đặt',
-                icon: 'settings',
-                route: '/settings',
-            },
-        ];
+    implements OnInit, OnDestroy {
 
-    /**
-     * Danh sách quyền sẽ được tải từ API sau.
-     * Giai đoạn hiện tại không sử dụng mock.
-     */
-    roles: RoleListItem[] = [];
+    roles:
+        RoleListItem[] =
+        [];
+    searchTerm =
+        '';
+    isLoading =
+        false;
 
-    activeMenu = 'Cài đặt';
-    globalSearchTerm = '';
-    searchTerm = '';
-    sidebarOpen = false;
-    isLoading = false;
-    errorMessage = '';
-    toastMessage = '';
+    isDeleting =
+        false;
 
-    currentPage = 1;
-    pageSize = 10;
+    deletingRoleId:
+        number | null =
+        null;
+
+    errorMessage =
+        '';
+
+    toastMessage =
+        '';
+
+    currentPage =
+        1;
+
+    readonly pageSize =
+        10;
 
     private toastTimer:
-        ReturnType<typeof setTimeout> | null = null;
+        ReturnType<
+            typeof setTimeout
+        > | null =
+        null;
 
     constructor(
-        private readonly router: Router,
-    ) {
+        private readonly router:
+            Router,
+
+        private readonly quyenService:
+            QuyenService,
+
+        private readonly taiKhoanService:
+            TaiKhoanService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
+    ) { }
+
+    ngOnInit():
+        void {
+
         this.loadRoles();
     }
 
-    ngOnDestroy(): void {
-        if (this.toastTimer) {
-            clearTimeout(this.toastTimer);
+    ngOnDestroy():
+        void {
+
+        if (
+            this.toastTimer
+        ) {
+
+            clearTimeout(
+                this.toastTimer,
+            );
         }
     }
 
-    get filteredRoles(): RoleListItem[] {
-        const keyword = this.searchTerm
-            .trim()
-            .toLocaleLowerCase('vi');
+    get filteredRoles():
+        RoleListItem[] {
 
-        if (!keyword) {
+        const keyword =
+            this.searchTerm
+                .trim()
+                .toLocaleLowerCase(
+                    'vi',
+                );
+
+        if (
+            !keyword
+        ) {
+
             return this.roles;
         }
 
-        return this.roles.filter((role) =>
-            role.tenQuyen
-                .toLocaleLowerCase('vi')
-                .includes(keyword) ||
-            (role.moTa ?? '')
-                .toLocaleLowerCase('vi')
-                .includes(keyword) ||
-            this.formatRoleCode(role.maQuyen)
-                .toLocaleLowerCase('vi')
-                .includes(keyword),
-        );
+        return this.roles
+            .filter(
+                (
+                    role,
+                ) =>
+
+                    role.tenQuyen
+                        .toLocaleLowerCase(
+                            'vi',
+                        )
+                        .includes(
+                            keyword,
+                        ) ||
+
+                    (
+                        role.moTa ??
+                        ''
+                    )
+                        .toLocaleLowerCase(
+                            'vi',
+                        )
+                        .includes(
+                            keyword,
+                        ) ||
+
+                    this.formatRoleCode(
+                        role.maQuyen,
+                    )
+                        .toLocaleLowerCase(
+                            'vi',
+                        )
+                        .includes(
+                            keyword,
+                        ),
+            );
     }
 
-    get pagedRoles(): RoleListItem[] {
+    get pagedRoles():
+        RoleListItem[] {
+
         const startIndex =
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize;
 
-        return this.filteredRoles.slice(
-            startIndex,
-            startIndex + this.pageSize,
-        );
+        return this
+            .filteredRoles
+            .slice(
+                startIndex,
+
+                startIndex +
+                this.pageSize,
+            );
     }
 
-    get stats(): RoleListStats {
-        return this.roles.reduce<RoleListStats>(
-            (result, role) => ({
-                tongQuyen:
-                    result.tongQuyen + 1,
-                tongTaiKhoan:
-                    result.tongTaiKhoan +
-                    role.soTaiKhoan,
-                quyenDangSuDung:
-                    result.quyenDangSuDung +
-                    (role.soTaiKhoan > 0
-                        ? 1
-                        : 0),
-                quyenChuaSuDung:
-                    result.quyenChuaSuDung +
-                    (role.soTaiKhoan === 0
-                        ? 1
-                        : 0),
-            }),
-            {
-                tongQuyen: 0,
-                tongTaiKhoan: 0,
-                quyenDangSuDung: 0,
-                quyenChuaSuDung: 0,
-            },
-        );
+    get stats():
+        RoleListStats {
+
+        return this.roles
+            .reduce<
+                RoleListStats
+            >(
+                (
+                    result,
+                    role,
+                ) => ({
+
+                    tongQuyen:
+                        result
+                            .tongQuyen +
+                        1,
+
+                    tongTaiKhoan:
+                        result
+                            .tongTaiKhoan +
+                        role.soTaiKhoan,
+
+                    quyenDangSuDung:
+                        result
+                            .quyenDangSuDung +
+                        (
+                            role.soTaiKhoan >
+                                0
+                                ? 1
+                                : 0
+                        ),
+
+                    quyenChuaSuDung:
+                        result
+                            .quyenChuaSuDung +
+                        (
+                            role.soTaiKhoan ===
+                                0
+                                ? 1
+                                : 0
+                        ),
+                }),
+
+                {
+                    tongQuyen:
+                        0,
+
+                    tongTaiKhoan:
+                        0,
+
+                    quyenDangSuDung:
+                        0,
+
+                    quyenChuaSuDung:
+                        0,
+                },
+            );
     }
 
-    get totalPages(): number {
+    get totalPages():
+        number {
+
         return Math.max(
             1,
+
             Math.ceil(
-                this.filteredRoles.length /
+                this
+                    .filteredRoles
+                    .length /
                 this.pageSize,
             ),
         );
     }
 
-    get visiblePageNumbers(): number[] {
-        const pageCount = 5;
-        let startPage = Math.max(
-            1,
-            this.currentPage -
-            Math.floor(pageCount / 2),
-        );
-        const endPage = Math.min(
-            this.totalPages,
-            startPage + pageCount - 1,
-        );
+    get visiblePageNumbers():
+        number[] {
 
-        startPage = Math.max(
-            1,
-            endPage - pageCount + 1,
-        );
+        const pageCount =
+            5;
+
+        let startPage =
+            Math.max(
+                1,
+
+                this.currentPage -
+                Math.floor(
+                    pageCount /
+                    2,
+                ),
+            );
+
+        const endPage =
+            Math.min(
+                this.totalPages,
+
+                startPage +
+                pageCount -
+                1,
+            );
+
+        startPage =
+            Math.max(
+                1,
+
+                endPage -
+                pageCount +
+                1,
+            );
 
         return Array.from(
             {
                 length:
-                    endPage - startPage + 1,
+                    endPage -
+                    startPage +
+                    1,
             },
-            (_, index) =>
-                startPage + index,
+
+            (
+                _,
+                index,
+            ) =>
+                startPage +
+                index,
         );
     }
 
-    get startItem(): number {
-        if (this.filteredRoles.length === 0) {
+    get startItem():
+        number {
+
+        if (
+            this
+                .filteredRoles
+                .length ===
+            0
+        ) {
+
             return 0;
         }
 
         return (
-            (this.currentPage - 1) *
+            (
+                this.currentPage -
+                1
+            ) *
             this.pageSize +
             1
         );
     }
 
-    get endItem(): number {
+    get endItem():
+        number {
+
         return Math.min(
-            this.currentPage * this.pageSize,
-            this.filteredRoles.length,
+            this.currentPage *
+            this.pageSize,
+
+            this
+                .filteredRoles
+                .length,
         );
     }
 
-    toggleSidebar(): void {
-        this.sidebarOpen = !this.sidebarOpen;
+    applySearch():
+        void {
+
+        this.currentPage =
+            1;
     }
 
-    closeSidebar(): void {
-        this.sidebarOpen = false;
+    clearSearch():
+        void {
+
+        this.searchTerm =
+            '';
+
+        this.currentPage =
+            1;
     }
 
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.closeSidebar();
-    }
+    goToPage(
+        page:
+            number,
+    ): void {
 
-    applySearch(): void {
-        this.currentPage = 1;
-    }
-
-    clearSearch(): void {
-        this.searchTerm = '';
-        this.currentPage = 1;
-    }
-
-    goToPage(page: number): void {
         if (
-            page < 1 ||
-            page > this.totalPages
+            page <
+            1 ||
+
+            page >
+            this.totalPages
         ) {
+
             return;
         }
 
-        this.currentPage = page;
+        this.currentPage =
+            page;
     }
 
-    createRole(): void {
-        void this.router.navigate([
-            '/settings/roles/add',
-        ]);
+    createRole():
+        void {
+
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/settings/roles/add',
+            ]);
     }
 
-    viewRole(role: RoleListItem): void {
-        void this.router.navigate([
-            '/settings/roles',
-            role.maQuyen,
-        ]);
+    viewRole(
+        role:
+            RoleListItem,
+    ): void {
+
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/settings/roles',
+                role.maQuyen,
+            ]);
     }
 
-    editRole(role: RoleListItem): void {
-        void this.router.navigate([
-            '/settings/roles',
-            role.maQuyen,
-            'edit',
-        ]);
+    editRole(
+        role:
+            RoleListItem,
+    ): void {
+
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/settings/roles',
+                role.maQuyen,
+                'edit',
+            ]);
     }
 
-    deleteRole(role: RoleListItem): void {
-        if (role.soTaiKhoan > 0) {
+    deleteRole(
+        role:
+            RoleListItem,
+    ): void {
+
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+
+            return;
+        }
+
+        if (
+            role.soTaiKhoan >
+            0
+        ) {
+
             this.showToast(
                 `Không thể xóa quyền “${role.tenQuyen}” vì đang có ${role.soTaiKhoan} tài khoản sử dụng.`,
             );
+
             return;
         }
 
-        this.showToast(
-            'Chức năng xóa quyền sẽ hoạt động khi kết nối API.',
-        );
+        const confirmed =
+            typeof window ===
+                'undefined'
+                ? true
+                : window.confirm(
+                    `Bạn có chắc muốn xóa quyền “${role.tenQuyen}”?`,
+                );
+
+        if (
+            !confirmed
+        ) {
+
+            return;
+        }
+
+        this.isDeleting =
+            true;
+
+        this.deletingRoleId =
+            role.maQuyen;
+
+        this.errorMessage =
+            '';
+
+        this.quyenService
+            .delete(
+                role.maQuyen,
+            )
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isDeleting =
+                            false;
+
+                        this.deletingRoleId =
+                            null;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+
+                next: () => {
+
+                    this.showToast(
+                        'Xóa quyền thành công.',
+                    );
+
+                    this.roles =
+                        this.roles
+                            .filter(
+                                (
+                                    item,
+                                ) =>
+                                    item.maQuyen !==
+                                    role.maQuyen,
+                            );
+
+                    if (
+                        this.currentPage >
+                        this.totalPages
+                    ) {
+
+                        this.currentPage =
+                            this.totalPages;
+                    }
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+
+                            'Không thể xóa quyền.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
     }
 
-    retry(): void {
+    retry():
+        void {
+
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+
+            return;
+        }
+
         this.loadRoles();
     }
 
-    formatRoleCode(maQuyen: number): string {
-        return `Q-${String(maQuyen).padStart(
+    formatRoleCode(
+        maQuyen:
+            number,
+    ): string {
+
+        return `Q-${String(
+            maQuyen,
+        ).padStart(
             3,
             '0',
         )}`;
     }
 
-    logout(): void {
-        if (typeof window !== 'undefined') {
-            localStorage.clear();
-            sessionStorage.clear();
-        }
+    private loadRoles():
+        void {
 
-        void this.router.navigate([
-            '/login',
-        ]);
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        forkJoin({
+
+            roles:
+                this.quyenService
+                    .getAll(),
+
+            accounts:
+                this.taiKhoanService
+                    .getAll(),
+
+        })
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+
+                next: ({
+                    roles,
+                    accounts,
+                }) => {
+
+                    this.roles =
+                        roles
+                            .map(
+                                (
+                                    role,
+                                ) => ({
+
+                                    maQuyen:
+                                        role.maQuyen,
+
+                                    tenQuyen:
+                                        role.tenQuyen,
+
+                                    moTa:
+                                        role.moTa ??
+                                        null,
+
+                                    soTaiKhoan:
+                                        accounts
+                                            .filter(
+                                                (
+                                                    account,
+                                                ) =>
+                                                    account.maQuyen ===
+                                                    role.maQuyen,
+                                            )
+                                            .length,
+
+                                }),
+                            )
+                            .sort(
+                                (
+                                    a,
+                                    b,
+                                ) =>
+                                    a.maQuyen -
+                                    b.maQuyen,
+                            );
+
+                    this.currentPage =
+                        1;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+
+                            'Không thể tải danh sách quyền.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
     }
 
-    private loadRoles(): void {
-        this.isLoading = false;
-        this.errorMessage = '';
-        this.roles = [];
-        this.currentPage = 1;
+    private getApiErrorMessage(
+        error:
+            HttpErrorResponse,
 
-        /**
-         * Khi nối Backend, tải danh sách quyền kèm
-         * số tài khoản sử dụng và gán vào roles.
-         */
-    }
+        fallback:
+            string,
+    ): string {
 
-    private showToast(message: string): void {
-        this.toastMessage = message;
+        const backendMessage =
+            typeof error.error
+                ?.message ===
+                'string'
 
-        if (this.toastTimer) {
-            clearTimeout(this.toastTimer);
+                ? error.error
+                    .message
+
+                : '';
+
+        if (
+            backendMessage
+        ) {
+
+            return backendMessage;
         }
 
-        this.toastTimer = setTimeout(
-            () => {
-                this.toastMessage = '';
-                this.toastTimer = null;
-            },
-            3500,
-        );
+        const backendErrors =
+            error.error
+                ?.errors;
+
+        if (
+            backendErrors &&
+            typeof backendErrors ===
+            'object'
+        ) {
+
+            const messages =
+                Object.values(
+                    backendErrors as
+                    Record<
+                        string,
+                        unknown
+                    >,
+                )
+                    .flatMap(
+                        (
+                            value,
+                        ) => {
+
+                            if (
+                                Array.isArray(
+                                    value,
+                                )
+                            ) {
+
+                                return value
+                                    .map(
+                                        (
+                                            item,
+                                        ) =>
+                                            String(
+                                                item,
+                                            ),
+                                    );
+                            }
+
+                            return [
+                                String(
+                                    value,
+                                ),
+                            ];
+                        },
+                    )
+                    .filter(
+                        Boolean,
+                    );
+
+            if (
+                messages.length >
+                0
+            ) {
+
+                return messages
+                    .join(
+                        ' ',
+                    );
+            }
+        }
+
+        switch (
+        error.status
+        ) {
+
+            case 0:
+
+                return (
+                    'Không thể kết nối đến hệ thống.'
+                );
+
+            case 400:
+
+                return (
+                    'Yêu cầu xử lý quyền không hợp lệ.'
+                );
+
+            case 401:
+
+                return (
+                    'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
+                );
+
+            case 403:
+
+                return (
+                    'Bạn không có quyền thực hiện thao tác này.'
+                );
+
+            case 404:
+
+                return (
+                    'Không tìm thấy quyền.'
+                );
+
+            case 409:
+
+                return (
+                    'Không thể xóa quyền vì quyền đang được sử dụng.'
+                );
+
+            default:
+
+                return fallback;
+        }
+    }
+
+    private showToast(
+        message:
+            string,
+    ): void {
+
+        this.toastMessage =
+            message;
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        if (
+            this.toastTimer
+        ) {
+
+            clearTimeout(
+                this.toastTimer,
+            );
+        }
+
+        this.toastTimer =
+            setTimeout(
+                () => {
+
+                    this.toastMessage =
+                        '';
+
+                    this.toastTimer =
+                        null;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+
+                },
+                3500,
+            );
     }
 }

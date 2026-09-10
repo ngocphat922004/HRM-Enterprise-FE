@@ -3,13 +3,9 @@
 }
 
 .attendance-overview-page {
-    min-height: 100vh;
-    color     : var(--color-text-primary);
-}
 
-/* =========================
-   PAGE HEADING
-========================= */
+    color: var(--color-text-primary);
+}
 
 .overview-heading {
     display        : flex;
@@ -119,10 +115,6 @@
     }
 }
 
-/* =========================
-   FILTER TOOLBAR
-========================= */
-
 .overview-toolbar {
     display      : flex;
     align-items  : flex-end;
@@ -190,10 +182,6 @@
         background  : color-mix(in srgb, var(--color-primary-light) 72%, #ffffff);
     }
 }
-
-/* =========================
-   STAT CARDS
-========================= */
 
 .overview-stats {
     display              : grid;
@@ -308,10 +296,6 @@
     }
 }
 
-/* =========================
-   SHARED OVERVIEW CARDS
-========================= */
-
 .overview-grid {
     display      : grid;
     gap          : 18px;
@@ -397,10 +381,6 @@
     background: #e8d6cd;
 }
 
-/* =========================
-   TREND CHART
-========================= */
-
 .trend-chart {
     min-height           : 290px;
     display              : grid;
@@ -465,10 +445,6 @@
 .trend-bar--absent {
     background: #e8d6cd;
 }
-
-/* =========================
-   ON-TIME RATE
-========================= */
 
 .rate-card {
     display       : flex;
@@ -539,10 +515,6 @@
         font-weight: 750;
     }
 }
-
-/* =========================
-   ATTENTION EMPLOYEES
-========================= */
 
 .text-button {
     flex       : 0 0 auto;
@@ -680,10 +652,6 @@
     background: #efedf4;
 }
 
-/* =========================
-   DAILY SUMMARY
-========================= */
-
 .daily-summary-card {
     display       : flex;
     flex-direction: column;
@@ -758,10 +726,6 @@
     margin: auto 20px 20px;
 }
 
-/* =========================
-   EMPTY STATE & TOAST
-========================= */
-
 .empty-state {
     min-height     : 240px;
     display        : flex;
@@ -811,6 +775,86 @@
     animation    : toast-in 0.25s ease;
 }
 
+.overview-loading {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    gap            : 14px;
+    min-height     : 110px;
+    margin-bottom  : 20px;
+    padding        : 22px 24px;
+    border         : 1px solid var(--color-border);
+    border-radius  : 12px;
+    background     : var(--color-surface);
+    box-shadow     : 0 4px 16px rgb(37 32 51 / 5%);
+
+    >div {
+        display       : flex;
+        flex-direction: column;
+        gap           : 4px;
+    }
+
+    strong {
+        color      : var(--color-text-primary);
+        font-size  : 14px;
+        font-weight: 700;
+    }
+
+    p {
+        margin     : 0;
+        color      : var(--color-text-secondary);
+        font-size  : 12px;
+        line-height: 1.5;
+    }
+}
+
+.overview-loading__spinner {
+    width           : 22px;
+    height          : 22px;
+    flex            : 0 0 22px;
+    display         : inline-block;
+    border          : 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius   : 50%;
+    animation       : attendance-overview-spin 0.75s linear infinite;
+}
+
+.empty-state {
+    .overview-loading__spinner {
+        width        : 24px;
+        height       : 24px;
+        margin-bottom: 6px;
+        font-size    : 0;
+    }
+}
+
+@keyframes attendance-overview-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 700px) {
+    .overview-loading {
+        align-items: flex-start;
+        min-height : auto;
+        padding    : 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .overview-loading {
+        gap    : 12px;
+        padding: 16px;
+    }
+
+    .overview-loading__spinner {
+        width     : 20px;
+        height    : 20px;
+        flex-basis: 20px;
+    }
+}
+
 @keyframes toast-in {
     from {
         opacity  : 0;
@@ -822,10 +866,6 @@
         transform: translateY(0);
     }
 }
-
-/* =========================
-   RESPONSIVE
-========================= */
 
 @media (max-width: 1320px) {
     .overview-stats {
@@ -964,5 +1004,36 @@
     .rate-ring__inner {
         width : 114px;
         height: 114px;
+    }
+}
+
+.overview-error {
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    gap            : 16px;
+    padding        : 16px 18px;
+    margin-bottom  : 20px;
+    border         : 1px solid #fecaca;
+    border-radius  : 14px;
+    background     : #fff7f7;
+}
+
+.overview-error strong {
+    display  : block;
+    color    : #991b1b;
+    font-size: 14px;
+}
+
+.overview-error p {
+    margin   : 4px 0 0;
+    color    : #7f1d1d;
+    font-size: 13px;
+}
+
+@media (max-width: 640px) {
+    .overview-error {
+        align-items   : stretch;
+        flex-direction: column;
     }
 }

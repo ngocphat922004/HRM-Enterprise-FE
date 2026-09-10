@@ -31,8 +31,3 @@ export interface AddAccountPasswordRule {
     passed: boolean;
 }
 
-export interface AddAccountSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

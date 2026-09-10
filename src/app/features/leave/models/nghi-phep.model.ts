@@ -7,12 +7,11 @@ export interface NghiPhep {
     tuNgay: string;
     denNgay: string;
     lyDo: string | null;
-    trangThai: NghiPhepTrangThai;
+    trangThai: string;
     nguoiDuyet: number | null;
 }
 
 export interface CreateNghiPhepRequest {
-    maNV: number;
     maLoaiNP: number;
     tuNgay: string;
     denNgay: string;
@@ -27,8 +26,4 @@ export interface UpdateNghiPhepRequest {
     lyDo: string | null;
     trangThai: NghiPhepTrangThai;
     nguoiDuyet: number | null;
-}
-
-export interface XuLyNghiPhepRequest {
-    nguoiDuyet: number;
 }

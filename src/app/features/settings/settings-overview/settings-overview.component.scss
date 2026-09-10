@@ -827,6 +827,54 @@
     animation    : settings-overview-toast-in 0.24s ease-out;
 }
 
+
+
+.settings-state--error {
+    border-color: #fecaca !important;
+    background  : #fef2f2 !important;
+    color       : #991b1b !important;
+
+    .settings-state__icon {
+        background: #fee2e2;
+        color     : #dc2626;
+    }
+
+    h2,
+    h3,
+    strong {
+        color: #991b1b;
+    }
+
+    p {
+        color: #b91c1c;
+    }
+
+    button {
+        border-color: #fca5a5;
+        background  : #ffffff;
+        color       : #991b1b;
+
+        &:hover:not(:disabled) {
+            border-color: #ef4444;
+            background  : #fff7f7;
+        }
+
+        &:disabled {
+            cursor : not-allowed;
+            opacity: 0.6;
+        }
+    }
+}
+
+
+
+
+@media (max-width: 600px) {
+    .settings-state--error {
+        padding: 20px 16px;
+    }
+}
+
 @keyframes settings-overview-spin {
     to {
         transform: rotate(360deg);

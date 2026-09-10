@@ -1,17 +1,36 @@
-import { CommonModule } from '@angular/common';
+import {
+    CommonModule,
+} from '@angular/common';
+
+import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
 import {
     Router,
     RouterLink,
 } from '@angular/router';
 
 import {
+    finalize,
+} from 'rxjs';
+
+import {
+    ChucVuService,
+} from '../services/chuc-vu.service';
+
+import {
     AddPositionForm,
-    SidebarItem,
 } from './add-position.model';
 
 @Component({
@@ -30,106 +49,34 @@ import {
         ChangeDetectionStrategy.OnPush,
 })
 export class AddPositionComponent {
-    sidebarOpen = false;
-    activeMenu = 'Nhân viên';
-    globalSearchTerm = '';
-
     isSaving = false;
     submitted = false;
     toastMessage = '';
 
-    readonly sidebarItems: SidebarItem[] = [
-        {
-            label: 'Tổng quan',
-            icon: 'dashboard',
-            route: '/dashboard',
-        },
-        {
-            label: 'Nhân viên',
-            icon: 'employees',
-            route: '/employees',
-        },
-        {
-            label: 'Phòng ban',
-            icon: 'department',
-            route: '/departments',
-        },
-        {
-            label: 'Hợp đồng',
-            icon: 'contract',
-            route: '/contracts',
-        },
-        {
-            label: 'Chấm công',
-            icon: 'attendance',
-            route: '/attendance',
-        },
-        {
-            label: 'Nghỉ phép',
-            icon: 'leave',
-            route: '/leave',
-        },
-        {
-            label: 'Bảng lương',
-            icon: 'payroll',
-            route: '/payroll',
-        },
-        {
-            label: 'Khen thưởng, kỷ luật',
-            icon: 'award',
-            route: '/rewards-discipline',
-        },
-        {
-            label: 'Báo cáo',
-            icon: 'report',
-            route: '/reports',
-        },
-        {
-            label: 'Cài đặt',
-            icon: 'settings',
-            route: '/settings',
-        },
-    ];
-
-    form: AddPositionForm = {
-        tenCV: '',
-        moTa: '',
-        heSoPhuCap: 0,
-    };
+    form:
+        AddPositionForm = {
+            tenCV: '',
+            moTa: '',
+        };
 
     constructor(
-        private readonly router: Router,
+        private readonly router:
+            Router,
+
+        private readonly chucVuService:
+            ChucVuService,
+
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
     ) { }
 
-    get isPositionNameInvalid(): boolean {
+    get isPositionNameInvalid():
+        boolean {
+
         return (
             this.submitted &&
             !this.form.tenCV.trim()
         );
-    }
-
-    get isAllowanceInvalid(): boolean {
-        return (
-            this.submitted &&
-            (
-                this.form.heSoPhuCap === null ||
-                this.form.heSoPhuCap < 0
-            )
-        );
-    }
-
-    toggleSidebar(): void {
-        this.sidebarOpen =
-            !this.sidebarOpen;
-    }
-
-    closeSidebar(): void {
-        this.sidebarOpen = false;
-    }
-
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
     }
 
     cancel(): void {
@@ -143,7 +90,6 @@ export class AddPositionComponent {
 
         if (
             this.isPositionNameInvalid ||
-            this.isAllowanceInvalid ||
             this.isSaving
         ) {
             return;
@@ -151,31 +97,205 @@ export class AddPositionComponent {
 
         this.isSaving = true;
 
-        window.setTimeout(() => {
-            this.isSaving = false;
+        this.chucVuService
+            .create({
+                tenCV:
+                    this.form.tenCV
+                        .trim(),
 
-            this.showToast(
-                'Giao diện đã hợp lệ. Dữ liệu sẽ được lưu khi kết nối API.',
-            );
-        }, 700);
+                moTa:
+                    this.form.moTa
+                        .trim() ||
+                    null,
+            })
+            .pipe(
+                finalize(
+                    () => {
+                        this.isSaving =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: () => {
+                    this.showToast(
+                        'Thêm chức vụ thành công.',
+                    );
+
+                    this.form = {
+                        tenCV: '',
+                        moTa: '',
+                    };
+
+                    this.submitted =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        unknown,
+                ) => {
+                    this.showToast(
+                        this.getApiErrorMessage(
+                            error,
+                        ),
+                    );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+            });
     }
 
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
+    private getApiErrorMessage(
+        error:
+            unknown,
+    ): string {
 
-        void this.router.navigate([
-            '/login',
-        ]);
+        if (
+            error instanceof
+            HttpErrorResponse
+        ) {
+            if (
+                error.status === 0
+            ) {
+                return 'Không thể kết nối đến máy chủ.';
+            }
+
+            if (
+                typeof error.error ===
+                'string' &&
+                error.error.trim()
+            ) {
+                return error.error.trim();
+            }
+
+            if (
+                this.isRecord(
+                    error.error,
+                )
+            ) {
+                const message =
+                    error.error['message'];
+
+                if (
+                    typeof message ===
+                    'string' &&
+                    message.trim()
+                ) {
+                    return message.trim();
+                }
+
+                const errors =
+                    error.error['errors'];
+
+                if (
+                    this.isRecord(
+                        errors,
+                    )
+                ) {
+                    const messages =
+                        Object.values(
+                            errors,
+                        )
+                            .flatMap(
+                                value => {
+                                    if (
+                                        Array.isArray(
+                                            value,
+                                        )
+                                    ) {
+                                        return value
+                                            .filter(
+                                                item =>
+                                                    typeof item ===
+                                                    'string',
+                                            )
+                                            .map(
+                                                item =>
+                                                    String(
+                                                        item,
+                                                    ),
+                                            );
+                                    }
+
+                                    if (
+                                        typeof value ===
+                                        'string'
+                                    ) {
+                                        return [
+                                            value,
+                                        ];
+                                    }
+
+                                    return [];
+                                },
+                            )
+                            .filter(
+                                Boolean,
+                            );
+
+                    if (
+                        messages.length >
+                        0
+                    ) {
+                        return messages
+                            .join(' ');
+                    }
+                }
+            }
+
+            return `Không thể thêm chức vụ (${error.status}).`;
+        }
+
+        if (
+            error instanceof Error &&
+            error.message.trim()
+        ) {
+            return error.message.trim();
+        }
+
+        return 'Không thể thêm chức vụ. Vui lòng thử lại.';
+    }
+
+    private isRecord(
+        value:
+            unknown,
+    ): value is Record<string, unknown> {
+
+        return (
+            typeof value ===
+            'object' &&
+            value !== null &&
+            !Array.isArray(
+                value,
+            )
+        );
     }
 
     private showToast(
-        message: string,
+        message:
+            string,
     ): void {
-        this.toastMessage = message;
 
-        window.setTimeout(() => {
-            this.toastMessage = '';
-        }, 2800);
+        this.toastMessage =
+            message;
+
+        window.setTimeout(
+            () => {
+                this.toastMessage =
+                    '';
+
+                this.changeDetectorRef
+                    .markForCheck();
+            },
+            2800,
+        );
     }
 }

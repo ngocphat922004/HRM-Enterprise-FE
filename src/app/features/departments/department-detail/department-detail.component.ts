@@ -1,21 +1,39 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     ChangeDetectionStrategy,
+    ChangeDetectorRef,
     Component,
+    OnDestroy,
+    OnInit,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
     ActivatedRoute,
     Router,
     RouterLink,
 } from '@angular/router';
+import { finalize, forkJoin } from 'rxjs';
 
 import {
-    DepartmentActivity,
+    NHAN_VIEN_TRANG_THAI,
+} from '../../../core/constants/status.constants';
+import {
+    ExcelExportService,
+} from '../../../core/services/excel-export.service';
+import {
+    NhanVienChiTiet,
+} from '../../employees/models/nhan-vien.model';
+import {
+    NhanVienService,
+} from '../../employees/services/nhan-vien.service';
+import { PhongBan } from '../models/phong-ban.model';
+import {
+    PhongBanService,
+} from '../services/phong-ban.service';
+import {
     DepartmentDetail,
     DepartmentEmployee,
     DepartmentEmployeeStatus,
-    SidebarItem,
 } from './department-detail.model';
 
 @Component({
@@ -23,328 +41,60 @@ import {
     standalone: true,
     imports: [
         CommonModule,
-        FormsModule,
         RouterLink,
     ],
     templateUrl: './department-detail.component.html',
     styleUrl: './department-detail.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DepartmentDetailComponent {
-    sidebarOpen = false;
-    activeMenu = 'Phòng ban';
-    searchTerm = '';
+export class DepartmentDetailComponent implements OnInit, OnDestroy {
     toastMessage = '';
+    isLoading = false;
+    errorMessage = '';
+    departmentId: number | null = null;
 
-    openEmployeeMenuId: number | null = null;
-    showAddEmployeeModal = false;
-    employeeSearchTerm = '';
-    selectedEmployeeIds: number[] = [];
+    department: DepartmentDetail =
+        this.createEmptyDepartment();
 
-    readonly sidebarItems: SidebarItem[] = [
-        {
-            label: 'Tổng quan',
-            icon: 'dashboard',
-            route: '/dashboard',
-        },
-        {
-            label: 'Nhân viên',
-            icon: 'employees',
-            route: '/employees',
-        },
-        {
-            label: 'Phòng ban',
-            icon: 'department',
-            route: '/departments',
-        },
-        {
-            label: 'Hợp đồng',
-            icon: 'contract',
-            route: '/contracts',
-        },
-        {
-            label: 'Chấm công',
-            icon: 'attendance',
-            route: '/attendance',
-        },
-        {
-            label: 'Nghỉ phép',
-            icon: 'leave',
-            route: '/leave',
-        },
-        {
-            label: 'Bảng lương',
-            icon: 'payroll',
-            route: '/payroll',
-        },
-        {
-            label: 'Khen thưởng, kỷ luật',
-            icon: 'award',
-            route: '/rewards-discipline',
-        },
-        {
-            label: 'Báo cáo',
-            icon: 'report',
-            route: '/reports',
-        },
-        {
-            label: 'Cài đặt',
-            icon: 'settings',
-            route: '/settings',
-        },
-    ];
+    employees: DepartmentEmployee[] = [];
 
-    department: DepartmentDetail = {
-        id: 1,
-        name: 'Phòng Công nghệ',
-        code: 'DEPT-TECH-001',
-        managerName: 'Nguyễn Văn A',
-        managerInitials: 'NA',
-        establishedDate: '15/05/2018',
-        description:
-            'Chịu trách nhiệm phát triển, bảo trì các hệ thống công nghệ lõi của tập đoàn. Nghiên cứu và triển khai các giải pháp chuyển đổi số, tự động hóa quy trình nghiệp vụ và đảm bảo an toàn thông tin toàn hệ thống.',
-    };
-
-    employees: DepartmentEmployee[] = [
-        {
-            id: 1,
-            fullName: 'Trần Hoàng Nam',
-            email: 'nam.th@company.com',
-            position: 'Senior Developer',
-            joinDate: '12/02/2021',
-            status: 'working',
-            initials: 'TN',
-        },
-        {
-            id: 2,
-            fullName: 'Minh Tú',
-            email: 'tu.minh@company.com',
-            position: 'UI/UX Designer',
-            joinDate: '05/11/2022',
-            status: 'working',
-            initials: 'MT',
-        },
-        {
-            id: 3,
-            fullName: 'Lê Ngọc Anh',
-            email: 'anh.ln@company.com',
-            position: 'DevOps Engineer',
-            joinDate: '15/08/2020',
-            status: 'probation',
-            initials: 'LA',
-        },
-    ];
-
-    readonly availableEmployees: DepartmentEmployee[] = [
-        {
-            id: 4,
-            fullName: 'Phạm Minh Đức',
-            email: 'duc.pm@company.com',
-            position: 'Backend Developer',
-            joinDate: '10/01/2024',
-            status: 'working',
-            initials: 'PD',
-        },
-        {
-            id: 5,
-            fullName: 'Nguyễn Thảo Vy',
-            email: 'vy.nt@company.com',
-            position: 'Frontend Developer',
-            joinDate: '20/03/2024',
-            status: 'working',
-            initials: 'NV',
-        },
-        {
-            id: 6,
-            fullName: 'Hoàng Gia Huy',
-            email: 'huy.hg@company.com',
-            position: 'QA Engineer',
-            joinDate: '01/06/2024',
-            status: 'probation',
-            initials: 'HH',
-        },
-    ];
-
-    readonly activities: DepartmentActivity[] = [
-        {
-            id: 1,
-            title: 'Thêm 2 nhân viên mới',
-            time: '2 giờ trước',
-        },
-        {
-            id: 2,
-            title: 'Cập nhật ngân sách quý 4',
-            time: 'Hôm qua',
-        },
-    ];
+    private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
         private readonly route: ActivatedRoute,
         private readonly router: Router,
-    ) {
-        const departmentId = Number(
-            this.route.snapshot.paramMap.get('id'),
-        );
+        private readonly phongBanService: PhongBanService,
+        private readonly nhanVienService: NhanVienService,
+        private readonly excelExportService: ExcelExportService,
+        private readonly changeDetectorRef: ChangeDetectorRef,
+    ) { }
 
-        if (departmentId) {
-            this.department = {
-                ...this.department,
-                id: departmentId,
-            };
+    ngOnInit(): void {
+        this.readRouteId();
+    }
+
+    ngOnDestroy(): void {
+        if (this.toastTimer) {
+            clearTimeout(this.toastTimer);
         }
     }
 
-    toggleSidebar(): void {
-        this.sidebarOpen = !this.sidebarOpen;
+    get totalEmployees(): number {
+        return this.employees.length;
     }
 
-    closeSidebar(): void {
-        this.sidebarOpen = false;
-    }
-
-    setActiveMenu(label: string): void {
-        this.activeMenu = label;
-        this.sidebarOpen = false;
-    }
-
-    editDepartment(): void {
-        void this.router.navigate([
-            '/departments',
-            this.department.id,
-            'edit',
-        ]);
-    }
-
-    openAddEmployeeModal(): void {
-        this.showAddEmployeeModal = true;
-        this.employeeSearchTerm = '';
-        this.selectedEmployeeIds = [];
-        this.openEmployeeMenuId = null;
-    }
-
-    closeAddEmployeeModal(): void {
-        this.showAddEmployeeModal = false;
-        this.employeeSearchTerm = '';
-        this.selectedEmployeeIds = [];
-    }
-
-    toggleEmployeeSelection(employeeId: number): void {
-        const index = this.selectedEmployeeIds.indexOf(employeeId);
-
-        if (index >= 0) {
-            this.selectedEmployeeIds.splice(index, 1);
-            return;
-        }
-
-        this.selectedEmployeeIds.push(employeeId);
-    }
-
-    isEmployeeSelected(employeeId: number): boolean {
-        return this.selectedEmployeeIds.includes(employeeId);
-    }
-
-    get filteredAvailableEmployees(): DepartmentEmployee[] {
-        const keyword = this.employeeSearchTerm
-            .trim()
-            .toLowerCase();
-
-        if (!keyword) {
-            return this.availableEmployees;
-        }
-
-        return this.availableEmployees.filter((employee) =>
-            employee.fullName.toLowerCase().includes(keyword) ||
-            employee.email.toLowerCase().includes(keyword) ||
-            employee.position.toLowerCase().includes(keyword),
-        );
-    }
-
-    addSelectedEmployees(): void {
-        if (this.selectedEmployeeIds.length === 0) {
-            this.showToast('Vui lòng chọn ít nhất một nhân sự.');
-            return;
-        }
-
-        const employeesToAdd = this.availableEmployees.filter(
+    get workingEmployees(): number {
+        return this.employees.filter(
             (employee) =>
-                this.selectedEmployeeIds.includes(employee.id),
-        );
-
-        this.employees = [
-            ...this.employees,
-            ...employeesToAdd,
-        ];
-
-        this.closeAddEmployeeModal();
-
-        this.showToast(
-            `Đã thêm ${employeesToAdd.length} nhân sự vào phòng ban.`,
-        );
+                employee.status === 'working',
+        ).length;
     }
 
-    toggleEmployeeMenu(employeeId: number): void {
-        this.openEmployeeMenuId =
-            this.openEmployeeMenuId === employeeId
-                ? null
-                : employeeId;
-    }
-
-    closeEmployeeMenu(): void {
-        this.openEmployeeMenuId = null;
-    }
-
-    viewEmployeeInfo(employee: DepartmentEmployee): void {
-        this.closeEmployeeMenu();
-
-        this.showToast(
-            `Đang xem thông tin ${employee.fullName}.`,
-        );
-    }
-
-    moveEmployee(employee: DepartmentEmployee): void {
-        this.closeEmployeeMenu();
-
-        this.showToast(
-            `Chức năng chuyển ${employee.fullName} sang phòng ban khác.`,
-        );
-    }
-
-    removeEmployee(employee: DepartmentEmployee): void {
-        this.closeEmployeeMenu();
-
-        const confirmed = window.confirm(
-            `Bạn có chắc muốn xóa ${employee.fullName} khỏi phòng ban này?`,
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        this.employees = this.employees.filter(
-            (item) => item.id !== employee.id,
-        );
-
-        this.showToast(
-            `Đã xóa ${employee.fullName} khỏi phòng ban.`,
-        );
-    }
-
-    viewAllDepartmentEmployees(): void {
-        this.showToast(
-            `Phòng ban hiện có ${this.employees.length} nhân sự.`,
-        );
-    }
-
-    exportEmployees(): void {
-        this.showToast(
-            'Chức năng xuất danh sách nhân sự sẽ được kết nối sau.',
-        );
-    }
-
-    logout(): void {
-        localStorage.clear();
-        sessionStorage.clear();
-        void this.router.navigate(['/login']);
+    get onLeaveEmployees(): number {
+        return this.employees.filter(
+            (employee) =>
+                employee.status === 'leave',
+        ).length;
     }
 
     getEmployeeStatusLabel(
@@ -356,7 +106,7 @@ export class DepartmentDetailComponent {
         > = {
             working: 'Đang làm việc',
             probation: 'Thử việc',
-            leave: 'Nghỉ phép',
+            leave: 'Tạm nghỉ',
         };
 
         return labels[status];
@@ -368,11 +118,381 @@ export class DepartmentDetailComponent {
         return `status-badge--${status}`;
     }
 
+    editDepartment(): void {
+        if (this.departmentId === null) {
+            return;
+        }
+
+        void this.router.navigate([
+            '/departments',
+            this.departmentId,
+            'edit',
+        ]);
+    }
+
+    viewEmployeeInfo(
+        employee: DepartmentEmployee,
+    ): void {
+        void this.router.navigate([
+            '/employees',
+            employee.id,
+        ]);
+    }
+
+    viewAllDepartmentEmployees(): void {
+        if (this.departmentId === null) {
+            return;
+        }
+
+        void this.router.navigate(
+            ['/employees'],
+            {
+                queryParams: {
+                    departmentId: this.departmentId,
+                },
+                queryParamsHandling: 'merge',
+            },
+        );
+    }
+
+    exportEmployees(): void {
+        if (this.employees.length === 0) {
+            this.showToast(
+                'Phòng ban chưa có nhân viên để xuất.',
+            );
+            return;
+        }
+
+        const data = this.employees.map(
+            (employee) => ({
+                employeeCode:
+                    `NV-${String(employee.id).padStart(4, '0')}`,
+                fullName: employee.fullName,
+                email: employee.email,
+                position: employee.position,
+                joinDate: employee.joinDate,
+                status: this.getEmployeeStatusLabel(
+                    employee.status,
+                ),
+            }),
+        );
+
+        this.excelExportService.exportWithHeaders(
+            data,
+            {
+                employeeCode: 'Mã nhân viên',
+                fullName: 'Họ tên',
+                email: 'Email',
+                position: 'Chức vụ',
+                joinDate: 'Ngày vào làm',
+                status: 'Trạng thái',
+            },
+            `nhan-vien-${this.department.code}`,
+            'Nhân viên',
+        );
+
+        this.showToast(
+            'Đã xuất danh sách nhân viên phòng ban.',
+        );
+    }
+
+    retry(): void {
+        if (
+            this.isLoading ||
+            this.departmentId === null
+        ) {
+            return;
+        }
+
+        this.loadDepartmentDetail();
+    }
+
+    private readRouteId(): void {
+        const parsedId = Number(
+            this.route.snapshot.paramMap.get('id'),
+        );
+
+        if (
+            !Number.isInteger(parsedId) ||
+            parsedId <= 0
+        ) {
+            this.departmentId = null;
+            this.errorMessage =
+                'Mã phòng ban trên đường dẫn không hợp lệ.';
+            this.resetData();
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.departmentId = parsedId;
+        this.loadDepartmentDetail();
+    }
+
+    private loadDepartmentDetail(): void {
+        if (this.departmentId === null) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        forkJoin({
+            departments: this.phongBanService.getAll(),
+            employees: this.nhanVienService.getAll(),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading = false;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({ departments, employees }) => {
+                    this.handleLoadedData(
+                        departments,
+                        employees,
+                    );
+                },
+                error: (error: HttpErrorResponse) => {
+                    this.resetData();
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải thông tin phòng ban.',
+                        );
+                    this.showToast(this.errorMessage);
+                },
+            });
+    }
+
+    private handleLoadedData(
+        departments: PhongBan[],
+        allEmployees: NhanVienChiTiet[],
+    ): void {
+        if (this.departmentId === null) {
+            return;
+        }
+
+        const department = departments.find(
+            (item) =>
+                item.maPB === this.departmentId,
+        );
+
+        if (!department) {
+            this.resetData();
+            this.errorMessage =
+                'Không tìm thấy phòng ban.';
+            this.showToast(this.errorMessage);
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        const departmentEmployees = allEmployees
+            .filter(
+                (employee) =>
+                    employee.maPB === department.maPB,
+            );
+
+        const visibleEmployees = departmentEmployees
+            .filter(
+                (employee) =>
+                    employee.trangThai !==
+                    NHAN_VIEN_TRANG_THAI.DA_NGHI_VIEC,
+            );
+
+        const manager = visibleEmployees.find(
+            (employee) => {
+                const position = (
+                    employee.tenCV ?? ''
+                )
+                    .trim()
+                    .toLocaleLowerCase('vi-VN');
+
+                return (
+                    position.includes('trưởng phòng') ||
+                    position.includes('trưởng bộ phận')
+                );
+            },
+        );
+
+        this.department = {
+            id: department.maPB,
+            name: department.tenPB,
+            code: this.createDepartmentCode(
+                department.maPB,
+            ),
+            managerName:
+                manager?.hoTen ?? 'Chưa phân công',
+            managerInitials:
+                manager
+                    ? this.createInitials(manager.hoTen)
+                    : '--',
+            establishedDate: '—',
+            description:
+                department.moTa?.trim() ||
+                'Chưa cập nhật',
+        };
+
+        this.employees = visibleEmployees
+            .map((employee) =>
+                this.mapEmployee(employee),
+            )
+            .sort((first, second) =>
+                first.fullName.localeCompare(
+                    second.fullName,
+                    'vi',
+                ),
+            );
+
+        this.errorMessage = '';
+        this.changeDetectorRef.markForCheck();
+    }
+
+    private mapEmployee(
+        employee: NhanVienChiTiet,
+    ): DepartmentEmployee {
+        return {
+            id: employee.maNV,
+            fullName: employee.hoTen,
+            email:
+                employee.email?.trim() ||
+                'Chưa cập nhật',
+            position:
+                employee.tenCV?.trim() ||
+                'Chưa có chức vụ',
+            joinDate:
+                this.formatDate(employee.ngayVaoLam),
+            status:
+                this.mapEmployeeStatus(
+                    employee.trangThai,
+                ),
+            initials:
+                this.createInitials(employee.hoTen),
+        };
+    }
+
+    private mapEmployeeStatus(
+        status: string,
+    ): DepartmentEmployeeStatus {
+        if (
+            status ===
+            NHAN_VIEN_TRANG_THAI.TAM_NGHI
+        ) {
+            return 'leave';
+        }
+
+        return 'working';
+    }
+
+    private createDepartmentCode(
+        maPB: number,
+    ): string {
+        return `PB-${String(maPB).padStart(3, '0')}`;
+    }
+
+    private createInitials(fullName: string): string {
+        const parts = fullName
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+        if (parts.length === 0) {
+            return 'NV';
+        }
+
+        if (parts.length === 1) {
+            return parts[0]
+                .slice(0, 2)
+                .toUpperCase();
+        }
+
+        return parts
+            .slice(-2)
+            .map((part) => part[0])
+            .join('')
+            .toUpperCase();
+    }
+
+    private formatDate(
+        value: string | null | undefined,
+    ): string {
+        if (!value) {
+            return '—';
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return new Intl.DateTimeFormat(
+            'vi-VN',
+        ).format(date);
+    }
+
+    private createEmptyDepartment(): DepartmentDetail {
+        return {
+            id: this.departmentId ?? 0,
+            name: '',
+            code: '—',
+            managerName: 'Chưa phân công',
+            managerInitials: '--',
+            establishedDate: '—',
+            description: 'Chưa cập nhật',
+        };
+    }
+
+    private resetData(): void {
+        this.department =
+            this.createEmptyDepartment();
+        this.employees = [];
+    }
+
+    private getApiErrorMessage(
+        error: HttpErrorResponse,
+        fallback: string,
+    ): string {
+        const message = error.error?.message;
+
+        if (
+            typeof message === 'string' &&
+            message.trim()
+        ) {
+            return message.trim();
+        }
+
+        if (error.status === 0) {
+            return 'Không thể kết nối đến hệ thống.';
+        }
+
+        if (error.status === 401) {
+            return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+        }
+
+        if (error.status === 403) {
+            return 'Bạn không có quyền xem phòng ban này.';
+        }
+
+        if (error.status === 404) {
+            return 'Không tìm thấy phòng ban.';
+        }
+
+        return fallback;
+    }
+
     private showToast(message: string): void {
         this.toastMessage = message;
+        this.changeDetectorRef.markForCheck();
 
-        window.setTimeout(() => {
+        if (this.toastTimer) {
+            clearTimeout(this.toastTimer);
+        }
+
+        this.toastTimer = setTimeout(() => {
             this.toastMessage = '';
-        }, 2500);
+            this.toastTimer = null;
+            this.changeDetectorRef.markForCheck();
+        }, 3000);
     }
 }

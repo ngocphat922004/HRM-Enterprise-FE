@@ -2,10 +2,6 @@
     display: block;
 }
 
-.rewards-discipline-detail-page {
-    min-height: 100vh;
-}
-
 .rewards-discipline-detail-heading {
     display        : flex;
     align-items    : flex-end;
@@ -637,6 +633,38 @@
     .decision-content-card .payslip-card__header {
         align-items: flex-start;
     }
+}
+
+.state-card__actions {
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    flex-wrap      : wrap;
+    gap            : 10px;
+
+    margin-top: 20px;
+}
+
+.state-card__actions button {
+    margin-top: 0;
+}
+
+.state-card__actions .state-secondary-button {
+    color     : var(--color-primary);
+    background: #fff;
+}
+
+.state-card__actions .state-secondary-button:hover {
+    background: var(--color-primary-light);
+}
+
+.edit-decision-button:disabled,
+.print-button:disabled,
+.logout-button:disabled,
+.state-card button:disabled,
+.search-box input:disabled {
+    cursor : not-allowed;
+    opacity: 0.6;
 }
 
 @keyframes rewards-discipline-detail-spin {

@@ -11,19 +11,6 @@ export interface AddLeaveTypeOption {
     moTa: string | null;
 }
 
-export interface AddLeaveApprover {
-    maNV: number;
-    hoTen: string;
-    chucVu: string | null;
-}
-
 export interface AddLeaveSummary {
-    soNgayPhepCon: number;
     soNgayNghiDuKien: number;
-}
-
-export interface AddLeaveSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
 }

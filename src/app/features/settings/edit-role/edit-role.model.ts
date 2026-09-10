@@ -11,9 +11,3 @@ export interface EditRoleData
 export type EditRoleForm =
     UpdateQuyenRequest;
 
-export interface EditRoleSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}
-

@@ -7,5 +7,4 @@ export interface CreateTrinhDoRequest {
     tenTD: string;
 }
 
-export type UpdateTrinhDoRequest =
-    CreateTrinhDoRequest;
+export type UpdateTrinhDoRequest = CreateTrinhDoRequest;

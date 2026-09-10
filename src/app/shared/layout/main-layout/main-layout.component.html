@@ -1,0 +1,16 @@
+<div class="dashboard-shell">
+    <button type="button" class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen"
+        (click)="closeSidebar()" aria-label="Đóng menu"></button>
+
+    <app-sidebar [class.sidebar-host--open]="sidebarOpen" (navigation)="closeSidebar()"></app-sidebar>
+
+    <section class="workspace">
+        <header class="top-header">
+            <app-header-user (sidebarToggle)="toggleSidebar()"></app-header-user>
+        </header>
+
+        <main class="main-content">
+            <router-outlet></router-outlet>
+        </main>
+    </section>
+</div>

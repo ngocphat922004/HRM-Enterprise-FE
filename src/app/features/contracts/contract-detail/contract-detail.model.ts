@@ -13,9 +13,3 @@ export interface ContractDetail {
     luongCoBan: number;
     trangThai: HopDongTrangThai;
 }
-
-export interface SidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

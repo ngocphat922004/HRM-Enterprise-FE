@@ -86,7 +86,7 @@
 }
 
 .save-button:disabled {
-    opacity: .6;
+    opacity: 0.6;
     cursor : not-allowed;
 }
 
@@ -149,7 +149,7 @@
 }
 
 .form-tab--active::after {
-    content      : '';
+    content      : "";
     position     : absolute;
     right        : 20px;
     bottom       : -1px;
@@ -190,7 +190,9 @@
     background   : var(--color-primary-light);
     color        : var(--color-primary);
     cursor       : pointer;
-    transition   : border-color 150ms ease, background 150ms ease;
+    transition   :
+        border-color 150ms ease,
+        background 150ms ease;
 }
 
 .avatar-upload:hover {
@@ -277,7 +279,9 @@
     color        : var(--color-text-primary);
     font         : inherit;
     font-size    : var(--font-size-body);
-    transition   : border-color 150ms ease, box-shadow 150ms ease;
+    transition   :
+        border-color 150ms ease,
+        box-shadow 150ms ease;
 }
 
 .form-field input::placeholder {
@@ -417,9 +421,346 @@
     box-shadow   : 0 12px 32px rgb(0 0 0 / 18%);
 }
 
-/* Add Employee content responsive */
-@media (max-width: 860px) {
+.work-form {
+    padding: 34px 36px 30px;
+}
 
+.salary-form {
+    padding: 28px 32px 30px;
+}
+
+.salary-form__header {
+    margin-bottom: 24px;
+}
+
+.salary-form__header h2 {
+    margin     : 0;
+    color      : #302a3a;
+    font-size  : 17px;
+    font-weight: 700;
+}
+
+.salary-form__header p {
+    margin   : 6px 0 0;
+    color    : #7c748c;
+    font-size: 10px;
+}
+
+.salary-form__content {
+    display: grid;
+    gap    : 22px;
+}
+
+.allowance-section {
+    display: grid;
+    gap    : 12px;
+}
+
+.allowance-section__title {
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+}
+
+.allowance-section__title>span {
+    color      : #554d60;
+    font-size  : 10px;
+    font-weight: 700;
+}
+
+.allowance-section__title small {
+    color    : #7c748c;
+    font-size: 9px;
+}
+
+.allowance-list {
+    display              : grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap                  : 12px;
+}
+
+.allowance-item {
+    min-height : 76px;
+    display    : flex;
+    align-items: flex-start;
+    gap        : 11px;
+
+    padding: 13px 14px;
+
+    border       : 1px solid #ddd7e8;
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    cursor: pointer;
+
+    transition:
+        border-color 160ms ease,
+        background 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.allowance-item:hover {
+    border-color: #a5b4fc;
+}
+
+.allowance-item--selected {
+    border-color: #6366f1;
+    background  : #f5f5ff;
+    box-shadow  : 0 0 0 2px rgb(99 102 241 / 8%);
+}
+
+.allowance-item input {
+    width : 15px;
+    height: 15px;
+    margin: 2px 0 0;
+
+    accent-color: #4f46e5;
+}
+
+.allowance-item__content {
+    min-width: 0;
+    flex     : 1;
+}
+
+.allowance-item__top {
+    display        : flex;
+    align-items    : flex-start;
+    justify-content: space-between;
+    gap            : 10px;
+}
+
+.allowance-item__top strong {
+    color      : #3d3647;
+    font-size  : 10px;
+    font-weight: 700;
+}
+
+.allowance-item__amount {
+    flex: 0 0 auto;
+
+    color      : #4338ca;
+    font-size  : 10px;
+    font-weight: 700;
+}
+
+.allowance-item p {
+    margin: 6px 0 0;
+
+    color      : #81798d;
+    font-size  : 9px;
+    line-height: 1.5;
+}
+
+.allowance-empty {
+    grid-column: 1 / -1;
+
+    padding: 24px;
+
+    border       : 1px dashed #ddd7e8;
+    border-radius: 8px;
+
+    color     : #7c748c;
+    font-size : 10px;
+    text-align: center;
+}
+
+.salary-note {
+    display    : flex;
+    align-items: flex-start;
+    gap        : 9px;
+
+    padding: 12px 14px;
+
+    border-radius: 7px;
+
+    background: #eef2ff;
+    color     : #4f46e5;
+
+    font-size  : 9px;
+    line-height: 1.55;
+}
+
+.salary-note .lucide-icon {
+    width : 16px;
+    height: 16px;
+    flex  : 0 0 16px;
+}
+
+.account-form {
+    padding: 28px 32px 30px;
+}
+
+.account-form__header {
+    display        : flex;
+    align-items    : flex-start;
+    justify-content: space-between;
+    gap            : 24px;
+
+    margin-bottom: 26px;
+}
+
+.account-form__header h2 {
+    margin: 0;
+
+    color      : #302a3a;
+    font-size  : 17px;
+    font-weight: 700;
+}
+
+.account-form__header p {
+    margin: 6px 0 0;
+
+    color    : #7c748c;
+    font-size: 10px;
+}
+
+.account-toggle {
+    display    : flex;
+    align-items: center;
+    gap        : 9px;
+
+    padding: 10px 13px;
+
+    border       : 1px solid #ddd7e8;
+    border-radius: 8px;
+
+    background: #faf9fc;
+
+    color      : #554d60;
+    font-size  : 10px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.account-toggle input {
+    width : 15px;
+    height: 15px;
+
+    margin: 0;
+
+    accent-color: #4f46e5;
+}
+
+.account-form__grid {
+    align-items: start;
+}
+
+.account-summary {
+    min-height: 66px;
+
+    display    : flex;
+    align-items: flex-start;
+    gap        : 11px;
+
+    padding: 13px 14px;
+
+    border       : 1px solid #dfe3ff;
+    border-radius: 8px;
+
+    background: #f5f6ff;
+}
+
+.account-summary__icon {
+    width : 30px;
+    height: 30px;
+
+    display        : inline-flex;
+    align-items    : center;
+    justify-content: center;
+
+    flex: 0 0 30px;
+
+    border-radius: 7px;
+
+    background: #e8eaff;
+    color     : #4f46e5;
+}
+
+.account-summary__icon .lucide-icon {
+    width : 16px;
+    height: 16px;
+}
+
+.account-summary strong {
+    display: block;
+
+    color      : #4338ca;
+    font-size  : 10px;
+    font-weight: 700;
+}
+
+.account-summary p {
+    margin: 5px 0 0;
+
+    color      : #6e6a80;
+    font-size  : 9px;
+    line-height: 1.5;
+}
+
+.account-disabled-state {
+    min-height: 100px;
+
+    display    : flex;
+    align-items: center;
+    gap        : 13px;
+
+    padding: 20px;
+
+    border       : 1px dashed #d9d4e2;
+    border-radius: 8px;
+
+    background: #faf9fc;
+}
+
+.account-disabled-state>.lucide-icon {
+    width : 22px;
+    height: 22px;
+
+    flex: 0 0 22px;
+
+    color: #7c748c;
+}
+
+.account-disabled-state strong {
+    color    : #554d60;
+    font-size: 11px;
+}
+
+.account-disabled-state p {
+    margin: 5px 0 0;
+
+    color      : #81798d;
+    font-size  : 9px;
+    line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+    .account-form {
+        padding: 22px 18px 24px;
+    }
+
+    .account-form__header {
+        flex-direction: column;
+    }
+
+    .account-toggle {
+        width: 100%;
+    }
+}
+
+@media (max-width: 720px) {
+    .allowance-list {
+        grid-template-columns: 1fr;
+    }
+
+    .salary-form {
+        padding: 22px 18px 24px;
+    }
+}
+
+@media (max-width: 860px) {
     .personal-form {
         grid-template-columns: 1fr;
     }
@@ -430,7 +771,6 @@
 }
 
 @media (max-width: 680px) {
-
     .page-actions button {
         flex: 1;
     }

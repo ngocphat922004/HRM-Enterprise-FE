@@ -1,682 +1,460 @@
-<div class="dashboard-shell contract-page">
-    <div class="sidebar-backdrop" [class.sidebar-backdrop--visible]="sidebarOpen" (click)="closeSidebar()"
-        aria-hidden="true">
+<section class="page-heading">
+    <div>
+        <p class="page-breadcrumb">
+            Quản lý nhân sự
+
+            <span>/</span>
+
+            Danh sách hợp đồng
+        </p>
+
+        <h1>Danh sách hợp đồng</h1>
+
+        <p>
+            Quản lý hợp đồng lao động
+            của nhân viên trong hệ thống
+        </p>
     </div>
 
-    <aside class="sidebar" [class.sidebar--open]="sidebarOpen">
-        <div class="sidebar__brand">
-            <div class="brand-mark" aria-hidden="true">HR</div>
+    <div class="page-actions">
+        <button class="export-button" type="button" (click)="exportContracts()"
+            [disabled]="isLoading || filteredContracts.length === 0">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
 
-            <div>
-                <strong>HRM Admin</strong>
-                <span>Quản lý nhân sự</span>
-            </div>
+            Xuất danh sách
+        </button>
+    </div>
+</section>
 
-            <button class="sidebar__close" type="button" (click)="closeSidebar()" aria-label="Đóng menu">
-                ×
-            </button>
+<section class="contract-stats" aria-label="Thống kê hợp đồng">
+    <article class="contract-stat-card contract-stat-card--primary">
+        <span class="contract-stat-card__icon" aria-hidden="true">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+
+                <path d="M14 2v6h6"></path>
+                <path d="M8 13h8"></path>
+                <path d="M8 17h8"></path>
+            </svg>
+        </span>
+
+        <div>
+            <small>
+                Tổng số hợp đồng
+            </small>
+
+            <strong>
+                {{ contracts.length }}
+            </strong>
+
+            <span>
+                Toàn bộ hợp đồng
+            </span>
         </div>
+    </article>
 
-        <nav class="sidebar__nav" aria-label="Điều hướng chính">
-            @for (item of sidebarItems; track item.label) {
-            <a [routerLink]="item.route" class="nav-item" [class.nav-item--active]="activeMenu === item.label"
-                (click)="setActiveMenu(item.label)">
-                <span class="nav-item__icon" aria-hidden="true">
-                    @switch (item.icon) {
-                    @case ('dashboard') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
-                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
-                    </svg>
-                    }
+    <article class="contract-stat-card contract-stat-card--warning">
+        <span class="contract-stat-card__icon" aria-hidden="true">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"></circle>
 
-                    @case ('employees') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    }
+                <path d="M12 7v5"></path>
+                <path d="m12 12 3 2"></path>
+            </svg>
+        </span>
 
-                    @case ('department') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2"></path>
-                        <path d="M10 6h4"></path>
-                        <path d="M10 10h4"></path>
-                        <path d="M10 14h4"></path>
-                        <path d="M10 18h4"></path>
-                    </svg>
-                    }
+        <div>
+            <small>
+                Sắp hết hạn
+            </small>
 
-                    @case ('contract') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <path d="M14 2v6h6"></path>
-                        <path d="M8 13h8"></path>
-                        <path d="M8 17h8"></path>
-                    </svg>
-                    }
+            <strong>
+                {{ expiringSoonCount }}
+            </strong>
 
-                    @case ('attendance') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 7v5l3 2"></path>
-                    </svg>
-                    }
-
-                    @case ('leave') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="m9 16 2 2 4-4"></path>
-                    </svg>
-                    }
-
-                    @case ('payroll') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7"></path>
-                        <path d="M16 14h2"></path>
-                    </svg>
-                    }
-
-                    @case ('award') {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="nav-icon" aria-hidden="true">
-                        <circle cx="12" cy="8" r="6" />
-                        <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                    }
-
-                    @case ('report') {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 3v18h18"></path>
-                        <path d="m7 16 4-4 3 3 5-6"></path>
-                    </svg>
-                    }
-
-                    @default {
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z">
-                        </path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    }
-                    }
-                </span>
-
-                <span>{{ item.label }}</span>
-            </a>
-            }
-        </nav>
-
-        <div class="sidebar__footer">
-            <button type="button" class="logout-button" (click)="logout()" aria-label="Đăng xuất">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                </svg>
-
-                <span>Đăng xuất</span>
-            </button>
+            <span>
+                Trong vòng 30 ngày
+            </span>
         </div>
-    </aside>
+    </article>
 
-    <section class="workspace">
-        <header class="top-header">
-            <button class="mobile-menu-button" type="button" (click)="toggleSidebar()" aria-label="Mở menu">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 6h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 18h16"></path>
-                </svg>
-            </button>
+    <article class="contract-stat-card contract-stat-card--danger">
+        <span class="contract-stat-card__icon" aria-hidden="true">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"></circle>
 
-            <label class="search-box">
-                <span aria-hidden="true">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-                </span>
+                <path d="m9 9 6 6"></path>
+                <path d="m15 9-6 6"></path>
+            </svg>
+        </span>
 
-                <input type="search" [(ngModel)]="globalSearchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
-                    aria-label="Tìm kiếm toàn hệ thống" />
-            </label>
+        <div>
+            <small>
+                Đã hết hiệu lực
+            </small>
 
-            <div class="top-header__actions">
-                <a class="header-add-button" routerLink="/contracts/add">
-                    <span aria-hidden="true">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14"></path>
-                            <path d="M12 5v14"></path>
-                        </svg>
-                    </span>
-                    Thêm mới
-                </a>
+            <strong>
+                {{ expiredContractCount }}
+            </strong>
 
-                <button type="button" class="icon-button notification-button" aria-label="Thông báo">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-                        <path d="M4 17h16"></path>
-                        <path d="M6 17V9a6 6 0 0 1 12 0v8"></path>
-                    </svg>
-                    <span class="notification-dot"></span>
-                </button>
+            <span>
+                Cần kiểm tra, gia hạn
+            </span>
+        </div>
+    </article>
+</section>
 
-                <button type="button" class="icon-button" aria-label="Chế độ giao diện">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9"></path>
-                    </svg>
-                </button>
+<section class="contract-filter-card" aria-label="Bộ lọc hợp đồng">
+    <label class="contract-search">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
 
-                <button type="button" class="header-profile" aria-label="Mở tùy chọn tài khoản">
-                    <div class="header-profile__info">
-                        <strong>Trần Hoàng Nam</strong>
-                        <span>Quản trị viên</span>
-                    </div>
+            <path d="m21 21-4.3-4.3"></path>
+        </svg>
 
-                    <span class="header-profile__avatar">TN</span>
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+            placeholder="Tìm mã hợp đồng, nhân viên..." aria-label="Tìm kiếm hợp đồng" />
+    </label>
 
-                    <span class="header-profile__arrow" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 9l6 6 6-6"></path>
-                        </svg>
-                    </span>
-                </button>
-            </div>
-        </header>
+    <select [(ngModel)]="selectedContractType" (ngModelChange)="applyFilters()" aria-label="Lọc loại hợp đồng">
+        <option value="">
+            Tất cả loại hợp đồng
+        </option>
 
-        <main class="main-content">
-            <section class="page-heading">
-                <div>
-                    <p class="page-breadcrumb">
-                        Quản lý nhân sự
+        @for (
+        contractType of contractTypes;
+        track contractType.maLoaiHD
+        ) {
+        <option [value]="contractType.maLoaiHD">
+            {{ contractType.tenLoaiHD }}
+        </option>
+        }
+    </select>
 
-                        <span>/</span>
+    <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()" aria-label="Lọc trạng thái hợp đồng">
+        <option value="">
+            Tất cả trạng thái
+        </option>
 
-                        Danh sách hợp đồng
-                    </p>
+        <option [value]="
+        contractStatus.CON_HIEU_LUC
+    ">
+            Còn hiệu lực
+        </option>
 
-                    <h1>Danh sách hợp đồng</h1>
+        <option [value]="
+        contractStatus.HET_HIEU_LUC
+    ">
+            Hết hiệu lực
+        </option>
+    </select>
 
-                    <p>
-                        Quản lý hợp đồng lao động
-                        của nhân viên trong hệ thống
-                    </p>
-                </div>
+    <button class="reset-filter-button" type="button" (click)="resetFilters()">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
 
-                <div class="page-actions">
-                    <button class="export-button" type="button" (click)="exportContracts()">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 3v12"></path>
-                            <path d="m7 10 5 5 5-5"></path>
-                            <path d="M5 21h14"></path>
-                        </svg>
+            <path d="M3 3v5h5"></path>
+        </svg>
 
-                        Xuất danh sách
-                    </button>
-                </div>
-            </section>
+        Đặt lại lọc
+    </button>
+</section>
 
-            <section class="contract-stats" aria-label="Thống kê hợp đồng">
-                <article class="contract-stat-card contract-stat-card--primary">
-                    <span class="contract-stat-card__icon" aria-hidden="true">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+<section class="contract-table-card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã hợp đồng</th>
+                    <th>Nhân viên</th>
+                    <th>Loại hợp đồng</th>
+                    <th>Ngày bắt đầu</th>
+                    <th>Ngày kết thúc</th>
+                    <th>Lương cơ bản</th>
+                    <th>Trạng thái</th>
 
-                            <path d="M14 2v6h6"></path>
-                            <path d="M8 13h8"></path>
-                            <path d="M8 17h8"></path>
-                        </svg>
-                    </span>
+                    <th class="action-column">
+                        Thao tác
+                    </th>
+                </tr>
+            </thead>
 
-                    <div>
-                        <small>
-                            Tổng số hợp đồng
-                        </small>
+            <tbody>
+                @if (isLoading) {
+                <tr>
+                    <td colspan="8" class="empty-table">
+                        <div class="empty-contracts">
+                            <span class="spinner" aria-hidden="true"></span>
 
-                        <strong>
-                            {{ contracts.length }}
-                        </strong>
+                            <strong>
+                                Đang tải danh sách hợp đồng...
+                            </strong>
+                        </div>
+                    </td>
+                </tr>
+                } @else {
 
-                        <span>
-                            Toàn bộ hợp đồng
+                @for (
+                contract of paginatedContracts;
+                track contract.maHD
+                ) {
+                <tr>
+                    <td>
+                        <span class="contract-code">
+                            {{
+                            formatContractCode(
+                            contract.maHD
+                            )
+                            }}
                         </span>
-                    </div>
-                </article>
 
-                <article class="contract-stat-card contract-stat-card--warning">
-                    <span class="contract-stat-card__icon" aria-hidden="true">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"></circle>
-
-                            <path d="M12 7v5"></path>
-                            <path d="m12 12 3 2"></path>
-                        </svg>
-                    </span>
-
-                    <div>
-                        <small>
-                            Sắp hết hạn
+                        <small class="system-id">
+                            MaHD:
+                            {{ contract.maHD }}
                         </small>
+                    </td>
 
-                        <strong>
-                            {{ expiringSoonCount }}
-                        </strong>
+                    <td>
+                        <div class="employee-info">
+                            <span class="employee-avatar" aria-hidden="true">
+                                {{
+                                contract.tenNV
+                                .charAt(0)
+                                .toUpperCase()
+                                }}
+                            </span>
 
-                        <span>
-                            Trong vòng 30 ngày
+                            <div>
+                                <strong>
+                                    {{ contract.tenNV }}
+                                </strong>
+
+                                <span>
+                                    MaNV:
+                                    {{ contract.maNV }}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <div class="contract-type">
+                            <strong>
+                                {{ contract.tenLoaiHD }}
+                            </strong>
+
+                            <span>
+                                MaLoaiHD:
+                                {{ contract.maLoaiHD }}
+                            </span>
+                        </div>
+                    </td>
+
+                    <td>
+                        {{
+                        contract.ngayBatDau
+                        | date:'dd/MM/yyyy'
+                        }}
+                    </td>
+
+                    <td>
+                        @if (contract.ngayKetThuc) {
+                        <span [class.expiring-date]="
+        isExpiringSoon(
+            contract
+        )
+    ">
+                            {{
+                            contract.ngayKetThuc
+                            | date:'dd/MM/yyyy'
+                            }}
                         </span>
-                    </div>
-                </article>
-
-                <article class="contract-stat-card contract-stat-card--danger">
-                    <span class="contract-stat-card__icon" aria-hidden="true">
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"></circle>
-
-                            <path d="m9 9 6 6"></path>
-                            <path d="m15 9-6 6"></path>
-                        </svg>
-                    </span>
-
-                    <div>
-                        <small>
-                            Đã hết hiệu lực
-                        </small>
-
-                        <strong>
-                            {{ expiredContractCount }}
-                        </strong>
-
-                        <span>
-                            Cần kiểm tra, gia hạn
+                        } @else {
+                        <span class="no-end-date">
+                            Không thời hạn
                         </span>
-                    </div>
-                </article>
-            </section>
-
-            <section class="contract-filter-card" aria-label="Bộ lọc hợp đồng">
-                <label class="contract-search">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="8"></circle>
-
-                        <path d="m21 21-4.3-4.3"></path>
-                    </svg>
-
-                    <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
-                        placeholder="Tìm mã hợp đồng, nhân viên..." aria-label="Tìm kiếm hợp đồng" />
-                </label>
-
-                <select [(ngModel)]="selectedContractType" (ngModelChange)="applyFilters()"
-                    aria-label="Lọc loại hợp đồng">
-                    <option value="">
-                        Tất cả loại hợp đồng
-                    </option>
-
-                    @for (
-                    contractType of contractTypes;
-                    track contractType.maLoaiHD
-                    ) {
-                    <option [value]="contractType.maLoaiHD">
-                        {{ contractType.tenLoaiHD }}
-                    </option>
-                    }
-                </select>
-
-                <select [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()"
-                    aria-label="Lọc trạng thái hợp đồng">
-                    <option value="">
-                        Tất cả trạng thái
-                    </option>
-
-                    <option [value]="
-                    contractStatus.CON_HIEU_LUC
-                ">
-                        Còn hiệu lực
-                    </option>
-
-                    <option [value]="
-                    contractStatus.HET_HIEU_LUC
-                ">
-                        Hết hiệu lực
-                    </option>
-                </select>
-
-                <button class="reset-filter-button" type="button" (click)="resetFilters()">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
-
-                        <path d="M3 3v5h5"></path>
-                    </svg>
-
-                    Đặt lại lọc
-                </button>
-            </section>
-
-            <section class="contract-table-card">
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Mã hợp đồng</th>
-                                <th>Nhân viên</th>
-                                <th>Loại hợp đồng</th>
-                                <th>Ngày bắt đầu</th>
-                                <th>Ngày kết thúc</th>
-                                <th>Lương cơ bản</th>
-                                <th>Trạng thái</th>
-
-                                <th class="action-column">
-                                    Thao tác
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @for (
-                            contract of paginatedContracts;
-                            track contract.maHD
-                            ) {
-                            <tr>
-                                <td>
-                                    <span class="contract-code">
-                                        {{
-                                        formatContractCode(
-                                        contract.maHD
-                                        )
-                                        }}
-                                    </span>
-
-                                    <small class="system-id">
-                                        MaHD:
-                                        {{ contract.maHD }}
-                                    </small>
-                                </td>
-
-                                <td>
-                                    <div class="employee-info">
-                                        <span class="employee-avatar" aria-hidden="true">
-                                            {{
-                                            contract.tenNV
-                                            .charAt(0)
-                                            .toUpperCase()
-                                            }}
-                                        </span>
-
-                                        <div>
-                                            <strong>
-                                                {{
-                                                contract.tenNV
-                                                }}
-                                            </strong>
-
-                                            <span>
-                                                MaNV:
-                                                {{
-                                                contract.maNV
-                                                }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div class="contract-type">
-                                        <strong>
-                                            {{
-                                            contract
-                                            .tenLoaiHD
-                                            }}
-                                        </strong>
-
-                                        <span>
-                                            MaLoaiHD:
-                                            {{
-                                            contract
-                                            .maLoaiHD
-                                            }}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td>
-                                    {{
-                                    contract.ngayBatDau
-                                    | date:'dd/MM/yyyy'
-                                    }}
-                                </td>
-
-                                <td>
-                                    @if (
-                                    contract.ngayKetThuc
-                                    ) {
-                                    <span [class.expiring-date]="
-                                            isExpiringSoon(
-                                                contract
-                                            )
-                                        ">
-                                        {{
-                                        contract
-                                        .ngayKetThuc
-                                        | date:
-                                        'dd/MM/yyyy'
-                                        }}
-                                    </span>
-                                    } @else {
-                                    <span class="no-end-date">
-                                        Không thời hạn
-                                    </span>
-                                    }
-                                </td>
-
-                                <td>
-                                    <strong class="salary-value">
-                                        {{
-                                        contract.luongCoBan
-                                        | number:
-                                        '1.0-0'
-                                        }}
-                                        ₫
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    <span class="status-badge" [class.status-badge--success]="
-                                        contract.trangThai ===
-                                            contractStatus
-                                                .CON_HIEU_LUC &&
-                                        !isExpiringSoon(
-                                            contract
-                                        )
-                                    " [class.status-badge--warning]="
-                                        isExpiringSoon(
-                                            contract
-                                        )
-                                    " [class.status-badge--danger]="
-                                        contract.trangThai ===
-                                            contractStatus
-                                                .HET_HIEU_LUC
-                                    ">
-                                        @if (
-                                        isExpiringSoon(
-                                        contract
-                                        )
-                                        ) {
-                                        Sắp hết hạn
-                                        } @else {
-                                        {{
-                                        contract
-                                        .trangThai
-                                        }}
-                                        }
-                                    </span>
-                                </td>
-
-                                <td class="action-column">
-                                    <div class="contract-actions">
-                                        <button type="button" (click)="
-                                            viewContract(
-                                                contract
-                                            )
-                                        " aria-label="Xem hợp đồng">
-                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12"></path>
-
-                                                <circle cx="12" cy="12" r="3"></circle>
-                                            </svg>
-                                        </button>
-
-                                        <button type="button" (click)="
-                                            editContract(
-                                                contract
-                                            )
-                                        " aria-label="Chỉnh sửa hợp đồng">
-                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M12 20h9"></path>
-
-                                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
-                                            </svg>
-                                        </button>
-
-                                        <button type="button" (click)="
-                                            downloadContract(
-                                                contract
-                                            )
-                                        " aria-label="Tải hợp đồng">
-                                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <path d="M12 3v12"></path>
-
-                                                <path d="m7 10 5 5 5-5"></path>
-
-                                                <path d="M5 21h14"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            } @empty {
-                            <tr>
-                                <td colspan="8" class="empty-table">
-                                    <div class="empty-contracts">
-                                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                            aria-hidden="true">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-
-                                            <path d="M14 2v6h6"></path>
-
-                                            <path d="M9 15h6"></path>
-                                        </svg>
-
-                                        <strong>
-                                            Chưa có dữ liệu
-                                            hợp đồng
-                                        </strong>
-
-                                        <p>
-                                            Dữ liệu sẽ hiển thị
-                                            sau khi kết nối
-                                            service/API.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <footer class="table-footer">
-                    <p>
-                        Hiển thị
-                        {{ firstDisplayedRow }}
-                        -
-                        {{ lastDisplayedRow }}
-                        trên tổng số
-                        {{ filteredContracts.length }}
-                        hợp đồng
-                    </p>
-
-                    <div class="pagination">
-                        <button type="button" [disabled]="currentPage === 1" (click)="
-                        goToPage(
-                            currentPage - 1
-                        )
-                    " aria-label="Trang trước">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m15 18-6-6 6-6"></path>
-                            </svg>
-                        </button>
-
-                        @for (
-                        page of visiblePages;
-                        track page
-                        ) {
-                        <button type="button" [class.pagination__active]="
-                            currentPage === page
-                        " (click)="goToPage(page)">
-                            {{ page }}
-                        </button>
                         }
+                    </td>
 
-                        <button type="button" [disabled]="
-                        currentPage === totalPages
-                    " (click)="
-                        goToPage(
-                            currentPage + 1
-                        )
-                    " aria-label="Trang sau">
+                    <td>
+                        <strong class="salary-value">
+                            {{
+                            contract.luongCoBan
+                            | number:'1.0-0'
+                            }}
+                            ₫
+                        </strong>
+                    </td>
+
+                    <td>
+                        <span class="status-badge" [class.status-badge--success]="
+        contract.trangThai ===
+            contractStatus.CON_HIEU_LUC &&
+        !isExpiringSoon(
+            contract
+        )
+    " [class.status-badge--warning]="
+        isExpiringSoon(
+            contract
+        )
+    " [class.status-badge--danger]="
+        contract.trangThai ===
+            contractStatus.HET_HIEU_LUC
+    ">
+                            @if (
+                            isExpiringSoon(
+                            contract
+                            )
+                            ) {
+                            Sắp hết hạn
+                            } @else {
+                            {{ contract.trangThai }}
+                            }
+                        </span>
+                    </td>
+
+                    <td class="action-column">
+                        <div class="contract-actions">
+                            <button type="button" (click)="
+            viewContract(
+                contract
+            )
+        " aria-label="Xem hợp đồng" title="Xem chi tiết">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12"></path>
+
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                            <button type="button" (click)="
+            editContract(
+                contract
+            )
+        " aria-label="Chỉnh sửa hợp đồng" title="Chỉnh sửa">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"></path>
+
+                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+                            <button type="button" class="delete-action" (click)="
+            deleteContract(
+                contract
+            )
+        " aria-label="Xóa hợp đồng" title="Xóa hợp đồng">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+
+                                    <path d="M8 6V4h8v2"></path>
+
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+
+                                    <path d="M10 11v5"></path>
+
+                                    <path d="M14 11v5"></path>
+                                </svg>
+                            </button>
+
+                        </div>
+                    </td>
+                </tr>
+
+                } @empty {
+
+                <tr>
+                    <td colspan="8" class="empty-table">
+                        <div class="empty-contracts">
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="m9 18 6-6-6-6"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </footer>
-            </section>
-        </main>
-    </section>
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 
-    @if (toastMessage) {
-    <div class="toast-message" role="status">{{ toastMessage }}</div>
-    }
-</div>
+                                <path d="M14 2v6h6"></path>
+
+                                <path d="M9 15h6"></path>
+                            </svg>
+
+                            <strong>
+                                Không có dữ liệu hợp đồng
+                            </strong>
+
+                            <p>
+                                Chưa có hợp đồng hoặc
+                                không có dữ liệu phù hợp
+                                với bộ lọc hiện tại.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+
+                }
+
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="table-footer">
+        <p>
+            Hiển thị
+            {{ firstDisplayedRow }}
+            -
+            {{ lastDisplayedRow }}
+            trên tổng số
+            {{ filteredContracts.length }}
+            hợp đồng
+        </p>
+
+        <div class="pagination">
+            <button type="button" [disabled]="currentPage === 1" (click)="
+            goToPage(
+                currentPage - 1
+            )
+        " aria-label="Trang trước">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6"></path>
+                </svg>
+            </button>
+
+            @for (
+            page of visiblePages;
+            track page
+            ) {
+            <button type="button" [class.pagination__active]="
+                currentPage === page
+            " (click)="goToPage(page)">
+                {{ page }}
+            </button>
+            }
+
+            <button type="button" [disabled]="
+            currentPage === totalPages
+        " (click)="
+            goToPage(
+                currentPage + 1
+            )
+        " aria-label="Trang sau">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m9 18 6-6-6-6"></path>
+                </svg>
+            </button>
+        </div>
+    </footer>
+</section>
+@if (toastMessage) {
+<div class="toast-message" role="status">{{ toastMessage }}</div>
+}

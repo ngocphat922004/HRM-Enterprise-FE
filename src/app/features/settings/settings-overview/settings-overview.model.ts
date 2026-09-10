@@ -17,7 +17,7 @@ export interface SettingsAccountListItem {
     tenCV: string | null;
     maQuyen: number;
     tenQuyen: string;
-    trangThai: TaiKhoanTrangThai;
+    trangThai: string;
 }
 
 export interface SettingsRoleListItem {
@@ -44,8 +44,3 @@ export interface SettingsStatusOption {
     label: string;
 }
 
-export interface SettingsSidebarItem {
-    label: string;
-    icon: string;
-    route: string;
-}

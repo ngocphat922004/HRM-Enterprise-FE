@@ -1,263 +1,159 @@
 import { HttpClient } from '@angular/common/http';
-import {
-    Injectable,
-    inject,
-} from '@angular/core';
-import {
-    Observable,
-    delay,
-    of,
-    switchMap,
-    throwError,
-    timer,
-} from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
 import { PHONG_BAN_TRANG_THAI } from '../../../core/constants/status.constants';
-import {
-    PHONG_BAN_MOCK_DATA,
-    PHONG_BAN_MOCK_DELAY,
-} from '../mocks/phong-ban.mock';
-import {
-    CreatePhongBanRequest,
-    PhongBan,
-    UpdatePhongBanRequest,
-} from '../models/phong-ban.model';
+import { PhongBan } from '../models/phong-ban.model';
+
+interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T | null;
+    errors?: Record<string, string[] | string> | null;
+}
+
+export type CreatePhongBanRequest = Omit<PhongBan, 'maPB'>;
+export type UpdatePhongBanRequest = CreatePhongBanRequest;
+
+type PhongBanApiItem = Omit<PhongBan, 'trangThai'> & {
+    trangThai?: PhongBan['trangThai'] | null;
+};
 
 @Injectable({
     providedIn: 'root',
 })
 export class PhongBanService {
     private readonly http = inject(HttpClient);
-
-    private readonly apiUrl =
-        `${environment.apiBaseUrl}` +
-        `${API_ENDPOINTS.phongBan}`;
-
-    private phongBans: PhongBan[] =
-        PHONG_BAN_MOCK_DATA.map(
-            (phongBan) => ({ ...phongBan }),
-        );
+    private readonly apiUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.phongBan}`;
 
     getAll(): Observable<PhongBan[]> {
-        if (!environment.useMockApi) {
-            return this.http.get<PhongBan[]>(
-                this.apiUrl,
+        return this.http
+            .get<ApiResponse<PhongBanApiItem[]> | PhongBanApiItem[]>(this.apiUrl)
+            .pipe(
+                map((response) => {
+                    const departments = this.unwrapList(response);
+                    return departments.map((department) => this.normalizeDepartment(department));
+                }),
             );
-        }
-
-        const data = this.phongBans
-            .map((phongBan) => ({
-                ...phongBan,
-            }))
-            .sort(
-                (first, second) =>
-                    first.maPB - second.maPB,
-            );
-
-        return of(data).pipe(
-            delay(PHONG_BAN_MOCK_DELAY),
-        );
     }
 
-    getById(
-        maPB: number,
-    ): Observable<PhongBan> {
-        if (!environment.useMockApi) {
-            return this.http.get<PhongBan>(
-                `${this.apiUrl}/${maPB}`,
-            );
-        }
-
-        const phongBan =
-            this.phongBans.find(
-                (item) => item.maPB === maPB,
-            );
-
-        if (!phongBan) {
-            return this.mockError(
-                'Không tìm thấy phòng ban.',
-            );
-        }
-
-        return of({
-            ...phongBan,
-        }).pipe(
-            delay(PHONG_BAN_MOCK_DELAY),
-        );
-    }
-
-    create(
-        payload: CreatePhongBanRequest,
-    ): Observable<PhongBan> {
-        if (!environment.useMockApi) {
-            return this.http.post<PhongBan>(
-                this.apiUrl,
-                payload,
-            );
-        }
-
-        const tenPB = payload.tenPB.trim();
-
-        if (!tenPB) {
-            return this.mockError(
-                'Tên phòng ban không được để trống.',
-            );
-        }
-
-        if (this.isDuplicateName(tenPB)) {
-            return this.mockError(
-                'Tên phòng ban đã tồn tại.',
-            );
-        }
-
-        const nextMaPB =
-            this.phongBans.length > 0
-                ? Math.max(
-                    ...this.phongBans.map(
-                        (item) => item.maPB,
-                    ),
-                ) + 1
-                : 1;
-
-        const newPhongBan: PhongBan = {
-            maPB: nextMaPB,
-            tenPB,
-            moTa:
-                payload.moTa?.trim() || null,
-            trangThai:
-                payload.trangThai ??
-                PHONG_BAN_TRANG_THAI
-                    .DANG_HOAT_DONG,
-        };
-
-        this.phongBans = [
-            ...this.phongBans,
-            newPhongBan,
-        ];
-
-        return of({
-            ...newPhongBan,
-        }).pipe(
-            delay(PHONG_BAN_MOCK_DELAY),
-        );
-    }
-
-    update(
-        maPB: number,
-        payload: UpdatePhongBanRequest,
-    ): Observable<PhongBan> {
-        if (!environment.useMockApi) {
-            return this.http.put<PhongBan>(
-                `${this.apiUrl}/${maPB}`,
-                payload,
-            );
-        }
-
-        const index =
-            this.phongBans.findIndex(
-                (item) => item.maPB === maPB,
-            );
-
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy phòng ban.',
-            );
-        }
-
-        const tenPB = payload.tenPB.trim();
-
-        if (!tenPB) {
-            return this.mockError(
-                'Tên phòng ban không được để trống.',
-            );
-        }
-
-        if (
-            this.isDuplicateName(
-                tenPB,
-                maPB,
+    getById(maPB: number): Observable<PhongBan> {
+        return this.http
+            .get<ApiResponse<PhongBanApiItem> | PhongBanApiItem>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.phongBanById(maPB)}`,
             )
+            .pipe(
+                map((response) => {
+                    const department = this.unwrapItem(response);
+
+                    if (!department) {
+                        throw new Error('Không nhận được dữ liệu phòng ban.');
+                    }
+
+                    return this.normalizeDepartment(department);
+                }),
+            );
+    }
+
+    create(payload: CreatePhongBanRequest): Observable<PhongBan> {
+        return this.http
+            .post<ApiResponse<PhongBanApiItem> | PhongBanApiItem>(this.apiUrl, payload)
+            .pipe(
+                map((response) => {
+                    const department = this.unwrapItem(response);
+
+                    if (!department) {
+                        throw new Error('Không nhận được dữ liệu phòng ban vừa tạo.');
+                    }
+
+                    return this.normalizeDepartment(department);
+                }),
+            );
+    }
+
+    update(maPB: number, payload: UpdatePhongBanRequest): Observable<PhongBan> {
+        return this.http
+            .put<ApiResponse<PhongBanApiItem | null> | PhongBanApiItem | null>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.phongBanById(maPB)}`,
+                payload,
+            )
+            .pipe(
+                map((response) => {
+                    const department = this.unwrapItem(response);
+
+                    if (department) {
+                        return this.normalizeDepartment(department);
+                    }
+
+                    return {
+                        maPB,
+                        tenPB: payload.tenPB,
+                        moTa: payload.moTa,
+                        trangThai: payload.trangThai,
+                    };
+                }),
+            );
+    }
+
+    delete(maPB: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.phongBanById(maPB)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
+                }),
+            );
+    }
+
+    private unwrapList<T>(response: ApiResponse<T[]> | T[]): T[] {
+        if (Array.isArray(response)) {
+            return response;
+        }
+
+        this.assertSuccess(response);
+        return response.data ?? [];
+    }
+
+    private unwrapItem<T>(response: ApiResponse<T | null> | T | null): T | null {
+        if (this.isApiResponse<T | null>(response)) {
+            this.assertSuccess(response);
+            return response.data;
+        }
+
+        return response;
+    }
+
+    private assertSuccess(response: unknown): void {
+        if (
+            this.isApiResponse<unknown>(response) &&
+            response.success === false
         ) {
-            return this.mockError(
-                'Tên phòng ban đã tồn tại.',
-            );
+            throw new Error(response.message?.trim() || 'Thao tác phòng ban không thành công.');
         }
+    }
 
-        const updatedPhongBan: PhongBan = {
-            maPB,
-            tenPB,
-            moTa:
-                payload.moTa?.trim() || null,
-            trangThai: payload.trangThai,
+    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+        return Boolean(
+            response &&
+            typeof response === 'object' &&
+            !Array.isArray(response) &&
+            'success' in response &&
+            'message' in response &&
+            'data' in response,
+        );
+    }
+
+    private normalizeDepartment(department: PhongBanApiItem): PhongBan {
+        return {
+            maPB: department.maPB,
+            tenPB: department.tenPB,
+            moTa: department.moTa ?? null,
+            trangThai: department.trangThai ?? PHONG_BAN_TRANG_THAI.DANG_HOAT_DONG,
         };
-
-        this.phongBans[index] =
-            updatedPhongBan;
-
-        return of({
-            ...updatedPhongBan,
-        }).pipe(
-            delay(PHONG_BAN_MOCK_DELAY),
-        );
-    }
-
-    delete(
-        maPB: number,
-    ): Observable<void> {
-        if (!environment.useMockApi) {
-            return this.http.delete<void>(
-                `${this.apiUrl}/${maPB}`,
-            );
-        }
-
-        const index =
-            this.phongBans.findIndex(
-                (item) => item.maPB === maPB,
-            );
-
-        if (index === -1) {
-            return this.mockError(
-                'Không tìm thấy phòng ban.',
-            );
-        }
-
-        this.phongBans.splice(index, 1);
-
-        return of(undefined).pipe(
-            delay(PHONG_BAN_MOCK_DELAY),
-        );
-    }
-
-    private isDuplicateName(
-        tenPB: string,
-        ignoredMaPB?: number,
-    ): boolean {
-        const normalizedName =
-            tenPB.toLocaleLowerCase('vi');
-
-        return this.phongBans.some(
-            (item) =>
-                item.maPB !== ignoredMaPB &&
-                item.tenPB
-                    .trim()
-                    .toLocaleLowerCase('vi') ===
-                normalizedName,
-        );
-    }
-
-    private mockError(
-        message: string,
-    ): Observable<never> {
-        return timer(
-            PHONG_BAN_MOCK_DELAY,
-        ).pipe(
-            switchMap(() =>
-                throwError(
-                    () => new Error(message),
-                ),
-            ),
-        );
     }
 }
