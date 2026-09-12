@@ -4,16 +4,10 @@ import {
     Router,
     UrlTree,
 } from '@angular/router';
+import { LoginData } from '../models/login-response.model';
+import { AuthService } from '../services/auth.service';
 
-import {
-    LoginData,
-} from '../models/login-response.model';
-
-import {
-    AuthService,
-} from '../services/auth.service';
-
-type RoleKey =
+export type RoleKey =
     | 'admin'
     | 'hr'
     | 'accountant'
@@ -31,30 +25,45 @@ const ROLE_BY_ID: Record<number, RoleKey> = {
 };
 
 const ROLE_BY_NAME: Record<string, RoleKey> = {
-    'quản trị viên': 'admin',
-    'admin': 'admin',
-    'nhân viên nhân sự': 'hr',
-    'nhân sự': 'hr',
-    'kế toán': 'accountant',
-    'trưởng phòng': 'manager',
-    'trưởng nhóm': 'manager',
-    'ban giám đốc': 'director',
-    'giám đốc': 'director',
-    'nhân viên': 'employee',
+    admin: 'admin',
+    administrator: 'admin',
+    'role admin': 'admin',
+    'quan tri vien': 'admin',
+    'quan tri he thong': 'admin',
+    'system administrator': 'admin',
+
+    hr: 'hr',
+    'human resources': 'hr',
+    'hr manager': 'hr',
+    'nhan su': 'hr',
+    'nhan vien nhan su': 'hr',
+    'quan ly nhan su': 'hr',
+
+    accountant: 'accountant',
+    'ke toan': 'accountant',
+    'nhan vien ke toan': 'accountant',
+
+    manager: 'manager',
+    'truong phong': 'manager',
+    'truong nhom': 'manager',
+    'quan ly phong ban': 'manager',
+
+    director: 'director',
+    'ban giam doc': 'director',
+    'giam doc': 'director',
+    'board of directors': 'director',
+
+    employee: 'employee',
+    'nhan vien': 'employee',
 };
 
 export const roleGuard: CanActivateChildFn = (
-    route,
+    _route,
     state,
 ) => {
-    const authService =
-        inject(AuthService);
-
-    const router =
-        inject(Router);
-
-    const currentUser =
-        authService.getCurrentUser();
+    const authService = inject(AuthService);
+    const router = inject(Router);
+    const currentUser = authService.getCurrentUser();
 
     if (!currentUser) {
         return router.createUrlTree(
@@ -67,35 +76,21 @@ export const roleGuard: CanActivateChildFn = (
         );
     }
 
-    const path =
-        normalizePath(state.url);
+    const path = normalizePath(state.url);
 
     if (path === '/dashboard') {
         return true;
     }
 
-    const role =
-        resolveRole(currentUser);
-
-    if (!role) {
-        return router.createUrlTree(
-            ['/dashboard'],
-            {
-                queryParams: {
-                    accessDenied: 'true',
-                },
-            },
-        );
-    }
-
-    const requestedTab =
-        route.queryParamMap.get('tab');
+    const requestedTab = getQueryParam(
+        state.url,
+        'tab',
+    );
 
     if (
-        canAccess(
-            path,
-            role,
+        canUserAccessPath(
             currentUser,
+            path,
             requestedTab,
         )
     ) {
@@ -104,18 +99,28 @@ export const roleGuard: CanActivateChildFn = (
 
     return createDefaultRoute(
         router,
-        role,
         currentUser,
         true,
     );
 };
 
-function canAccess(
-    path: string,
-    role: RoleKey,
+export function canUserAccessPath(
     currentUser: LoginData,
-    requestedTab: string | null,
+    rawPath: string,
+    requestedTab: string | null = null,
 ): boolean {
+    const path = normalizePath(rawPath);
+
+    if (path === '/dashboard') {
+        return true;
+    }
+
+    const role = resolveUserRole(currentUser);
+
+    if (!role) {
+        return false;
+    }
+
     if (path === '/employees/add') {
         return isOneOf(
             role,
@@ -124,11 +129,7 @@ function canAccess(
         );
     }
 
-    if (
-        /^\/employees\/\d+\/edit$/.test(
-            path,
-        )
-    ) {
+    if (/^\/employees\/\d+\/edit$/.test(path)) {
         if (
             isOneOf(
                 role,
@@ -145,10 +146,9 @@ function canAccess(
         );
     }
 
-    const employeeDetailMatch =
-        path.match(
-            /^\/employees\/(\d+)$/,
-        );
+    const employeeDetailMatch = path.match(
+        /^\/employees\/(\d+)$/,
+    );
 
     if (employeeDetailMatch) {
         if (
@@ -164,9 +164,8 @@ function canAccess(
 
         return (
             role === 'employee' &&
-            Number(
-                employeeDetailMatch[1],
-            ) === currentUser.maNV
+            Number(employeeDetailMatch[1]) ===
+            toPositiveInteger(currentUser.maNV)
         );
     }
 
@@ -179,11 +178,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/departments',
-        )
-    ) {
+    if (path.startsWith('/departments')) {
         return isOneOf(
             role,
             'admin',
@@ -191,11 +186,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/positions',
-        )
-    ) {
+    if (path.startsWith('/positions')) {
         return isOneOf(
             role,
             'admin',
@@ -203,11 +194,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/qualifications',
-        )
-    ) {
+    if (path.startsWith('/qualifications')) {
         return isOneOf(
             role,
             'admin',
@@ -215,11 +202,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/contracts',
-        )
-    ) {
+    if (path.startsWith('/contracts')) {
         return isOneOf(
             role,
             'admin',
@@ -227,11 +210,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/attendance',
-        )
-    ) {
+    if (path.startsWith('/attendance')) {
         return isOneOf(
             role,
             'admin',
@@ -245,11 +224,7 @@ function canAccess(
         return true;
     }
 
-    if (
-        path.startsWith(
-            '/leave',
-        )
-    ) {
+    if (path.startsWith('/leave')) {
         return isOneOf(
             role,
             'admin',
@@ -258,11 +233,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/payroll',
-        )
-    ) {
+    if (path.startsWith('/payroll')) {
         return isOneOf(
             role,
             'admin',
@@ -270,11 +241,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/rewards-discipline',
-        )
-    ) {
+    if (path.startsWith('/rewards-discipline')) {
         return isOneOf(
             role,
             'admin',
@@ -282,11 +249,7 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/reports',
-        )
-    ) {
+    if (path.startsWith('/reports')) {
         return isOneOf(
             role,
             'admin',
@@ -295,91 +258,78 @@ function canAccess(
         );
     }
 
-    if (
-        path.startsWith(
-            '/settings',
-        )
-    ) {
+    if (path.startsWith('/settings')) {
         return role === 'admin';
     }
 
     return false;
 }
 
+export function resolveUserRole(
+    user: LoginData | null,
+): RoleKey | null {
+    if (!user) {
+        return null;
+    }
+
+    const roleId = toPositiveInteger(
+        user.maQuyen,
+    );
+
+    if (roleId && ROLE_BY_ID[roleId]) {
+        return ROLE_BY_ID[roleId];
+    }
+
+    const normalizedRoleName = normalizeRoleName(
+        user.tenQuyen,
+    );
+
+    if (!normalizedRoleName) {
+        return null;
+    }
+
+    return ROLE_BY_NAME[normalizedRoleName] ?? null;
+}
+
 function createDefaultRoute(
     router: Router,
-    role: RoleKey,
     currentUser: LoginData,
     accessDenied: boolean,
 ): UrlTree {
+    const role = resolveUserRole(currentUser);
+    const employeeId = toPositiveInteger(
+        currentUser.maNV,
+    );
+
     const commands =
-        role === 'employee' &&
-            currentUser.maNV > 0
-            ? [
-                '/employees',
-                currentUser.maNV,
-            ]
+        role === 'employee' && employeeId
+            ? ['/employees', employeeId]
             : ['/dashboard'];
 
     return router.createUrlTree(
         commands,
         {
-            queryParams:
-                accessDenied
-                    ? {
-                        accessDenied:
-                            'true',
-                    }
-                    : undefined,
+            queryParams: accessDenied
+                ? {
+                    accessDenied: 'true',
+                }
+                : undefined,
         },
     );
-}
-
-function resolveRole(
-    user: LoginData,
-): RoleKey | null {
-    const normalizedRoleName =
-        normalizeRoleName(
-            user.tenQuyen,
-        );
-
-    if (normalizedRoleName) {
-        const roleByName =
-            ROLE_BY_NAME[
-            normalizedRoleName
-            ];
-
-        if (roleByName) {
-            return roleByName;
-        }
-    }
-
-    const roleId =
-        Number(user.maQuyen);
-
-    return (
-        Number.isInteger(roleId)
-            ? ROLE_BY_ID[roleId]
-            : undefined
-    ) ?? null;
 }
 
 function normalizePath(
     url: string,
 ): string {
-    const path =
-        url
-            .split('?')[0]
-            .split('#')[0];
+    const path = url
+        .split('?')[0]
+        .split('#')[0];
 
     if (
         path.length > 1 &&
         path.endsWith('/')
     ) {
-        return path.slice(
-            0,
-            -1,
-        );
+        return path.slice(0, -1);
     }
 
     return path;
@@ -388,20 +338,53 @@ function normalizePath(
 function normalizeRoleName(
     value: unknown,
 ): string {
-    return typeof value === 'string'
-        ? value
-            .trim()
-            .toLocaleLowerCase(
-                'vi-VN',
-            )
-        : '';
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('vi-VN')
+        .replace(/đ/g, 'd')
+        .replace(/[_\-.]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function toPositiveInteger(
+    value: unknown,
+): number | null {
+    const numberValue = Number(value);
+
+    return (
+        Number.isInteger(numberValue) &&
+        numberValue > 0
+    )
+        ? numberValue
+        : null;
+}
+
+function getQueryParam(
+    url: string,
+    key: string,
+): string | null {
+    const queryIndex = url.indexOf('?');
+
+    if (queryIndex < 0) {
+        return null;
+    }
+
+    const query = url
+        .slice(queryIndex + 1)
+        .split('#')[0];
+
+    return new URLSearchParams(query).get(key);
 }
 
 function isOneOf(
     role: RoleKey,
     ...allowedRoles: RoleKey[]
 ): boolean {
-    return allowedRoles.includes(
-        role,
-    );
+    return allowedRoles.includes(role);
 }

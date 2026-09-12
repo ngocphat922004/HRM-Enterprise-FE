@@ -4,7 +4,10 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { API_ENDPOINTS } from '../constants/api-endpoints.constants';
 import { LoginRequest } from '../models/login-request.model';
-import { LoginData, LoginResponse } from '../models/login-response.model';
+import {
+    LoginData,
+    LoginResponse,
+} from '../models/login-response.model';
 import { StorageService } from './storage.service';
 
 @Injectable({
@@ -12,17 +15,26 @@ import { StorageService } from './storage.service';
 })
 export class AuthService {
     private readonly http = inject(HttpClient);
-    private readonly storageService = inject(StorageService);
+    private readonly storageService =
+        inject(StorageService);
 
-    login(payload: LoginRequest): Observable<LoginResponse> {
+    login(
+        payload: LoginRequest,
+    ): Observable<LoginResponse> {
         return this.http.post<LoginResponse>(
             `${environment.apiBaseUrl}${API_ENDPOINTS.auth.login}`,
             payload,
         );
     }
 
-    saveSession(data: LoginData, rememberMe: boolean): void {
-        this.storageService.saveAuthSession(data, rememberMe);
+    saveSession(
+        data: LoginData,
+        rememberMe: boolean,
+    ): void {
+        this.storageService.saveAuthSession(
+            data,
+            rememberMe,
+        );
     }
 
     getToken(): string | null {
@@ -31,6 +43,14 @@ export class AuthService {
 
     getCurrentUser(): LoginData | null {
         return this.storageService.getCurrentUser();
+    }
+
+    getCurrentEmployeeId(): number | null {
+        return this.storageService.getCurrentEmployeeId();
+    }
+
+    getCurrentRoleId(): number | null {
+        return this.storageService.getCurrentRoleId();
     }
 
     isAuthenticated(): boolean {
@@ -42,6 +62,6 @@ export class AuthService {
     }
 
     logout(): void {
-        this.storageService.clearAuthSession();
+        this.clearSession();
     }
 }

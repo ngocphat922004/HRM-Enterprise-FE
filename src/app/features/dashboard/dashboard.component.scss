@@ -613,19 +613,30 @@
 }
 
 .contract-table {
-    display: grid;
+    display       : grid;
+    align-content : start;
+    grid-auto-rows: max-content;
+    min-height    : 0;
 }
 
 .contract-table__head {
+    height               : 54px;
     min-height           : 54px;
     display              : grid;
     grid-template-columns: 1.35fr .9fr 28px;
     align-items          : center;
     gap                  : 12px;
     padding              : 0 18px;
+    box-sizing           : border-box;
     background           : #f3f0ff;
     color                : #40394d;
     font-size            : 12px;
+}
+
+.contract-table .empty-state {
+    margin    : 0;
+    padding   : 22px 18px;
+    text-align: center;
 }
 
 .contract-row--table {
