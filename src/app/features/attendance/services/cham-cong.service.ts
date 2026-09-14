@@ -98,10 +98,22 @@ export class ChamCongService {
     }
 
     update(maCC: number, payload: UpdateChamCongRequest): Observable<ChamCong> {
+        const request: ChamCong = {
+            maCC,
+            maNV: payload.maNV,
+            maCa: payload.maCa,
+            ngayChamCong: payload.ngayChamCong,
+            gioVao: payload.gioVao,
+            gioRa: payload.gioRa,
+            soGioLam: payload.soGioLam,
+            trangThai: payload.trangThai,
+            ghiChu: payload.ghiChu,
+        };
+
         return this.http
             .put<ApiResponse<ChamCongApiItem | null> | ChamCongApiItem | null>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.chamCongById(maCC)}`,
-                payload,
+                request,
             )
             .pipe(
                 map((response) => {
@@ -111,17 +123,7 @@ export class ChamCongService {
                         return this.normalizeAttendance(attendance);
                     }
 
-                    return {
-                        maCC,
-                        maNV: payload.maNV,
-                        maCa: payload.maCa,
-                        ngayChamCong: payload.ngayChamCong,
-                        gioVao: payload.gioVao,
-                        gioRa: payload.gioRa,
-                        soGioLam: payload.soGioLam,
-                        trangThai: payload.trangThai,
-                        ghiChu: payload.ghiChu,
-                    };
+                    return request;
                 }),
             );
     }

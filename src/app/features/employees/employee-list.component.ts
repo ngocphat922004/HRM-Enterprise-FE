@@ -96,11 +96,8 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit(): void {
-        const currentUser =
-            this.storageService.getCurrentUser();
-
         this.currentRoleId =
-            Number(currentUser?.maQuyen) || 0;
+            this.storageService.getCurrentRoleId() ?? 0;
 
         this.route.queryParamMap.subscribe((params) => {
             this.searchTerm = (params.get('search') ?? '').trim();

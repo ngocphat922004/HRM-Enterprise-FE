@@ -8,6 +8,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MA_QUYEN } from '../../../core/constants/role.constants';
+import { StorageService } from '../../../core/services/storage.service';
 import { finalize, forkJoin } from 'rxjs';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
 import { NhanVienService } from '../../employees/services/nhan-vien.service';
@@ -57,6 +59,7 @@ export class AddLeaveComponent implements OnInit {
 
     constructor(
         private readonly router: Router,
+        private readonly storageService: StorageService,
         private readonly nghiPhepService: NghiPhepService,
         private readonly nhanVienService: NhanVienService,
         private readonly phongBanService: PhongBanService,
@@ -193,7 +196,7 @@ export class AddLeaveComponent implements OnInit {
             return;
         }
 
-        void this.router.navigate(['/leave']);
+        this.navigateAfterLeaveAction();
     }
 
     saveRequest(): void {
@@ -229,7 +232,7 @@ export class AddLeaveComponent implements OnInit {
                     );
 
                     window.setTimeout(() => {
-                        void this.router.navigate(['/leave']);
+                        this.navigateAfterLeaveAction();
                     }, 700);
                 },
                 error: (error: HttpErrorResponse) => {
@@ -240,6 +243,19 @@ export class AddLeaveComponent implements OnInit {
                     this.showToast(this.errorMessage);
                 },
             });
+    }
+
+    private navigateAfterLeaveAction(): void {
+        const currentRoleId = this.storageService.getCurrentRoleId();
+
+        const canAccessLeaveManagement =
+            currentRoleId === MA_QUYEN.QUAN_TRI_VIEN ||
+            currentRoleId === MA_QUYEN.NHAN_VIEN_NHAN_SU ||
+            currentRoleId === MA_QUYEN.TRUONG_PHONG;
+
+        void this.router.navigate([
+            canAccessLeaveManagement ? '/leave' : '/dashboard',
+        ]);
     }
 
     getInitials(fullName: string): string {

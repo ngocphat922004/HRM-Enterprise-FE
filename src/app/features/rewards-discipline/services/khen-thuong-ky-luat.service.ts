@@ -1,9 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
+
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
 import { KHEN_THUONG_KY_LUAT_LOAI } from '../../../core/constants/status.constants';
+
 import {
     CreateKhenThuongKyLuatRequest,
     KhenThuongKyLuat,
@@ -33,70 +35,117 @@ type ApiResult<T> = ApiResponse<T> | T;
 })
 export class KhenThuongKyLuatService {
     private readonly http = inject(HttpClient);
-    private readonly apiUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuat}`;
-    private readonly meUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuatMe}`;
+
+    private readonly apiUrl =
+        `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuat}`;
+
+    private readonly meUrl =
+        `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuatMe}`;
 
     getAll(): Observable<KhenThuongKyLuat[]> {
         return this.http
-            .get<ApiResult<KhenThuongKyLuatApiItem[]>>(this.apiUrl)
+            .get<ApiResult<KhenThuongKyLuatApiItem[]>>(
+                this.apiUrl,
+            )
             .pipe(
                 map((response) =>
-                    this.unwrapList(response).map((item) => this.normalize(item)),
+                    this.unwrapList(response).map(
+                        (item) => this.normalize(item),
+                    ),
                 ),
             );
     }
 
     getMe(): Observable<KhenThuongKyLuat[]> {
         return this.http
-            .get<ApiResult<KhenThuongKyLuatApiItem[]>>(this.meUrl)
+            .get<ApiResult<KhenThuongKyLuatApiItem[]>>(
+                this.meUrl,
+            )
             .pipe(
                 map((response) =>
-                    this.unwrapList(response).map((item) => this.normalize(item)),
+                    this.unwrapList(response).map(
+                        (item) => this.normalize(item),
+                    ),
                 ),
             );
     }
 
-    getById(maKTKL: number): Observable<KhenThuongKyLuat> {
+    getById(
+        maKTKL: number,
+    ): Observable<KhenThuongKyLuat> {
         return this.http
             .get<ApiResult<KhenThuongKyLuatApiItem>>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuatById(maKTKL)}`,
             )
-            .pipe(map((response) => this.normalize(this.unwrapItem(response))));
+            .pipe(
+                map((response) =>
+                    this.normalize(
+                        this.unwrapItem(response),
+                    ),
+                ),
+            );
     }
 
-    create(payload: CreateKhenThuongKyLuatRequest): Observable<KhenThuongKyLuat> {
+    create(
+        payload: CreateKhenThuongKyLuatRequest,
+    ): Observable<KhenThuongKyLuat> {
         return this.http
-            .post<ApiResult<KhenThuongKyLuatApiItem>>(this.apiUrl, payload)
-            .pipe(map((response) => this.normalize(this.unwrapItem(response))));
+            .post<ApiResult<KhenThuongKyLuatApiItem>>(
+                this.apiUrl,
+                payload,
+            )
+            .pipe(
+                map((response) =>
+                    this.normalize(
+                        this.unwrapItem(response),
+                    ),
+                ),
+            );
     }
 
     update(
         maKTKL: number,
-        payload: UpdateKhenThuongKyLuatRequest,
+        payload:
+            | UpdateKhenThuongKyLuatRequest
+            | Omit<
+                UpdateKhenThuongKyLuatRequest,
+                'maKTKL'
+            >,
     ): Observable<KhenThuongKyLuat> {
+        const request: UpdateKhenThuongKyLuatRequest = {
+            maKTKL,
+            maNV: Number(payload.maNV),
+            loai: payload.loai,
+            lyDo: payload.lyDo?.trim() || null,
+            soTien: Number(payload.soTien),
+            ngayQuyetDinh:
+                payload.ngayQuyetDinh.trim(),
+        };
+
         return this.http
-            .put<ApiResult<KhenThuongKyLuatApiItem> | null>(
+            .put<
+                ApiResult<KhenThuongKyLuatApiItem> |
+                null
+            >(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuatById(maKTKL)}`,
-                payload,
+                request,
             )
             .pipe(
                 map((response) => {
                     if (response === null) {
-                        return {
-                            maKTKL,
-                            ...payload,
-                        };
+                        return request;
                     }
 
-                    if (this.isApiResponse(response)) {
+                    if (
+                        this.isApiResponse(response)
+                    ) {
                         this.assertSuccess(response);
 
                         return response.data
-                            ? this.normalize(response.data)
-                            : {
-                                maKTKL,
-                                ...payload,
-                            };
+                            ? this.normalize(
+                                response.data,
+                            )
+                            : request;
                     }
 
                     return this.normalize(response);
@@ -104,15 +153,26 @@ export class KhenThuongKyLuatService {
             );
     }
 
-    delete(maKTKL: number): Observable<void> {
+    delete(
+        maKTKL: number,
+    ): Observable<void> {
         return this.http
-            .delete<ApiResponse<unknown> | unknown>(
+            .delete<
+                ApiResponse<unknown> |
+                unknown
+            >(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.khenThuongKyLuatById(maKTKL)}`,
             )
             .pipe(
                 map((response) => {
-                    if (this.isApiResponse(response)) {
-                        this.assertSuccess(response);
+                    if (
+                        this.isApiResponse(
+                            response,
+                        )
+                    ) {
+                        this.assertSuccess(
+                            response,
+                        );
                     }
 
                     return void 0;
@@ -121,24 +181,35 @@ export class KhenThuongKyLuatService {
     }
 
     private unwrapList(
-        response: ApiResult<KhenThuongKyLuatApiItem[]>,
+        response:
+            ApiResult<
+                KhenThuongKyLuatApiItem[]
+            >,
     ): KhenThuongKyLuatApiItem[] {
         if (Array.isArray(response)) {
             return response;
         }
 
         this.assertSuccess(response);
+
         return response.data ?? [];
     }
 
     private unwrapItem(
-        response: ApiResult<KhenThuongKyLuatApiItem>,
+        response:
+            ApiResult<
+                KhenThuongKyLuatApiItem
+            >,
     ): KhenThuongKyLuatApiItem {
-        if (this.isApiResponse(response)) {
+        if (
+            this.isApiResponse(response)
+        ) {
             this.assertSuccess(response);
 
             if (!response.data) {
-                throw new Error('Không nhận được dữ liệu quyết định.');
+                throw new Error(
+                    'Không nhận được dữ liệu quyết định.',
+                );
             }
 
             return response.data;
@@ -147,54 +218,95 @@ export class KhenThuongKyLuatService {
         return response;
     }
 
-    private normalize(item: KhenThuongKyLuatApiItem): KhenThuongKyLuat {
-        const maKTKL = Number(item.maKTKL);
-        const maNV = Number(item.maNV);
-        const amount = Number(item.soTien);
-        const decisionDate = item.ngayQuyetDinh?.trim() ?? '';
+    private normalize(
+        item: KhenThuongKyLuatApiItem,
+    ): KhenThuongKyLuat {
+        const maKTKL =
+            Number(item.maKTKL);
 
-        if (!Number.isInteger(maKTKL) || maKTKL <= 0) {
-            throw new Error('Mã quyết định không hợp lệ.');
-        }
+        const maNV =
+            Number(item.maNV);
 
-        if (!Number.isInteger(maNV) || maNV <= 0) {
-            throw new Error('Mã nhân viên của quyết định không hợp lệ.');
+        const amount =
+            Number(item.soTien);
+
+        const decisionDate =
+            item.ngayQuyetDinh?.trim() ??
+            '';
+
+        if (
+            !Number.isInteger(maKTKL) ||
+            maKTKL <= 0
+        ) {
+            throw new Error(
+                'Mã quyết định không hợp lệ.',
+            );
         }
 
         if (
-            item.loai !== KHEN_THUONG_KY_LUAT_LOAI.KHEN_THUONG &&
-            item.loai !== KHEN_THUONG_KY_LUAT_LOAI.KY_LUAT
+            !Number.isInteger(maNV) ||
+            maNV <= 0
         ) {
-            throw new Error('Loại quyết định không hợp lệ.');
+            throw new Error(
+                'Mã nhân viên của quyết định không hợp lệ.',
+            );
         }
 
-        if (!Number.isFinite(amount) || amount < 0) {
-            throw new Error('Số tiền của quyết định không hợp lệ.');
+        if (
+            item.loai !==
+            KHEN_THUONG_KY_LUAT_LOAI.KHEN_THUONG &&
+            item.loai !==
+            KHEN_THUONG_KY_LUAT_LOAI.KY_LUAT
+        ) {
+            throw new Error(
+                'Loại quyết định không hợp lệ.',
+            );
+        }
+
+        if (
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+            throw new Error(
+                'Số tiền của quyết định không hợp lệ.',
+            );
         }
 
         if (!decisionDate) {
-            throw new Error('Ngày quyết định không hợp lệ.');
+            throw new Error(
+                'Ngày quyết định không hợp lệ.',
+            );
         }
 
         return {
             maKTKL,
             maNV,
             loai: item.loai,
-            lyDo: item.lyDo?.trim() || null,
+            lyDo:
+                item.lyDo?.trim() ||
+                null,
             soTien: amount,
-            ngayQuyetDinh: decisionDate,
+            ngayQuyetDinh:
+                decisionDate,
         };
     }
 
-    private assertSuccess<T>(response: ApiResponse<T>): void {
+    private assertSuccess<T>(
+        response: ApiResponse<T>,
+    ): void {
         if (response.success) {
             return;
         }
 
-        throw new Error(response.message?.trim() || 'Thao tác không thành công.');
+        throw new Error(
+            response.message?.trim() ||
+            'Thao tác không thành công.',
+        );
     }
 
-    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+    private isApiResponse<T>(
+        response: unknown,
+    ): response is ApiResponse<T> {
         return Boolean(
             response &&
             typeof response === 'object' &&

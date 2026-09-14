@@ -22,6 +22,11 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    ExcelExportService,
+} from '../../../core/services/excel-export.service';
+
+
+import {
     NhanVienService,
 } from '../../employees/services/nhan-vien.service';
 
@@ -84,6 +89,9 @@ export class ContractListComponent
 
         private readonly nhanVienService:
             NhanVienService,
+
+        private readonly excelExportService:
+            ExcelExportService,
 
         private readonly changeDetectorRef:
             ChangeDetectorRef,
@@ -728,9 +736,57 @@ export class ContractListComponent
         }
 
 
-        if (
+        const data =
             this.filteredContracts
-                .length ===
+                .map(
+                    (
+                        contract,
+                    ) => ({
+                        'Mã hợp đồng':
+                            this.formatContractCode(
+                                contract.maHD,
+                            ),
+
+                        'Mã nhân viên':
+                            `NV-${String(
+                                contract.maNV,
+                            ).padStart(
+                                4,
+                                '0',
+                            )}`,
+
+                        'Nhân viên':
+                            contract.tenNV,
+
+                        'Loại hợp đồng':
+                            contract.tenLoaiHD,
+
+                        'Ngày bắt đầu':
+                            this.formatExportDate(
+                                contract.ngayBatDau,
+                            ),
+
+                        'Ngày kết thúc':
+                            contract.ngayKetThuc
+                                ? this.formatExportDate(
+                                    contract.ngayKetThuc,
+                                )
+                                : '',
+
+                        'Lương cơ bản':
+                            Number(
+                                contract.luongCoBan ??
+                                0,
+                            ),
+
+                        'Trạng thái':
+                            contract.trangThai,
+                    }),
+                );
+
+
+        if (
+            data.length ===
             0
         ) {
 
@@ -743,135 +799,12 @@ export class ContractListComponent
         }
 
 
-        if (
-            typeof window ===
-            'undefined' ||
-
-            typeof document ===
-            'undefined'
-        ) {
-
-            return;
-        }
-
-
-        const rows:
-            Array<
-                Array<
-                    string | number
-                >
-            > = [
-                [
-                    'Mã hợp đồng',
-                    'Mã nhân viên',
-                    'Nhân viên',
-                    'Loại hợp đồng',
-                    'Ngày bắt đầu',
-                    'Ngày kết thúc',
-                    'Lương cơ bản',
-                    'Trạng thái',
-                ],
-
-                ...this.filteredContracts
-                    .map(
-                        (
-                            contract,
-                        ) => [
-                                this.formatContractCode(
-                                    contract.maHD,
-                                ),
-
-                                contract.maNV,
-
-                                contract.tenNV,
-
-                                contract.tenLoaiHD,
-
-                                contract.ngayBatDau,
-
-                                contract.ngayKetThuc ??
-                                '',
-
-                                contract.luongCoBan,
-
-                                contract.trangThai,
-                            ],
-                    ),
-            ];
-
-
-        const csv =
-            rows
-                .map(
-                    (
-                        row,
-                    ) =>
-                        row
-                            .map(
-                                (
-                                    value,
-                                ) =>
-                                    this.escapeCsvValue(
-                                        value,
-                                    ),
-                            )
-                            .join(
-                                ',',
-                            ),
-                )
-                .join(
-                    '\r\n',
-                );
-
-
-        const blob =
-            new Blob(
-                [
-                    '\uFEFF',
-                    csv,
-                ],
-                {
-                    type:
-                        'text/csv;charset=utf-8;',
-                },
+        this.excelExportService
+            .exportToExcel(
+                data,
+                `danh-sach-hop-dong-${this.getTodayFileName()}`,
+                'Hợp đồng',
             );
-
-
-        const url =
-            URL.createObjectURL(
-                blob,
-            );
-
-
-        const link =
-            document.createElement(
-                'a',
-            );
-
-
-        link.href =
-            url;
-
-
-        link.download =
-            'danh-sach-hop-dong.csv';
-
-
-        document.body
-            .appendChild(
-                link,
-            );
-
-
-        link.click();
-
-
-        link.remove();
-
-
-        URL.revokeObjectURL(
-            url,
-        );
 
 
         this.showToast(
@@ -880,23 +813,79 @@ export class ContractListComponent
     }
 
 
-    private escapeCsvValue(
+    private formatExportDate(
         value:
-            string | number,
+            string,
     ): string {
 
-        const text =
-            String(
-                value ??
-                '',
-            );
+        const normalized =
+            value
+                ?.slice(
+                    0,
+                    10,
+                ) ??
+            '';
 
 
-        return `"${text.replace(
-            /"/g,
-            '""',
-        )}"`;
+        const [
+            year,
+            month,
+            day,
+        ] =
+            normalized
+                .split(
+                    '-',
+                );
+
+
+        return (
+            year &&
+            month &&
+            day
+        )
+            ? `${day}/${month}/${year}`
+            : value;
     }
+
+
+    private getTodayFileName():
+        string {
+
+        const today =
+            new Date();
+
+
+        const year =
+            today
+                .getFullYear();
+
+
+        const month =
+            String(
+                today
+                    .getMonth() +
+                1,
+            )
+                .padStart(
+                    2,
+                    '0',
+                );
+
+
+        const day =
+            String(
+                today
+                    .getDate(),
+            )
+                .padStart(
+                    2,
+                    '0',
+                );
+
+
+        return `${year}-${month}-${day}`;
+    }
+
 
     private showToast(
         message: string,

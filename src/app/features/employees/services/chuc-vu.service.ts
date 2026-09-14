@@ -69,8 +69,14 @@ export class ChucVuService {
             );
     }
 
-    update(maCV: number, payload: UpdateChucVuRequest): Observable<ChucVu> {
+    update(
+        maCV: number,
+        payload:
+            | UpdateChucVuRequest
+            | Omit<UpdateChucVuRequest, 'maCV'>,
+    ): Observable<ChucVu> {
         const request: UpdateChucVuRequest = {
+            maCV,
             tenCV: payload.tenCV.trim(),
             moTa: payload.moTa?.trim() || null,
         };
@@ -83,7 +89,11 @@ export class ChucVuService {
             .pipe(
                 map((response) => {
                     const position = this.unwrapItem(response);
-                    return position ?? this.buildUpdatedPosition(maCV, request);
+
+                    return (
+                        position ??
+                        this.buildUpdatedPosition(maCV, request)
+                    );
                 }),
             );
     }
@@ -101,7 +111,9 @@ export class ChucVuService {
             );
     }
 
-    private unwrapList<T>(response: ApiResponse<T[]> | T[]): T[] {
+    private unwrapList<T>(
+        response: ApiResponse<T[]> | T[],
+    ): T[] {
         if (Array.isArray(response)) {
             return response;
         }
@@ -110,7 +122,9 @@ export class ChucVuService {
         return response.data ?? [];
     }
 
-    private unwrapItem<T>(response: ApiResponse<T | null> | T | null): T | null {
+    private unwrapItem<T>(
+        response: ApiResponse<T | null> | T | null,
+    ): T | null {
         if (this.isApiResponse<T | null>(response)) {
             this.assertSuccess(response);
             return response.data;
@@ -124,11 +138,16 @@ export class ChucVuService {
             this.isApiResponse<unknown>(response) &&
             response.success === false
         ) {
-            throw new Error(response.message?.trim() || 'Thao tác chức vụ không thành công.');
+            throw new Error(
+                response.message?.trim() ||
+                'Thao tác chức vụ không thành công.',
+            );
         }
     }
 
-    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+    private isApiResponse<T>(
+        response: unknown,
+    ): response is ApiResponse<T> {
         return Boolean(
             response &&
             typeof response === 'object' &&
@@ -139,7 +158,10 @@ export class ChucVuService {
         );
     }
 
-    private buildUpdatedPosition(maCV: number, payload: UpdateChucVuRequest): ChucVu {
+    private buildUpdatedPosition(
+        maCV: number,
+        payload: UpdateChucVuRequest,
+    ): ChucVu {
         return {
             maCV,
             tenCV: payload.tenCV,

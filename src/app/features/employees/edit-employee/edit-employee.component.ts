@@ -121,8 +121,8 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit(): void {
-        const currentUser = this.storageService.getCurrentUser();
-        this.currentRoleId = Number(currentUser?.maQuyen) || 0;
+        this.currentRoleId =
+            this.storageService.getCurrentRoleId() ?? 0;
 
         const requestedTab = this.route.snapshot.queryParamMap.get('tab');
 

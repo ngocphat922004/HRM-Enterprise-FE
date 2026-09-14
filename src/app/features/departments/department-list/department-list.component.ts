@@ -16,6 +16,10 @@ import {
 } from 'rxjs';
 
 import {
+    ExcelExportService,
+} from '../../../core/services/excel-export.service';
+
+import {
     NhanVienChiTiet,
 } from '../../employees/models/nhan-vien.model';
 
@@ -78,6 +82,9 @@ export class DepartmentListComponent
 
         private readonly nhanVienService:
             NhanVienService,
+
+        private readonly excelExportService:
+            ExcelExportService,
 
         private readonly changeDetectorRef:
             ChangeDetectorRef,
@@ -552,9 +559,35 @@ export class DepartmentListComponent
             return;
         }
 
-        if (
+
+        const data =
             this.filteredDepartments
-                .length ===
+                .map(
+                    (
+                        department,
+                    ) => ({
+                        'Mã phòng ban':
+                            department.code,
+
+                        'Tên phòng ban':
+                            department.name,
+
+                        'Mô tả':
+                            department.location,
+
+                        'Trạng thái':
+                            this.getStatusLabel(
+                                department.status,
+                            ),
+
+                        'Số nhân viên':
+                            department.employeeCount,
+                    }),
+                );
+
+
+        if (
+            data.length ===
             0
         ) {
 
@@ -562,118 +595,24 @@ export class DepartmentListComponent
                 'Không có dữ liệu phòng ban để xuất.',
             );
 
-            return;
-        }
-
-        if (
-            typeof window ===
-            'undefined' ||
-
-            typeof document ===
-            'undefined'
-        ) {
 
             return;
         }
 
-        const rows:
-            Array<
-                Array<
-                    string | number
-                >
-            > = [
-                [
-                    'Mã phòng ban',
-                    'Tên phòng ban',
-                    'Mô tả',
-                    'Trạng thái',
-                    'Số nhân viên',
-                ],
 
-                ...this.filteredDepartments
-                    .map(
-                        (
-                            department,
-                        ) => [
-                                department.code,
-                                department.name,
-                                department.location,
-                                this.getStatusLabel(
-                                    department.status,
-                                ),
-                                department.employeeCount,
-                            ],
-                    ),
-            ];
-
-        const csv =
-            rows
-                .map(
-                    (
-                        row,
-                    ) =>
-                        row
-                            .map(
-                                (
-                                    value,
-                                ) =>
-                                    this.escapeCsvValue(
-                                        value,
-                                    ),
-                            )
-                            .join(
-                                ',',
-                            ),
-                )
-                .join(
-                    '\r\n',
-                );
-
-        const blob =
-            new Blob(
-                [
-                    '\uFEFF',
-                    csv,
-                ],
-                {
-                    type:
-                        'text/csv;charset=utf-8;',
-                },
+        this.excelExportService
+            .exportToExcel(
+                data,
+                `danh-sach-phong-ban-${this.getTodayFileName()}`,
+                'Phòng ban',
             );
 
-        const url =
-            URL.createObjectURL(
-                blob,
-            );
-
-        const link =
-            document.createElement(
-                'a',
-            );
-
-        link.href =
-            url;
-
-        link.download =
-            'danh-sach-phong-ban.csv';
-
-        document.body
-            .appendChild(
-                link,
-            );
-
-        link.click();
-
-        link.remove();
-
-        URL.revokeObjectURL(
-            url,
-        );
 
         this.showToast(
             'Đã xuất danh sách phòng ban.',
         );
     }
+
 
     getStatusLabel(
         status:
@@ -825,22 +764,44 @@ export class DepartmentListComponent
         )}`;
     }
 
-    private escapeCsvValue(
-        value:
-            string | number,
-    ): string {
+    private getTodayFileName():
+        string {
 
-        const text =
+        const today =
+            new Date();
+
+
+        const year =
+            today
+                .getFullYear();
+
+
+        const month =
             String(
-                value ??
-                '',
-            );
+                today
+                    .getMonth() +
+                1,
+            )
+                .padStart(
+                    2,
+                    '0',
+                );
 
-        return `"${text.replace(
-            /"/g,
-            '""',
-        )}"`;
+
+        const day =
+            String(
+                today
+                    .getDate(),
+            )
+                .padStart(
+                    2,
+                    '0',
+                );
+
+
+        return `${year}-${month}-${day}`;
     }
+
 
     private showToast(
         message:

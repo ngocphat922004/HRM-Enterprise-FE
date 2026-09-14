@@ -29,7 +29,14 @@ export class PhuCapService {
         return this.http
             .get<ApiResponse<PhuCap[]> | PhuCap[]>(this.apiUrl)
             .pipe(
-                map((response) => Array.isArray(response) ? response : response.data ?? []),
+                map((response) => {
+                    if (Array.isArray(response)) {
+                        return response;
+                    }
+
+                    this.assertSuccess(response);
+                    return response.data ?? [];
+                }),
             );
     }
 
@@ -41,9 +48,12 @@ export class PhuCapService {
             .pipe(
                 map((response) => {
                     if (this.isApiResponse<PhuCap>(response)) {
+                        this.assertSuccess(response);
+
                         if (!response.data) {
                             throw new Error('Không nhận được dữ liệu phụ cấp.');
                         }
+
                         return response.data;
                     }
                     return response;
@@ -63,9 +73,12 @@ export class PhuCapService {
             .pipe(
                 map((response) => {
                     if (this.isApiResponse<PhuCap>(response)) {
+                        this.assertSuccess(response);
+
                         if (!response.data) {
                             throw new Error('Không nhận được thông tin phụ cấp vừa tạo.');
                         }
+
                         return response.data;
                     }
                     return response;
@@ -88,6 +101,7 @@ export class PhuCapService {
             .pipe(
                 map((response) => {
                     if (this.isApiResponse<PhuCap | null>(response)) {
+                        this.assertSuccess(response);
                         return response.data ?? { maPC, ...request };
                     }
                     return response ?? { maPC, ...request };
@@ -100,10 +114,27 @@ export class PhuCapService {
             .delete<ApiResponse<unknown> | unknown>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.phuCapById(maPC)}`,
             )
-            .pipe(map(() => void 0));
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
+                }),
+            );
     }
 
-    private isApiResponse<T>(response: ApiResponse<T> | T | null): response is ApiResponse<T> {
+    private assertSuccess(response: unknown): void {
+        if (
+            this.isApiResponse<unknown>(response) &&
+            response.success === false
+        ) {
+            throw new Error(
+                response.message?.trim() ||
+                'Thao tác phụ cấp không thành công.',
+            );
+        }
+    }
+
+    private isApiResponse<T>(response: unknown): response is ApiResponse<T> {
         return Boolean(
             response &&
             typeof response === 'object' &&

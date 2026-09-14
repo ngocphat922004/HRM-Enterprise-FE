@@ -13,13 +13,22 @@
         </nav>
 
         <h1>
+            @if (isEmployeeView) {
+            Nghỉ phép của tôi
+            } @else {
             Quản lý Nghỉ phép
+            }
         </h1>
 
         <p>
+            @if (isEmployeeView) {
+            Theo dõi các đơn nghỉ phép của bạn
+            và trạng thái xử lý từng yêu cầu.
+            } @else {
             Theo dõi, phê duyệt và quản lý
             các yêu cầu nghỉ phép của nhân viên
             trong hệ thống.
+            }
         </p>
     </div>
 
@@ -35,6 +44,7 @@
             Tạo đơn nghỉ phép
         </button>
 
+        @if (!isEmployeeView) {
         <button class="secondary-button" type="button" (click)="exportReport()" [disabled]="
                             isLoading ||
                             processingRequestId !== null
@@ -48,6 +58,7 @@
 
             Xuất Excel
         </button>
+        }
     </div>
 </section>
 
@@ -61,9 +72,14 @@
         </strong>
 
         <p>
+            @if (isEmployeeView) {
+            Đang lấy các đơn nghỉ phép
+            và loại nghỉ của bạn.
+            } @else {
             Đang lấy đơn nghỉ phép,
             nhân viên, phòng ban
             và loại nghỉ phép.
+            }
         </p>
     </div>
 </section>
@@ -155,7 +171,11 @@
 
         <div>
             <span>
+                @if (isEmployeeView) {
+                Tỷ lệ nghỉ hiện tại
+                } @else {
                 Tỷ lệ vắng mặt
+                }
             </span>
 
             <strong>
@@ -186,7 +206,11 @@
 
         <div>
             <span>
+                @if (isEmployeeView) {
+                Đang nghỉ hiện tại
+                } @else {
                 Nhân viên đang nghỉ
+                }
             </span>
 
             <strong>
@@ -215,11 +239,13 @@
 
             <input type="search" [(ngModel)]="
                                 globalSearchTerm
-                            " (input)="applyFilters()" placeholder="Tên nhân viên, mã đơn, lý do..."
+                            " (input)="applyFilters()"
+                [placeholder]="isEmployeeView ? 'Mã đơn, lý do...' : 'Tên nhân viên, mã đơn, lý do...'"
                 [disabled]="isLoading" />
         </div>
     </label>
 
+    @if (!isEmployeeView) {
     <label class="leave-filter">
         <span>
             Phòng ban
@@ -242,6 +268,7 @@
             }
         </select>
     </label>
+    }
 
     <label class="leave-filter">
         <span>
@@ -541,6 +568,7 @@
 
                             }
 
+                            @if (canDeleteRequest(request)) {
                             <button class="
                                                 table-action-button
                                                 table-action-button--delete
@@ -565,6 +593,7 @@
                                     <path d="M14 11v5"></path>
                                 </svg>
                             </button>
+                            }
 
                             }
                         </div>

@@ -12,7 +12,13 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import {
+    catchError,
+    finalize,
+    forkJoin,
+    of,
+} from 'rxjs';
+
 import { environment } from '../../../../environments/environment';
 import { MA_QUYEN } from '../../../core/constants/role.constants';
 import { StorageService } from '../../../core/services/storage.service';
@@ -25,13 +31,22 @@ import { AiChatComponent } from '../ai-chat/ai-chat.component';
 @Component({
     selector: 'app-header-user',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink, AiChatComponent],
+    imports: [
+        CommonModule,
+        FormsModule,
+        RouterLink,
+        AiChatComponent,
+    ],
     templateUrl: './header-user.component.html',
     styleUrl: './header-user.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    changeDetection:
+        ChangeDetectionStrategy.OnPush,
 })
-export class HeaderUserComponent implements OnInit {
-    @Output() readonly sidebarToggle = new EventEmitter<void>();
+export class HeaderUserComponent
+    implements OnInit {
+    @Output()
+    readonly sidebarToggle =
+        new EventEmitter<void>();
 
     searchTerm = '';
     isMenuOpen = false;
@@ -43,6 +58,7 @@ export class HeaderUserComponent implements OnInit {
 
     employee: NhanVien | null = null;
     role: Quyen | null = null;
+
     employeeId: number | null = null;
     currentRoleId = 0;
 
@@ -57,28 +73,46 @@ export class HeaderUserComponent implements OnInit {
             MA_QUYEN.QUAN_TRI_VIEN,
             MA_QUYEN.NHAN_VIEN_NHAN_SU,
             MA_QUYEN.TRUONG_PHONG,
-        ].includes(this.currentRoleId as 1 | 2 | 4);
+        ].includes(
+            this.currentRoleId as
+            | 1
+            | 2
+            | 4,
+        );
     }
 
     get canAddEmployee(): boolean {
         return [
             MA_QUYEN.QUAN_TRI_VIEN,
             MA_QUYEN.NHAN_VIEN_NHAN_SU,
-        ].includes(this.currentRoleId as 1 | 2);
+        ].includes(
+            this.currentRoleId as
+            | 1
+            | 2,
+        );
     }
 
     get canOpenSettings(): boolean {
-        return this.currentRoleId === MA_QUYEN.QUAN_TRI_VIEN;
+        return (
+            this.currentRoleId ===
+            MA_QUYEN.QUAN_TRI_VIEN
+        );
     }
 
     constructor(
         private readonly router: Router,
-        private readonly storageService: StorageService,
-        private readonly nhanVienService: NhanVienService,
-        private readonly quyenService: QuyenService,
-        private readonly changeDetectorRef: ChangeDetectorRef,
-        private readonly elementRef: ElementRef<HTMLElement>,
-        @Inject(DOCUMENT) private readonly document: Document,
+        private readonly storageService:
+            StorageService,
+        private readonly nhanVienService:
+            NhanVienService,
+        private readonly quyenService:
+            QuyenService,
+        private readonly changeDetectorRef:
+            ChangeDetectorRef,
+        private readonly elementRef:
+            ElementRef<HTMLElement>,
+        @Inject(DOCUMENT)
+        private readonly document: Document,
     ) { }
 
     ngOnInit(): void {
@@ -91,43 +125,78 @@ export class HeaderUserComponent implements OnInit {
     }
 
     submitSearch(): void {
-        const search = this.searchTerm.trim();
+        if (!this.canSearchEmployees) {
+            return;
+        }
 
-        void this.router.navigate(['/employees'], {
-            queryParams: search ? { search } : {},
-        });
+        const search =
+            this.searchTerm.trim();
+
+        void this.router.navigate(
+            ['/employees'],
+            {
+                queryParams: search
+                    ? { search }
+                    : {},
+            },
+        );
     }
 
-    toggleMenu(event: Event): void {
+    toggleMenu(
+        event: Event,
+    ): void {
         event.stopPropagation();
-        this.isMenuOpen = !this.isMenuOpen;
-        this.isNotificationOpen = false;
+
+        this.isMenuOpen =
+            !this.isMenuOpen;
+
+        this.isNotificationOpen =
+            false;
     }
 
-    toggleAiChat(event: Event): void {
+    toggleAiChat(
+        event: Event,
+    ): void {
         event.stopPropagation();
-        this.isAiChatOpen = !this.isAiChatOpen;
+
+        this.isAiChatOpen =
+            !this.isAiChatOpen;
+
         this.isMenuOpen = false;
-        this.isNotificationOpen = false;
+        this.isNotificationOpen =
+            false;
     }
 
-    toggleNotifications(event: Event): void {
+    toggleNotifications(
+        event: Event,
+    ): void {
         event.stopPropagation();
-        this.isNotificationOpen = !this.isNotificationOpen;
+
+        this.isNotificationOpen =
+            !this.isNotificationOpen;
+
         this.isMenuOpen = false;
     }
 
     toggleDarkMode(): void {
-        this.isDarkMode = !this.isDarkMode;
-        this.document.documentElement.classList.toggle(
-            'dark-theme',
-            this.isDarkMode,
-        );
+        this.isDarkMode =
+            !this.isDarkMode;
 
-        if (typeof window !== 'undefined') {
+        this.document.documentElement
+            .classList.toggle(
+                'dark-theme',
+                this.isDarkMode,
+            );
+
+        if (
+            typeof window !==
+            'undefined'
+        ) {
             localStorage.setItem(
                 'hrm_theme',
-                this.isDarkMode ? 'dark' : 'light',
+                this.isDarkMode
+                    ? 'dark'
+                    : 'light',
             );
         }
     }
@@ -140,10 +209,18 @@ export class HeaderUserComponent implements OnInit {
                 '/employees',
                 this.employeeId,
             ]);
+
             return;
         }
 
-        void this.router.navigate(['/employees']);
+        /*
+         * Nếu không xác định được MaNV,
+         * không cố mở /employees vì có thể
+         * khiến role Employee bị redirect vòng.
+         */
+        void this.router.navigate([
+            '/dashboard',
+        ]);
     }
 
     goToSettings(): void {
@@ -153,60 +230,104 @@ export class HeaderUserComponent implements OnInit {
             return;
         }
 
-        void this.router.navigate(['/settings']);
+        void this.router.navigate([
+            '/settings',
+        ]);
     }
 
     logout(): void {
         this.closePopups();
-        this.storageService.clearAuthSession();
-        void this.router.navigate(['/login']);
+
+        this.storageService
+            .clearAuthSession();
+
+        void this.router.navigate([
+            '/login',
+        ]);
     }
 
     handleImageError(): void {
         this.avatarUrl = '';
-        this.changeDetectorRef.markForCheck();
+
+        this.changeDetectorRef
+            .markForCheck();
     }
 
-    @HostListener('document:click', ['$event'])
-    onDocumentClick(event: MouseEvent): void {
-        const target = event.target;
+    @HostListener(
+        'document:click',
+        ['$event'],
+    )
+    onDocumentClick(
+        event: MouseEvent,
+    ): void {
+        const target =
+            event.target;
 
         if (
             target instanceof Node &&
-            !this.elementRef.nativeElement.contains(target)
+            !this.elementRef
+                .nativeElement
+                .contains(target)
         ) {
             this.closePopups();
         }
     }
 
-    @HostListener('document:keydown.escape')
+    @HostListener(
+        'document:keydown.escape',
+    )
     closePopups(): void {
         this.isMenuOpen = false;
-        this.isNotificationOpen = false;
+        this.isNotificationOpen =
+            false;
         this.isAiChatOpen = false;
     }
 
     private loadCurrentUser(): void {
         const currentUser =
-            this.storageService.getCurrentUser();
+            this.storageService
+                .getCurrentUser();
 
         this.username =
-            currentUser?.tenDangNhap?.trim() || '';
+            currentUser
+                ?.tenDangNhap
+                ?.trim() || '';
 
+        /*
+         * Không đọc trực tiếp:
+         * currentUser.maQuyen
+         *
+         * StorageService đã chịu trách nhiệm
+         * normalize quyền.
+         *
+         * Ví dụ production:
+         * maQuyen = 0
+         * tenQuyen = "Quản trị viên"
+         *
+         * sẽ được resolve thành role ID = 1.
+         */
         this.currentRoleId =
-            Number(currentUser?.maQuyen) > 0
-                ? Number(currentUser?.maQuyen)
-                : 0;
+            this.storageService
+                .getCurrentRoleId() ??
+            0;
 
         this.roleName =
-            currentUser?.tenQuyen?.trim() || '';
+            currentUser
+                ?.tenQuyen
+                ?.trim() || '';
 
+        /*
+         * Tương tự role ID, lấy employee ID
+         * qua StorageService để toàn app
+         * dùng chung một cách đọc session.
+         */
         this.employeeId =
-            Number(currentUser?.maNV) > 0
-                ? Number(currentUser?.maNV)
-                : null;
+            this.storageService
+                .getCurrentEmployeeId();
 
-        this.displayName = this.username;
+        this.displayName =
+            this.username;
+
         this.initials =
             this.createInitials(
                 this.displayName,
@@ -221,17 +342,23 @@ export class HeaderUserComponent implements OnInit {
                     ),
                 );
 
+        /*
+         * Dùng currentRoleId đã normalize,
+         * không quay lại đọc
+         * currentUser.maQuyen.
+         */
         const role$ =
-            Number(currentUser?.maQuyen) > 0
+            this.currentRoleId > 0
                 ? this.quyenService
                     .getById(
-                        Number(
-                            currentUser?.maQuyen,
-                        ),
+                        this.currentRoleId,
                     )
                     .pipe(
                         catchError(
-                            () => of(null),
+                            () =>
+                                of(
+                                    null,
+                                ),
                         ),
                     )
                 : of(null);
@@ -242,8 +369,11 @@ export class HeaderUserComponent implements OnInit {
         })
             .pipe(
                 finalize(() => {
-                    this.isLoading = false;
-                    this.changeDetectorRef.markForCheck();
+                    this.isLoading =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
                 }),
             )
             .subscribe({
@@ -259,7 +389,9 @@ export class HeaderUserComponent implements OnInit {
 
                     if (
                         employee &&
-                        Number(employee.maNV) > 0
+                        Number(
+                            employee.maNV,
+                        ) > 0
                     ) {
                         this.employeeId =
                             Number(
@@ -268,16 +400,21 @@ export class HeaderUserComponent implements OnInit {
                     }
 
                     this.displayName =
-                        employee?.hoTen?.trim() ||
+                        employee
+                            ?.hoTen
+                            ?.trim() ||
                         this.username;
 
                     this.roleName =
-                        role?.tenQuyen?.trim() ||
+                        role
+                            ?.tenQuyen
+                            ?.trim() ||
                         this.roleName;
 
                     this.avatarUrl =
                         this.normalizeImageUrl(
-                            employee?.hinhAnh ??
+                            employee
+                                ?.hinhAnh ??
                             null,
                         );
 
@@ -293,7 +430,8 @@ export class HeaderUserComponent implements OnInit {
                         this.loadError =
                             'Không thể tải thông tin người dùng hiện tại.';
                     } else {
-                        this.loadError = '';
+                        this.loadError =
+                            '';
                     }
                 },
             });
@@ -369,9 +507,11 @@ export class HeaderUserComponent implements OnInit {
                 'hrm_theme',
             ) === 'dark';
 
-        this.document.documentElement.classList.toggle(
-            'dark-theme',
-            this.isDarkMode,
-        );
+        this.document
+            .documentElement
+            .classList.toggle(
+                'dark-theme',
+                this.isDarkMode,
+            );
     }
 }

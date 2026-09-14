@@ -137,7 +137,7 @@ export class EditRewardsDisciplineComponent
 
 
     preparedPayload:
-        UpdateKhenThuongKyLuatRequest |
+        Omit<UpdateKhenThuongKyLuatRequest, 'maKTKL'> |
         null =
         null;
 
@@ -899,7 +899,7 @@ export class EditRewardsDisciplineComponent
 
 
     private buildPayload():
-        UpdateKhenThuongKyLuatRequest {
+        Omit<UpdateKhenThuongKyLuatRequest, 'maKTKL'> {
 
         const decisionType =
             this.form.loai ===

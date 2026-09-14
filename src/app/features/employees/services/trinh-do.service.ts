@@ -69,7 +69,8 @@ export class TrinhDoService {
     }
 
     update(maTD: number, payload: UpdateTrinhDoRequest): Observable<TrinhDo> {
-        const request: UpdateTrinhDoRequest = {
+        const request: TrinhDo = {
+            maTD,
             tenTD: payload.tenTD.trim(),
         };
 
@@ -81,7 +82,7 @@ export class TrinhDoService {
             .pipe(
                 map((response) => {
                     const qualification = this.unwrapItem(response);
-                    return qualification ?? { maTD, tenTD: request.tenTD };
+                    return qualification ?? request;
                 }),
             );
     }
@@ -122,7 +123,10 @@ export class TrinhDoService {
             this.isApiResponse<unknown>(response) &&
             response.success === false
         ) {
-            throw new Error(response.message?.trim() || 'Thao tác trình độ không thành công.');
+            throw new Error(
+                response.message?.trim() ||
+                'Thao tác trình độ không thành công.',
+            );
         }
     }
 

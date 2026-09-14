@@ -17,5 +17,11 @@ export interface CreateKhenThuongKyLuatRequest {
     ngayQuyetDinh: string;
 }
 
-export type UpdateKhenThuongKyLuatRequest =
-    CreateKhenThuongKyLuatRequest;
+export interface UpdateKhenThuongKyLuatRequest {
+    maKTKL: number;
+    maNV: number;
+    loai: KhenThuongKyLuatLoai;
+    lyDo: string | null;
+    soTien: number;
+    ngayQuyetDinh: string;
+}

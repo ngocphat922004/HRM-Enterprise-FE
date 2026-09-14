@@ -38,6 +38,15 @@ import {
 } from '../../core/constants/api-endpoints.constants';
 
 import {
+  resolveUserRole,
+  RoleKey,
+} from '../../core/guards/role.guard';
+
+import {
+  StorageService,
+} from '../../core/services/storage.service';
+
+import {
   DashboardStat,
   DepartmentRatio,
   EmployeeItem,
@@ -45,357 +54,187 @@ import {
   LeaveRequestItem,
 } from './dashboard.model';
 
-
 interface ApiResponse<T> {
-
-  success:
-  boolean;
-
-  message:
-  string;
-
-  data:
-  T | null;
-
+  success: boolean;
+  message: string;
+  data: T | null;
   errors?:
-  Record<
+  | Record<
     string,
     string[] | string
-  > |
-  null;
+  >
+  | null;
 }
-
 
 interface DashboardNhanVien {
-
-  maNV:
-  number;
-
-  hoTen:
-  string;
-
-  maPB:
-  number | null;
-
-  maCV:
-  number | null;
-
-  ngayVaoLam:
-  string;
-
-  trangThai:
-  string;
+  maNV: number;
+  hoTen: string;
+  maPB: number | null;
+  maCV: number | null;
+  ngayVaoLam: string;
+  trangThai: string;
 }
-
 
 interface DashboardPhongBan {
-
-  maPB:
-  number;
-
-  tenPB:
-  string;
-
-  trangThai:
-  string;
+  maPB: number;
+  tenPB: string;
+  trangThai: string;
 }
-
 
 interface DashboardChucVu {
-
-  maCV:
-  number;
-
-  tenCV:
-  string;
-
-  moTa?:
-  string | null;
+  maCV: number;
+  tenCV: string;
+  moTa?: string | null;
 }
-
 
 interface DashboardNghiPhep {
-
-  maNP:
-  number;
-
-  maNV:
-  number;
-
-  maLoaiNP:
-  number;
-
-  tuNgay:
-  string;
-
-  denNgay:
-  string;
-
-  lyDo:
-  string | null;
-
-  trangThai:
-  string;
-
-  nguoiDuyet:
-  number | null;
+  maNP: number;
+  maNV: number;
+  maLoaiNP: number;
+  tuNgay: string;
+  denNgay: string;
+  lyDo: string | null;
+  trangThai: string;
+  nguoiDuyet: number | null;
 }
-
 
 interface DashboardLoaiNghiPhep {
-
-  maLoaiNP:
-  number;
-
-  tenLoaiNP:
-  string;
-
-  moTa:
-  string | null;
+  maLoaiNP: number;
+  tenLoaiNP: string;
+  moTa: string | null;
 }
-
 
 interface DashboardChamCong {
-
-  maCC:
-  number;
-
-  maNV:
-  number;
-
-  maCa:
-  number;
-
-  ngayChamCong:
-  string;
-
-  gioVao:
-  string | null;
-
-  gioRa:
-  string | null;
-
-  soGioLam:
-  number;
-
-  trangThai:
-  string;
-
-  ghiChu:
-  string | null;
+  maCC: number;
+  maNV: number;
+  maCa: number;
+  ngayChamCong: string;
+  gioVao: string | null;
+  gioRa: string | null;
+  soGioLam: number;
+  trangThai: string;
+  ghiChu: string | null;
 }
-
 
 interface DashboardHopDong {
-
-  maHD:
-  number;
-
-  maNV:
-  number;
-
-  maLoaiHD:
-  number;
-
-  ngayBatDau:
-  string;
-
-  ngayKetThuc:
-  string | null;
-
-  luongCoBan:
-  number;
-
-  trangThai:
-  string;
+  maHD: number;
+  maNV: number;
+  maLoaiHD: number;
+  ngayBatDau: string;
+  ngayKetThuc: string | null;
+  luongCoBan: number;
+  trangThai: string;
 }
 
-
 @Component({
-  selector:
-    'app-dashboard',
-
-  standalone:
-    true,
-
+  selector: 'app-dashboard',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
     RouterLink,
   ],
-
-  templateUrl:
-    './dashboard.component.html',
-
-  styleUrl:
-    './dashboard.component.scss',
-
-  changeDetection:
-    ChangeDetectionStrategy.OnPush,
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent
   implements OnInit, OnDestroy {
 
+  searchTerm = '';
 
+  toastMessage = '';
 
-  searchTerm =
-    '';
+  isLoading = false;
 
-  toastMessage =
-    '';
+  errorMessage = '';
 
+  stats: DashboardStat[] = [];
 
-  isLoading =
-    false;
+  employeeTrend: Array<{
+    month: string;
+    value: number;
+  }> = [];
 
+  departments: DepartmentRatio[] = [];
 
-  errorMessage =
-    '';
+  employees: EmployeeItem[] = [];
 
+  leaveRequests: LeaveRequestItem[] = [];
 
+  expiringContracts: ExpiringContractItem[] = [];
 
-
-  stats:
-    DashboardStat[] =
-    [];
-
-
-  employeeTrend:
-    Array<{
-      month:
-      string;
-
-      value:
-      number;
-    }> =
-    [];
-
-
-  departments:
-    DepartmentRatio[] =
-    [];
-
-
-  employees:
-    EmployeeItem[] =
-    [];
-
-
-  leaveRequests:
-    LeaveRequestItem[] =
-    [];
-
-
-  expiringContracts:
-    ExpiringContractItem[] =
-    [];
-
-
-  expiringContractCount =
-    0;
-
-
+  expiringContractCount = 0;
 
   private readonly updatingLeaveIds =
     new Set<number>();
 
-
   private toastTimer:
-    ReturnType<
-      typeof setTimeout
-    > | null =
-    null;
-
+    ReturnType<typeof setTimeout> | null = null;
 
   private readonly apiBaseUrl =
     environment.apiBaseUrl;
 
-
   constructor(
-    private readonly router:
-      Router,
+    private readonly router: Router,
 
-    private readonly http:
-      HttpClient,
+    private readonly http: HttpClient,
 
     private readonly changeDetectorRef:
       ChangeDetectorRef,
+
+    private readonly storageService:
+      StorageService,
   ) { }
 
+  private get currentRole(): RoleKey | null {
+    return resolveUserRole(
+      this.storageService.getCurrentUser(),
+    );
+  }
 
+  get canApproveLeave(): boolean {
+    return (
+      this.currentRole === 'admin' ||
+      this.currentRole === 'hr' ||
+      this.currentRole === 'manager'
+    );
+  }
 
-
-  ngOnInit():
-    void {
-
+  ngOnInit(): void {
     this.loadDashboard();
   }
 
-
-  ngOnDestroy():
-    void {
-
-    if (
-      this.toastTimer
-    ) {
-
+  ngOnDestroy(): void {
+    if (this.toastTimer) {
       clearTimeout(
         this.toastTimer,
       );
     }
   }
 
-
-
-
-  get filteredEmployees():
-    EmployeeItem[] {
-
+  get filteredEmployees(): EmployeeItem[] {
     const term =
       this.searchTerm
         .trim()
-        .toLocaleLowerCase(
-          'vi',
-        );
+        .toLocaleLowerCase('vi');
 
-
-    if (
-      !term
-    ) {
-
+    if (!term) {
       return this.employees;
     }
 
-
-    return this.employees
-      .filter(
-        (
-          employee,
-        ) =>
-
-          `${employee.name} ${employee.position} ${employee.employeeCode}`
-            .toLocaleLowerCase(
-              'vi',
-            )
-            .includes(
-              term,
-            ),
-      );
+    return this.employees.filter(
+      (employee) =>
+        `${employee.name} ${employee.position} ${employee.employeeCode}`
+          .toLocaleLowerCase('vi')
+          .includes(term),
+    );
   }
 
-
-
-  get departmentChartBackground():
-    string {
-
-    if (
-      this.departments.length ===
-      0
-    ) {
-
+  get departmentChartBackground(): string {
+    if (this.departments.length === 0) {
       return 'conic-gradient(#e7e5ef 0% 100%)';
     }
-
 
     const colors = [
       '#4f46e5',
@@ -404,102 +243,66 @@ export class DashboardComponent
       '#e7e5ef',
     ];
 
-
-    let cursor =
-      0;
-
+    let cursor = 0;
 
     const segments =
-      this.departments
-        .map(
-          (
-            department,
-            index,
-          ) => {
+      this.departments.map(
+        (
+          department,
+          index,
+        ) => {
+          const start = cursor;
 
-            const start =
-              cursor;
+          const end =
+            index ===
+              this.departments.length - 1
+              ? 100
+              : Math.min(
+                100,
+                cursor + department.value,
+              );
 
+          cursor = end;
 
-            const end =
-              index ===
-                this.departments.length -
-                1
-
-                ? 100
-
-                : Math.min(
-                  100,
-
-                  cursor +
-                  department.value,
-                );
-
-
-            cursor =
-              end;
-
-
-            return `${colors[index % colors.length]} ${start}% ${end}%`;
-          },
-        );
-
+          return `${colors[index % colors.length]} ${start}% ${end}%`;
+        },
+      );
 
     return `conic-gradient(${segments.join(', ')})`;
   }
 
-
-  retry():
-    void {
-
-    if (
-      this.isLoading
-    ) {
-
+  retry(): void {
+    if (this.isLoading) {
       return;
     }
-
 
     this.loadDashboard();
   }
 
-
-
-
   updateLeaveStatus(
-    id:
-      number,
-
-    status:
-      'approved' |
-      'rejected',
+    id: number,
+    status: 'approved' | 'rejected',
   ): void {
-
-    if (
-      this.updatingLeaveIds
-        .has(
-          id,
-        )
-    ) {
+    if (!this.canApproveLeave) {
+      this.showToast(
+        'Bạn không có quyền duyệt đơn nghỉ phép.',
+      );
 
       return;
     }
 
+    if (
+      this.updatingLeaveIds.has(id)
+    ) {
+      return;
+    }
 
     const endpoint =
-      status ===
-        'approved'
-
+      status === 'approved'
         ? `${this.apiBaseUrl}${API_ENDPOINTS.nghiPhepApprove(id)}`
-
         : `${this.apiBaseUrl}${API_ENDPOINTS.nghiPhepReject(id)}`;
 
-
-    this.updatingLeaveIds
-      .add(
-        id,
-      );
-
+    this.updatingLeaveIds.add(id);
 
     this.http
       .put(
@@ -507,100 +310,59 @@ export class DashboardComponent
         null,
       )
       .pipe(
-        finalize(
-          () => {
+        finalize(() => {
+          this.updatingLeaveIds.delete(id);
 
-            this.updatingLeaveIds
-              .delete(
-                id,
-              );
-
-
-            this.changeDetectorRef
-              .markForCheck();
-          },
-        ),
+          this.changeDetectorRef.markForCheck();
+        }),
       )
       .subscribe({
-
         next: () => {
-
-
           this.leaveRequests =
-            this.leaveRequests
-              .filter(
-                (
-                  request,
-                ) =>
-                  request.id !==
-                  id,
-              );
-
-
+            this.leaveRequests.filter(
+              (request) =>
+                request.id !== id,
+            );
 
           const pendingStat =
-            this.stats
-              .find(
-                (
-                  item,
-                ) =>
-                  item.title ===
-                  'Đơn chờ duyệt',
-              );
+            this.stats.find(
+              (item) =>
+                item.title ===
+                'Đơn chờ duyệt',
+            );
 
-
-          if (
-            pendingStat
-          ) {
-
+          if (pendingStat) {
             pendingStat.value =
               String(
                 Math.max(
                   0,
-
                   Number(
                     pendingStat.value,
-                  ) -
-                  1,
+                  ) - 1,
                 ),
-              )
-                .padStart(
-                  2,
-                  '0',
-                );
+              ).padStart(
+                2,
+                '0',
+              );
           }
 
-
           this.showToast(
-            status ===
-              'approved'
-
+            status === 'approved'
               ? 'Đã duyệt đơn nghỉ phép.'
-
               : 'Đã từ chối đơn nghỉ phép.',
           );
 
-
-          this.changeDetectorRef
-            .markForCheck();
+          this.changeDetectorRef.markForCheck();
         },
 
-
         error: (
-          error:
-            HttpErrorResponse,
+          error: HttpErrorResponse,
         ) => {
-
-
           this.showToast(
             this.getApiErrorMessage(
               error,
-
-              status ===
-                'approved'
-
+              status === 'approved'
                 ? 'Không thể duyệt đơn nghỉ phép.'
-
                 : 'Không thể từ chối đơn nghỉ phép.',
             ),
           );
@@ -608,22 +370,13 @@ export class DashboardComponent
       });
   }
 
-
-
-
   openContract(
-    maHD:
-      number,
+    maHD: number,
   ): void {
-
     if (
-      !Number.isInteger(
-        maHD,
-      ) ||
-      maHD <=
-      0
+      !Number.isInteger(maHD) ||
+      maHD <= 0
     ) {
-
       this.showToast(
         'Không xác định được hợp đồng cần mở.',
       );
@@ -631,98 +384,61 @@ export class DashboardComponent
       return;
     }
 
-
-    void this.router
-      .navigate([
-        '/contracts',
-        maHD,
-      ]);
+    void this.router.navigate([
+      '/contracts',
+      maHD,
+    ]);
   }
 
-  private loadDashboard():
-    void {
+  private loadDashboard(): void {
+    this.isLoading = true;
 
-    this.isLoading =
-      true;
-
-
-    this.errorMessage =
-      '';
-
+    this.errorMessage = '';
 
     forkJoin({
-
       employees:
-        this.getList<
-          DashboardNhanVien
-        >(
+        this.getList<DashboardNhanVien>(
           API_ENDPOINTS.nhanVien,
         ),
 
-
       departments:
-        this.getList<
-          DashboardPhongBan
-        >(
+        this.getList<DashboardPhongBan>(
           API_ENDPOINTS.phongBan,
         ),
 
-
       positions:
-        this.getList<
-          DashboardChucVu
-        >(
+        this.getList<DashboardChucVu>(
           API_ENDPOINTS.chucVu,
         ),
 
-
       leaves:
-        this.getList<
-          DashboardNghiPhep
-        >(
+        this.getList<DashboardNghiPhep>(
           API_ENDPOINTS.nghiPhep,
         ),
 
-
       leaveTypes:
-        this.getList<
-          DashboardLoaiNghiPhep
-        >(
+        this.getList<DashboardLoaiNghiPhep>(
           API_ENDPOINTS.loaiNghiPhep,
         ),
 
-
       attendance:
-        this.getList<
-          DashboardChamCong
-        >(
+        this.getList<DashboardChamCong>(
           API_ENDPOINTS.chamCong,
         ),
 
-
       contracts:
-        this.getList<
-          DashboardHopDong
-        >(
+        this.getList<DashboardHopDong>(
           API_ENDPOINTS.hopDong,
         ),
-
     })
       .pipe(
-        finalize(
-          () => {
+        finalize(() => {
+          this.isLoading = false;
 
-            this.isLoading =
-              false;
-
-
-            this.changeDetectorRef
-              .markForCheck();
-          },
-        ),
+          this.changeDetectorRef.markForCheck();
+        }),
       )
       .subscribe({
-
         next: ({
           employees,
           departments,
@@ -732,243 +448,144 @@ export class DashboardComponent
           attendance,
           contracts,
         }) => {
-
-          const today =
-            this.today();
-
-
-
+          const today = this.today();
 
           const activeEmployees =
-            employees
-              .filter(
-                (
-                  employee,
-                ) =>
-                  employee.trangThai ===
-                  'Đang làm việc',
-              );
-
+            employees.filter(
+              (employee) =>
+                employee.trangThai ===
+                'Đang làm việc',
+            );
 
           const newEmployeesThisMonth =
-            employees
-              .filter(
-                (
-                  employee,
-                ) =>
-                  this.isSameMonth(
-                    employee.ngayVaoLam,
-
-                    today,
-                  ),
-              )
-              .length;
-
+            employees.filter(
+              (employee) =>
+                this.isSameMonth(
+                  employee.ngayVaoLam,
+                  today,
+                ),
+            ).length;
 
           const approvedLeaveToday =
-            leaves
-              .filter(
-                (
-                  leave,
-                ) =>
-                  leave.trangThai ===
-                  'Đã duyệt' &&
-
-                  this.dateInRange(
-                    today,
-
-                    leave.tuNgay,
-
-                    leave.denNgay,
-                  ),
-              );
-
+            leaves.filter(
+              (leave) =>
+                leave.trangThai ===
+                'Đã duyệt' &&
+                this.dateInRange(
+                  today,
+                  leave.tuNgay,
+                  leave.denNgay,
+                ),
+            );
 
           const lateToday =
-            attendance
-              .filter(
-                (
-                  item,
-                ) =>
-                  this.dateOnly(
-                    item.ngayChamCong,
-                  ) ===
-                  today &&
-
-                  item.trangThai ===
-                  'Đi trễ',
-              );
-
+            attendance.filter(
+              (item) =>
+                this.dateOnly(
+                  item.ngayChamCong,
+                ) === today &&
+                item.trangThai ===
+                'Đi trễ',
+            );
 
           const pendingLeaves =
-            leaves
-              .filter(
-                (
-                  leave,
-                ) =>
-                  leave.trangThai ===
-                  'Chờ duyệt',
-              );
-
+            leaves.filter(
+              (leave) =>
+                leave.trangThai ===
+                'Chờ duyệt',
+            );
 
           const activePercent =
-            employees.length >
-              0
-
+            employees.length > 0
               ? (
                 activeEmployees.length /
                 employees.length
               ) *
               100
-
               : 0;
 
-
           this.stats = [
-
             {
-              title:
-                'Tổng nhân viên',
-
-              value:
-                String(
-                  employees.length,
-                ),
-
+              title: 'Tổng nhân viên',
+              value: String(
+                employees.length,
+              ),
               description:
                 `+${newEmployeesThisMonth} tháng này`,
-
-              icon:
-                'users',
-
-              theme:
-                'primary',
+              icon: 'users',
+              theme: 'primary',
             },
 
             {
-              title:
-                'Đang làm việc',
-
-              value:
-                String(
-                  activeEmployees.length,
-                ),
-
+              title: 'Đang làm việc',
+              value: String(
+                activeEmployees.length,
+              ),
               description:
                 `${activePercent.toFixed(1)}% tổng nhân sự`,
-
-              icon:
-                'briefcase',
-
-              theme:
-                'warning',
+              icon: 'briefcase',
+              theme: 'warning',
             },
 
             {
-              title:
-                'Nghỉ phép hôm nay',
-
-              value:
-                String(
-                  approvedLeaveToday.length,
-                )
-                  .padStart(
-                    2,
-                    '0',
-                  ),
-
+              title: 'Nghỉ phép hôm nay',
+              value: String(
+                approvedLeaveToday.length,
+              ).padStart(
+                2,
+                '0',
+              ),
               description:
-                approvedLeaveToday.length >
-                  0
-
+                approvedLeaveToday.length > 0
                   ? 'Đơn đã được duyệt'
-
                   : 'Không có nhân viên nghỉ',
-
-              icon:
-                'calendar',
-
-              theme:
-                'info',
+              icon: 'calendar',
+              theme: 'info',
             },
 
             {
-              title:
-                'Đi muộn',
-
-              value:
-                String(
-                  lateToday.length,
-                )
-                  .padStart(
-                    2,
-                    '0',
-                  ),
-
+              title: 'Đi muộn',
+              value: String(
+                lateToday.length,
+              ).padStart(
+                2,
+                '0',
+              ),
               description:
-                lateToday.length >
-                  0
-
+                lateToday.length > 0
                   ? 'Cần theo dõi'
-
                   : 'Không ghi nhận đi trễ',
-
-              icon:
-                'clock',
-
-              theme:
-                'danger',
+              icon: 'clock',
+              theme: 'danger',
             },
 
             {
-              title:
-                'Đơn chờ duyệt',
-
-              value:
-                String(
-                  pendingLeaves.length,
-                )
-                  .padStart(
-                    2,
-                    '0',
-                  ),
-
+              title: 'Đơn chờ duyệt',
+              value: String(
+                pendingLeaves.length,
+              ).padStart(
+                2,
+                '0',
+              ),
               description:
-                pendingLeaves.length >
-                  0
-
+                pendingLeaves.length > 0
                   ? 'Yêu cầu đang chờ xử lý'
-
                   : 'Không có đơn chờ',
-
-              icon:
-                'document',
-
-              theme:
-                'primary',
+              icon: 'document',
+              theme: 'primary',
             },
           ];
-
-
-
 
           this.employeeTrend =
             this.buildEmployeeTrend(
               employees,
             );
 
-
-
-
           this.departments =
             this.buildDepartmentRatio(
               employees,
-
               departments,
             );
-
-
-
 
           this.employees =
             employees
@@ -978,26 +595,20 @@ export class DashboardComponent
                   a,
                   b,
                 ) => {
-
                   const dateCompare =
                     this.dateOnly(
                       b.ngayVaoLam,
-                    )
-                      .localeCompare(
-                        this.dateOnly(
-                          a.ngayVaoLam,
-                        ),
-                      );
-
+                    ).localeCompare(
+                      this.dateOnly(
+                        a.ngayVaoLam,
+                      ),
+                    );
 
                   if (
-                    dateCompare !==
-                    0
+                    dateCompare !== 0
                   ) {
-
                     return dateCompare;
                   }
-
 
                   return (
                     b.maNV -
@@ -1010,29 +621,20 @@ export class DashboardComponent
                 5,
               )
               .map(
-                (
-                  employee,
-                ) => {
-
+                (employee) => {
                   const position =
-                    positions
-                      .find(
-                        (
-                          item,
-                        ) =>
-                          item.maCV ===
-                          employee.maCV,
-                      );
-
+                    positions.find(
+                      (item) =>
+                        item.maCV ===
+                        employee.maCV,
+                    );
 
                   return {
-
                     name:
                       employee.hoTen,
 
                     position:
-                      position
-                        ?.tenCV ??
+                      position?.tenCV ??
                       'Chưa có chức vụ',
 
                     employeeCode:
@@ -1051,9 +653,6 @@ export class DashboardComponent
                 },
               );
 
-
-
-
           this.leaveRequests =
             pendingLeaves
               .slice()
@@ -1070,124 +669,85 @@ export class DashboardComponent
                 5,
               )
               .map(
-                (
-                  leave,
-                ) => {
-
+                (leave) => {
                   const employee =
-                    employees
-                      .find(
-                        (
-                          item,
-                        ) =>
-                          item.maNV ===
-                          leave.maNV,
-                      );
-
+                    employees.find(
+                      (item) =>
+                        item.maNV ===
+                        leave.maNV,
+                    );
 
                   const leaveType =
-                    leaveTypes
-                      .find(
-                        (
-                          item,
-                        ) =>
-                          item.maLoaiNP ===
-                          leave.maLoaiNP,
-                      );
-
+                    leaveTypes.find(
+                      (item) =>
+                        item.maLoaiNP ===
+                        leave.maLoaiNP,
+                    );
 
                   return {
-
-                    id:
-                      leave.maNP,
+                    id: leave.maNP,
 
                     employeeName:
-                      employee
-                        ?.hoTen ??
+                      employee?.hoTen ??
                       `Nhân viên #${leave.maNV}`,
 
                     leaveType:
-                      leaveType
-                        ?.tenLoaiNP ??
+                      leaveType?.tenLoaiNP ??
                       'Nghỉ phép',
 
                     numberOfDays:
                       this.countDaysInclusive(
                         leave.tuNgay,
-
                         leave.denNgay,
                       ),
 
                     initials:
                       this.getInitials(
-                        employee
-                          ?.hoTen ??
+                        employee?.hoTen ??
                         `NV${leave.maNV}`,
                       ),
 
-                    status:
-                      'pending',
+                    status: 'pending',
                   };
                 },
               );
 
-
-
-
           const expiringContracts =
             contracts
               .filter(
-                (
-                  contract,
-                ) => {
-
+                (contract) => {
                   if (
                     !contract.ngayKetThuc
                   ) {
-
                     return false;
                   }
-
 
                   const remainingDays =
                     this.daysFromToday(
                       contract.ngayKetThuc,
                     );
 
-
                   return (
-                    remainingDays >=
-                    0 &&
-
-                    remainingDays <=
-                    30
+                    remainingDays >= 0 &&
+                    remainingDays <= 30
                   );
                 },
               )
               .map(
-                (
-                  contract,
-                ) => {
-
+                (contract) => {
                   const employee =
-                    employees
-                      .find(
-                        (
-                          item,
-                        ) =>
-                          item.maNV ===
-                          contract.maNV,
-                      );
-
+                    employees.find(
+                      (item) =>
+                        item.maNV ===
+                        contract.maNV,
+                    );
 
                   return {
-
                     maHD:
                       contract.maHD,
 
                     employeeName:
-                      employee
-                        ?.hoTen ??
+                      employee?.hoTen ??
                       `Nhân viên #${contract.maNV}`,
 
                     expiryDate:
@@ -1213,40 +773,28 @@ export class DashboardComponent
                   b.remainingDays,
               );
 
-
           this.expiringContractCount =
             expiringContracts.length;
 
-
           this.expiringContracts =
-            expiringContracts
-              .slice(
-                0,
-                5,
-              );
+            expiringContracts.slice(
+              0,
+              5,
+            );
 
-
-          this.changeDetectorRef
-            .markForCheck();
+          this.changeDetectorRef.markForCheck();
         },
 
-
         error: (
-          error:
-            HttpErrorResponse,
+          error: HttpErrorResponse,
         ) => {
-
-
           this.resetDashboard();
-
 
           this.errorMessage =
             this.getApiErrorMessage(
               error,
-
               'Không thể tải dữ liệu tổng quan.',
             );
-
 
           this.showToast(
             this.errorMessage,
@@ -1255,25 +803,15 @@ export class DashboardComponent
       });
   }
 
-
-
-
   private buildDepartmentRatio(
-    employees:
-      DashboardNhanVien[],
-
-    departments:
-      DashboardPhongBan[],
+    employees: DashboardNhanVien[],
+    departments: DashboardPhongBan[],
   ): DepartmentRatio[] {
-
     if (
-      employees.length ===
-      0
+      employees.length === 0
     ) {
-
       return [];
     }
-
 
     const classNames = [
       'department--primary',
@@ -1282,100 +820,72 @@ export class DashboardComponent
       'department--muted',
     ];
 
-
     const departmentIds =
       new Set(
         departments.map(
-          department =>
+          (department) =>
             department.maPB,
         ),
       );
 
-
-    const rows:
-      Array<{
-        name: string;
-        count: number;
-      }> =
+    const rows: Array<{
+      name: string;
+      count: number;
+    }> =
       departments
         .map(
-          department => ({
+          (department) => ({
             name:
               department.tenPB,
 
             count:
-              employees
-                .filter(
-                  employee =>
-                    employee.maPB ===
-                    department.maPB,
-                )
-                .length,
+              employees.filter(
+                (employee) =>
+                  employee.maPB ===
+                  department.maPB,
+              ).length,
           }),
         )
         .filter(
-          item =>
-            item.count >
-            0,
+          (item) =>
+            item.count > 0,
         );
 
-
     const unassigned =
-      employees
-        .filter(
-          employee =>
-            employee.maPB ===
-            null ||
-            employee.maPB ===
-            undefined,
-        )
-        .length;
-
+      employees.filter(
+        (employee) =>
+          employee.maPB === null ||
+          employee.maPB === undefined,
+      ).length;
 
     if (
-      unassigned >
-      0
+      unassigned > 0
     ) {
-
       rows.push({
-        name:
-          'Chưa phân phòng',
-
-        count:
-          unassigned,
+        name: 'Chưa phân phòng',
+        count: unassigned,
       });
     }
 
-
     const unknownDepartmentCount =
-      employees
-        .filter(
-          employee =>
-            employee.maPB !==
-            null &&
-            employee.maPB !==
-            undefined &&
-            !departmentIds.has(
-              employee.maPB,
-            ),
-        )
-        .length;
-
+      employees.filter(
+        (employee) =>
+          employee.maPB !== null &&
+          employee.maPB !== undefined &&
+          !departmentIds.has(
+            employee.maPB,
+          ),
+      ).length;
 
     if (
-      unknownDepartmentCount >
-      0
+      unknownDepartmentCount > 0
     ) {
-
       rows.push({
-        name:
-          'Khác',
-
+        name: 'Khác',
         count:
           unknownDepartmentCount,
       });
     }
-
 
     rows.sort(
       (
@@ -1386,28 +896,20 @@ export class DashboardComponent
         a.count,
     );
 
-
-    let visibleRows =
-      rows;
-
+    let visibleRows = rows;
 
     if (
-      rows.length >
-      4
+      rows.length > 4
     ) {
-
       const leadingRows =
         rows.slice(
           0,
           3,
         );
 
-
       const remainingCount =
         rows
-          .slice(
-            3,
-          )
+          .slice(3)
           .reduce(
             (
               total,
@@ -1415,45 +917,33 @@ export class DashboardComponent
             ) =>
               total +
               item.count,
-
             0,
           );
-
 
       visibleRows = [
         ...leadingRows,
         {
-          name:
-            'Khác',
-
-          count:
-            remainingCount,
+          name: 'Khác',
+          count: remainingCount,
         },
       ];
     }
 
-
     const percentages =
       visibleRows.map(
-        item =>
+        (item) =>
           Number(
             (
-              item.count /
-              employees.length *
+              (item.count /
+                employees.length) *
               100
-            )
-              .toFixed(
-                1,
-              ),
+            ).toFixed(1),
           ),
       );
 
-
     if (
-      percentages.length >
-      0
+      percentages.length > 0
     ) {
-
       const totalBeforeLast =
         percentages
           .slice(
@@ -1467,189 +957,133 @@ export class DashboardComponent
             ) =>
               total +
               value,
-
             0,
           );
 
-
       percentages[
-        percentages.length -
-        1
+        percentages.length - 1
       ] =
         Number(
           Math.max(
             0,
             100 -
             totalBeforeLast,
-          )
-            .toFixed(
-              1,
-            ),
+          ).toFixed(1),
         );
     }
 
-
-    return visibleRows
-      .map(
-        (
-          item,
-          index,
-        ) => ({
-          name:
-            item.name,
-
-          value:
-            percentages[index] ??
-            0,
-
-          className:
-            classNames[
-            index %
-            classNames.length
-            ],
-        }),
-      );
-  }
-
-
-  private buildEmployeeTrend(
-    employees:
-      DashboardNhanVien[],
-  ): Array<{
-    month:
-    string;
-
-    value:
-    number;
-  }> {
-
-    const result:
-      Array<{
-        month:
-        string;
+    return visibleRows.map(
+      (
+        item,
+        index,
+      ) => ({
+        name:
+          item.name,
 
         value:
-        number;
-      }> =
-      [];
+          percentages[index] ??
+          0,
 
+        className:
+          classNames[
+          index %
+          classNames.length
+          ],
+      }),
+    );
+  }
+
+  private buildEmployeeTrend(
+    employees: DashboardNhanVien[],
+  ): Array<{
+    month: string;
+    value: number;
+  }> {
+    const result: Array<{
+      month: string;
+      value: number;
+    }> = [];
 
     const current =
       new Date();
-
 
     for (
       let offset = 5;
       offset >= 0;
       offset -= 1
     ) {
-
       const monthDate =
         new Date(
           current.getFullYear(),
-
           current.getMonth() -
           offset,
-
           1,
         );
-
 
       const year =
         monthDate.getFullYear();
 
-
       const month =
-        monthDate.getMonth() +
-        1;
-
+        monthDate.getMonth() + 1;
 
       const lastDay =
         new Date(
           year,
-
           month,
-
           0,
-        )
-          .getDate();
-
+        ).getDate();
 
       const endOfMonth =
         `${year}-${this.pad2(month)}-${this.pad2(lastDay)}`;
 
-
       const count =
-        employees
-          .filter(
-            (
-              employee,
-            ) => {
-
-              const joinDate =
-                this.dateOnly(
-                  employee.ngayVaoLam,
-                );
-
-
-              return (
-                !joinDate ||
-                joinDate <=
-                endOfMonth
+        employees.filter(
+          (employee) => {
+            const joinDate =
+              this.dateOnly(
+                employee.ngayVaoLam,
               );
-            },
-          )
-          .length;
 
+            return (
+              !joinDate ||
+              joinDate <=
+              endOfMonth
+            );
+          },
+        ).length;
 
       result.push({
-
         month:
           `T${this.pad2(month)}/${String(
             year,
-          ).slice(
-            -2,
-          )}`,
+          ).slice(-2)}`,
 
-        value:
-          count,
+        value: count,
       });
     }
-
 
     return result;
   }
 
-
-
-
   private getList<T>(
-    endpoint:
-      string,
+    endpoint: string,
   ): Observable<T[]> {
-
     return this.http
       .get<
-        ApiResponse<T[]> |
-        T[]
+        ApiResponse<T[]> | T[]
       >(
         `${this.apiBaseUrl}${endpoint}`,
       )
       .pipe(
         map(
-          (
-            response,
-          ) => {
-
+          (response) => {
             if (
               Array.isArray(
                 response,
               )
             ) {
-
               return response;
             }
-
 
             if (
               response.success ===
@@ -1670,21 +1104,14 @@ export class DashboardComponent
       );
   }
 
-
-
-
-  private today():
-    string {
-
+  private today(): string {
     const now =
       new Date();
-
 
     return (
       `${now.getFullYear()}-` +
       `${this.pad2(
-        now.getMonth() +
-        1,
+        now.getMonth() + 1,
       )}-` +
       `${this.pad2(
         now.getDate(),
@@ -1692,19 +1119,13 @@ export class DashboardComponent
     );
   }
 
-
   private dateOnly(
     value:
       string | null | undefined,
   ): string {
-
-    if (
-      !value
-    ) {
-
+    if (!value) {
       return '';
     }
-
 
     const result =
       value.slice(
@@ -1712,39 +1133,25 @@ export class DashboardComponent
         10,
       );
 
-
-    return /^\d{4}-\d{2}-\d{2}$/
-      .test(
-        result,
-      )
-
+    return /^\d{4}-\d{2}-\d{2}$/.test(
+      result,
+    )
       ? result
-
       : '';
   }
 
-
   private isSameMonth(
-    value:
-      string,
-
-    target:
-      string,
+    value: string,
+    target: string,
   ): boolean {
-
     const date =
       this.dateOnly(
         value,
       );
 
-
     return (
-      date.length >=
-      7 &&
-
-      target.length >=
-      7 &&
-
+      date.length >= 7 &&
+      target.length >= 7 &&
       date.slice(
         0,
         7,
@@ -1756,155 +1163,105 @@ export class DashboardComponent
     );
   }
 
-
   private dateInRange(
-    date:
-      string,
-
-    start:
-      string,
-
-    end:
-      string,
+    date: string,
+    start: string,
+    end: string,
   ): boolean {
-
     const startDate =
       this.dateOnly(
         start,
       );
-
 
     const endDate =
       this.dateOnly(
         end,
       );
 
-
     if (
       !startDate ||
       !endDate
     ) {
-
       return false;
     }
 
-
     return (
-      date >=
-      startDate &&
-
-      date <=
-      endDate
+      date >= startDate &&
+      date <= endDate
     );
   }
 
-
   private countDaysInclusive(
-    start:
-      string,
-
-    end:
-      string,
+    start: string,
+    end: string,
   ): number {
-
     const startTime =
       this.dateToUtcTime(
         start,
       );
-
 
     const endTime =
       this.dateToUtcTime(
         end,
       );
 
-
     if (
-      startTime ===
-      null ||
-
-      endTime ===
-      null ||
-
-      endTime <
-      startTime
+      startTime === null ||
+      endTime === null ||
+      endTime < startTime
     ) {
-
       return 0;
     }
-
 
     return (
       Math.floor(
         (
           endTime -
           startTime
-        ) /
-        86400000,
-      ) +
-      1
+        ) / 86400000,
+      ) + 1
     );
   }
 
-
   private daysFromToday(
-    value:
-      string,
+    value: string,
   ): number {
-
     const targetTime =
       this.dateToUtcTime(
         value,
       );
-
 
     const todayTime =
       this.dateToUtcTime(
         this.today(),
       );
 
-
     if (
-      targetTime ===
-      null ||
-
-      todayTime ===
-      null
+      targetTime === null ||
+      todayTime === null
     ) {
-
-      return Number
-        .MAX_SAFE_INTEGER;
+      return Number.MAX_SAFE_INTEGER;
     }
-
 
     return Math.ceil(
       (
         targetTime -
         todayTime
-      ) /
-      86400000,
+      ) / 86400000,
     );
   }
 
-
   private dateToUtcTime(
-    value:
-      string,
+    value: string,
   ): number | null {
-
     const date =
       this.dateOnly(
         value,
       );
 
-
-    if (
-      !date
-    ) {
-
+    if (!date) {
       return null;
     }
-
 
     const [
       year,
@@ -1912,115 +1269,73 @@ export class DashboardComponent
       day,
     ] =
       date
-        .split(
-          '-',
-        )
-        .map(
-          Number,
-        );
-
+        .split('-')
+        .map(Number);
 
     if (
       !year ||
       !month ||
       !day
     ) {
-
       return null;
     }
 
-
     return Date.UTC(
       year,
-      month -
-      1,
+      month - 1,
       day,
     );
   }
 
-
   private formatDate(
-    value:
-      string,
+    value: string,
   ): string {
-
     const date =
       this.dateOnly(
         value,
       );
 
-
-    if (
-      !date
-    ) {
-
+    if (!date) {
       return '—';
     }
-
 
     const [
       year,
       month,
       day,
     ] =
-      date.split(
-        '-',
-      );
+      date.split('-');
 
+    return `${day}/${month}/${year}`;
+  }
 
-    return (
-      `${day}/${month}/${year}`
+  private pad2(
+    value: number,
+  ): string {
+    return String(value).padStart(
+      2,
+      '0',
     );
   }
 
-
-  private pad2(
-    value:
-      number,
-  ): string {
-
-    return String(
-      value,
-    )
-      .padStart(
-        2,
-        '0',
-      );
-  }
-
-
-
-
   private getInitials(
-    name:
-      string,
+    name: string,
   ): string {
-
     const parts =
       name
         .trim()
-        .split(
-          /\s+/,
-        )
-        .filter(
-          Boolean,
-        );
-
+        .split(/\s+/)
+        .filter(Boolean);
 
     if (
-      parts.length ===
-      0
+      parts.length === 0
     ) {
-
       return 'NV';
     }
 
-
     if (
-      parts.length ===
-      1
+      parts.length === 1
     ) {
-
       return parts[0]
         .slice(
           0,
@@ -2029,232 +1344,130 @@ export class DashboardComponent
         .toUpperCase();
     }
 
-
     return parts
-      .slice(
-        -2,
-      )
+      .slice(-2)
       .map(
-        (
-          part,
-        ) =>
+        (part) =>
           part[0],
       )
-      .join(
-        '',
-      )
+      .join('')
       .toUpperCase();
   }
 
+  private resetDashboard(): void {
+    this.stats = [];
 
+    this.employeeTrend = [];
 
+    this.departments = [];
 
-  private resetDashboard():
-    void {
+    this.employees = [];
 
-    this.stats =
-      [];
+    this.leaveRequests = [];
 
+    this.expiringContracts = [];
 
-    this.employeeTrend =
-      [];
-
-
-    this.departments =
-      [];
-
-
-    this.employees =
-      [];
-
-
-    this.leaveRequests =
-      [];
-
-
-    this.expiringContracts =
-      [];
-
-
-    this.expiringContractCount =
-      0;
+    this.expiringContractCount = 0;
   }
 
-
-
-
   private getApiErrorMessage(
-    error:
-      HttpErrorResponse,
-
-    fallback:
-      string,
+    error: HttpErrorResponse,
+    fallback: string,
   ): string {
-
     const backendMessage =
-      typeof error.error
-        ?.message ===
+      typeof error.error?.message ===
         'string'
-
-        ? error.error
-          .message
-
+        ? error.error.message
         : '';
 
-
-    if (
-      backendMessage
-    ) {
-
+    if (backendMessage) {
       return backendMessage;
     }
 
-
     const backendErrors =
-      error.error
-        ?.errors;
-
+      error.error?.errors;
 
     if (
       backendErrors &&
       typeof backendErrors ===
       'object'
     ) {
-
       const messages =
         Object.values(
-          backendErrors as
-          Record<
+          backendErrors as Record<
             string,
             unknown
           >,
         )
           .flatMap(
-            (
-              value,
-            ) => {
-
+            (value) => {
               if (
                 Array.isArray(
                   value,
                 )
               ) {
-
                 return value.map(
-                  (
-                    item,
-                  ) =>
-                    String(
-                      item,
-                    ),
+                  (item) =>
+                    String(item),
                 );
               }
 
-
               return [
-                String(
-                  value,
-                ),
+                String(value),
               ];
             },
           )
-          .filter(
-            Boolean,
-          );
-
+          .filter(Boolean);
 
       if (
-        messages.length >
-        0
+        messages.length > 0
       ) {
-
-        return messages
-          .join(
-            ' ',
-          );
+        return messages.join(' ');
       }
     }
-
 
     switch (
     error.status
     ) {
-
       case 0:
-
-        return (
-          'Không thể kết nối đến hệ thống.'
-        );
-
+        return 'Không thể kết nối đến hệ thống.';
 
       case 401:
-
-        return (
-          'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
-        );
-
+        return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
 
       case 403:
-
-        return (
-          'Bạn không có quyền xem dữ liệu tổng quan.'
-        );
-
+        return 'Bạn không có quyền xem dữ liệu tổng quan.';
 
       case 404:
-
-        return (
-          'Không tìm thấy dữ liệu tổng quan.'
-        );
-
+        return 'Không tìm thấy dữ liệu tổng quan.';
 
       default:
-
         return fallback;
     }
   }
 
-
-
-
   showToast(
-    message:
-      string,
+    message: string,
   ): void {
-
     this.toastMessage =
       message;
 
+    this.changeDetectorRef.markForCheck();
 
-    this.changeDetectorRef
-      .markForCheck();
-
-
-    if (
-      this.toastTimer
-    ) {
-
+    if (this.toastTimer) {
       clearTimeout(
         this.toastTimer,
       );
     }
 
-
     this.toastTimer =
       setTimeout(
         () => {
+          this.toastMessage = '';
 
-          this.toastMessage =
-            '';
+          this.toastTimer = null;
 
-
-          this.toastTimer =
-            null;
-
-
-          this.changeDetectorRef
-            .markForCheck();
-
+          this.changeDetectorRef.markForCheck();
         },
         3000,
       );

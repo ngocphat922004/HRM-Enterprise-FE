@@ -10,6 +10,7 @@ export interface CreateChucVuRequest {
 }
 
 export interface UpdateChucVuRequest {
+    maCV: number;
     tenCV: string;
     moTa: string | null;
 }

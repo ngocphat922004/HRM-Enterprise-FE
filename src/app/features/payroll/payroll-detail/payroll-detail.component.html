@@ -30,6 +30,7 @@
 
     @if (payroll) {
     <div class="payroll-detail-actions">
+        @if (canEditPayroll) {
         <button class="edit-payroll-button" type="button" (click)="editPayroll()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -40,6 +41,7 @@
 
             Chỉnh sửa
         </button>
+        }
 
         <button class="print-button" type="button" (click)="printPayslip()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

@@ -1,15 +1,51 @@
 import { Injectable } from '@angular/core';
+
+import {
+    MA_QUYEN,
+    MaQuyen,
+} from '../constants/role.constants';
+
 import { LoginData } from '../models/login-response.model';
+
+const ROLE_ID_BY_NAME: Record<string, MaQuyen> = {
+    admin: MA_QUYEN.QUAN_TRI_VIEN,
+    administrator: MA_QUYEN.QUAN_TRI_VIEN,
+    'role admin': MA_QUYEN.QUAN_TRI_VIEN,
+    'quan tri vien': MA_QUYEN.QUAN_TRI_VIEN,
+    'quan tri he thong': MA_QUYEN.QUAN_TRI_VIEN,
+    'system administrator': MA_QUYEN.QUAN_TRI_VIEN,
+
+    hr: MA_QUYEN.NHAN_VIEN_NHAN_SU,
+    'human resources': MA_QUYEN.NHAN_VIEN_NHAN_SU,
+    'hr manager': MA_QUYEN.NHAN_VIEN_NHAN_SU,
+    'nhan su': MA_QUYEN.NHAN_VIEN_NHAN_SU,
+    'nhan vien nhan su': MA_QUYEN.NHAN_VIEN_NHAN_SU,
+    'quan ly nhan su': MA_QUYEN.NHAN_VIEN_NHAN_SU,
+
+    accountant: MA_QUYEN.KE_TOAN,
+    'ke toan': MA_QUYEN.KE_TOAN,
+    'nhan vien ke toan': MA_QUYEN.KE_TOAN,
+
+    manager: MA_QUYEN.TRUONG_PHONG,
+    'truong phong': MA_QUYEN.TRUONG_PHONG,
+    'truong nhom': MA_QUYEN.TRUONG_PHONG,
+    'quan ly phong ban': MA_QUYEN.TRUONG_PHONG,
+
+    director: MA_QUYEN.BAN_GIAM_DOC,
+    'ban giam doc': MA_QUYEN.BAN_GIAM_DOC,
+    'giam doc': MA_QUYEN.BAN_GIAM_DOC,
+    'board of directors': MA_QUYEN.BAN_GIAM_DOC,
+
+    employee: MA_QUYEN.NHAN_VIEN,
+    'nhan vien': MA_QUYEN.NHAN_VIEN,
+};
 
 @Injectable({
     providedIn: 'root',
 })
 export class StorageService {
-    private readonly tokenKey =
-        'hrm_access_token';
-
-    private readonly userKey =
-        'hrm_current_user';
+    private readonly tokenKey = 'hrm_access_token';
+    private readonly userKey = 'hrm_current_user';
 
     saveAuthSession(
         data: LoginData,
@@ -64,7 +100,8 @@ export class StorageService {
         }
 
         try {
-            const parsed = JSON.parse(rawUser) as unknown;
+            const parsed =
+                JSON.parse(rawUser) as unknown;
 
             if (!this.isRecord(parsed)) {
                 this.clearAuthSession();
@@ -86,26 +123,34 @@ export class StorageService {
 
             return this.normalizeLoginData({
                 accessToken: token,
+
                 maTK: this.readNumber(
                     parsed,
                     'maTK',
                 ),
-                tenDangNhap: this.readString(
-                    parsed,
-                    'tenDangNhap',
-                ),
+
+                tenDangNhap:
+                    this.readString(
+                        parsed,
+                        'tenDangNhap',
+                    ),
+
                 maNV: this.readNumber(
                     parsed,
                     'maNV',
                 ),
-                maQuyen: this.readNumber(
-                    parsed,
-                    'maQuyen',
-                ),
-                tenQuyen: this.readString(
-                    parsed,
-                    'tenQuyen',
-                ),
+
+                maQuyen:
+                    this.readNumber(
+                        parsed,
+                        'maQuyen',
+                    ),
+
+                tenQuyen:
+                    this.readString(
+                        parsed,
+                        'tenQuyen',
+                    ),
             });
         } catch {
             this.clearAuthSession();
@@ -143,9 +188,10 @@ export class StorageService {
             return 'TK';
         }
 
-        const words = displayName
-            .split(/\s+/)
-            .filter(Boolean);
+        const words =
+            displayName
+                .split(/\s+/)
+                .filter(Boolean);
 
         if (words.length === 1) {
             return words[0]
@@ -155,24 +201,33 @@ export class StorageService {
 
         return words
             .slice(-2)
-            .map((word) => word.charAt(0))
+            .map(
+                (word) =>
+                    word.charAt(0),
+            )
             .join('')
             .toUpperCase();
     }
 
-    getCurrentAccountId(): number | null {
+    getCurrentAccountId():
+        | number
+        | null {
         return this.toPositiveInteger(
             this.getCurrentUser()?.maTK,
         );
     }
 
-    getCurrentEmployeeId(): number | null {
+    getCurrentEmployeeId():
+        | number
+        | null {
         return this.toPositiveInteger(
             this.getCurrentUser()?.maNV,
         );
     }
 
-    getCurrentRoleId(): number | null {
+    getCurrentRoleId():
+        | number
+        | null {
         return this.toPositiveInteger(
             this.getCurrentUser()?.maQuyen,
         );
@@ -186,12 +241,15 @@ export class StorageService {
         localStorage.removeItem(
             this.tokenKey,
         );
+
         localStorage.removeItem(
             this.userKey,
         );
+
         sessionStorage.removeItem(
             this.tokenKey,
         );
+
         sessionStorage.removeItem(
             this.userKey,
         );
@@ -232,16 +290,6 @@ export class StorageService {
                 claims['EmployeeId'],
             );
 
-        const maQuyen =
-            this.firstPositiveInteger(
-                data.maQuyen,
-                claims['maQuyen'],
-                claims['MaQuyen'],
-                claims['roleId'],
-                claims['RoleId'],
-                claims['role'],
-            );
-
         const tenDangNhap =
             this.firstString(
                 data.tenDangNhap,
@@ -267,14 +315,79 @@ export class StorageService {
                 ],
             );
 
+        const maQuyen =
+            this.firstPositiveInteger(
+                data.maQuyen,
+                claims['maQuyen'],
+                claims['MaQuyen'],
+                claims['roleId'],
+                claims['RoleId'],
+                claims['role'],
+            ) ??
+            this.resolveRoleIdFromName(
+                tenQuyen,
+            );
+
         return {
-            accessToken: data.accessToken,
-            maTK: maTK ?? 0,
+            accessToken:
+                data.accessToken,
+
+            maTK:
+                maTK ?? 0,
+
             tenDangNhap,
-            maNV: maNV ?? 0,
-            maQuyen: maQuyen ?? 0,
+
+            maNV:
+                maNV ?? 0,
+
+            maQuyen:
+                maQuyen ?? 0,
+
             tenQuyen,
         };
+    }
+
+    private resolveRoleIdFromName(
+        value: unknown,
+    ): MaQuyen | null {
+        const normalizedRoleName =
+            this.normalizeRoleName(value);
+
+        if (!normalizedRoleName) {
+            return null;
+        }
+
+        return (
+            ROLE_ID_BY_NAME[
+            normalizedRoleName
+            ] ?? null
+        );
+    }
+
+    private normalizeRoleName(
+        value: unknown,
+    ): string {
+        if (
+            typeof value !==
+            'string'
+        ) {
+            return '';
+        }
+
+        return value
+            .normalize('NFD')
+            .replace(
+                /[\u0300-\u036f]/g,
+                '',
+            )
+            .toLocaleLowerCase('vi-VN')
+            .replace(/đ/g, 'd')
+            .replace(
+                /[_\-.]+/g,
+                ' ',
+            )
+            .replace(/\s+/g, ' ')
+            .trim();
     }
 
     private decodeJwtPayload(
@@ -287,33 +400,44 @@ export class StorageService {
             return {};
         }
 
-        const parts = token.split('.');
+        const parts =
+            token.split('.');
 
         if (parts.length < 2) {
             return {};
         }
 
         try {
-            const base64 = parts[1]
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
+            const base64 =
+                parts[1]
+                    .replace(/-/g, '+')
+                    .replace(/_/g, '/');
 
-            const padded = base64.padEnd(
-                Math.ceil(base64.length / 4) * 4,
-                '=',
-            );
+            const padded =
+                base64.padEnd(
+                    Math.ceil(
+                        base64.length / 4,
+                    ) * 4,
+                    '=',
+                );
 
-            const binary = window.atob(padded);
-            const bytes = Uint8Array.from(
-                binary,
-                (character) =>
-                    character.charCodeAt(0),
-            );
+            const binary =
+                window.atob(padded);
 
-            const json = new TextDecoder()
-                .decode(bytes);
+            const bytes =
+                Uint8Array.from(
+                    binary,
+                    (character) =>
+                        character.charCodeAt(0),
+                );
 
-            const payload = JSON.parse(json) as unknown;
+            const json =
+                new TextDecoder().decode(
+                    bytes,
+                );
+
+            const payload =
+                JSON.parse(json) as unknown;
 
             return this.isRecord(payload)
                 ? payload
@@ -328,20 +452,26 @@ export class StorageService {
     ): string {
         for (const value of values) {
             if (
-                typeof value === 'string' &&
+                typeof value ===
+                'string' &&
                 value.trim()
             ) {
                 return value.trim();
             }
 
             if (Array.isArray(value)) {
-                const item = value.find(
-                    (entry) =>
-                        typeof entry === 'string' &&
-                        entry.trim(),
-                );
+                const item =
+                    value.find(
+                        (entry) =>
+                            typeof entry ===
+                            'string' &&
+                            entry.trim(),
+                    );
 
-                if (typeof item === 'string') {
+                if (
+                    typeof item ===
+                    'string'
+                ) {
                     return item.trim();
                 }
             }
@@ -355,7 +485,9 @@ export class StorageService {
     ): number | null {
         for (const value of values) {
             const parsed =
-                this.toPositiveInteger(value);
+                this.toPositiveInteger(
+                    value,
+                );
 
             if (parsed !== null) {
                 return parsed;
@@ -368,10 +500,13 @@ export class StorageService {
     private toPositiveInteger(
         value: unknown,
     ): number | null {
-        const numberValue = Number(value);
+        const numberValue =
+            Number(value);
 
         return (
-            Number.isInteger(numberValue) &&
+            Number.isInteger(
+                numberValue,
+            ) &&
             numberValue > 0
         )
             ? numberValue
@@ -382,9 +517,11 @@ export class StorageService {
         record: Record<string, unknown>,
         key: string,
     ): string {
-        const value = record[key];
+        const value =
+            record[key];
 
-        return typeof value === 'string'
+        return typeof value ===
+            'string'
             ? value.trim()
             : '';
     }
@@ -393,7 +530,8 @@ export class StorageService {
         record: Record<string, unknown>,
         key: string,
     ): number {
-        const value = Number(record[key]);
+        const value =
+            Number(record[key]);
 
         return Number.isFinite(value)
             ? value
@@ -402,15 +540,22 @@ export class StorageService {
 
     private isRecord(
         value: unknown,
-    ): value is Record<string, unknown> {
+    ): value is Record<
+        string,
+        unknown
+    > {
         return (
-            typeof value === 'object' &&
+            typeof value ===
+            'object' &&
             value !== null &&
             !Array.isArray(value)
         );
     }
 
     private canUseStorage(): boolean {
-        return typeof window !== 'undefined';
+        return (
+            typeof window !==
+            'undefined'
+        );
     }
 }

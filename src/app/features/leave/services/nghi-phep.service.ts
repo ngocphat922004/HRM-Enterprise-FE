@@ -129,12 +129,24 @@ export class NghiPhepService {
             );
     }
 
-    approve(maNP: number): Observable<NghiPhepModel> {
-        return this.reviewLeaveRequest(maNP, 'approve');
+    approve(
+        maNP: number,
+        _nguoiDuyet?: number,
+    ): Observable<NghiPhepModel> {
+        return this.reviewLeaveRequest(
+            maNP,
+            'approve',
+        );
     }
 
-    reject(maNP: number): Observable<NghiPhepModel> {
-        return this.reviewLeaveRequest(maNP, 'reject');
+    reject(
+        maNP: number,
+        _nguoiDuyet?: number,
+    ): Observable<NghiPhepModel> {
+        return this.reviewLeaveRequest(
+            maNP,
+            'reject',
+        );
     }
 
     getLeaveTypes(): Observable<LoaiNghiPhepModel[]> {

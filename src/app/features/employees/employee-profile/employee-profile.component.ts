@@ -505,21 +505,19 @@ export class EmployeeProfileComponent
     this.employeeId =
       id;
 
-    const currentUser =
+    const currentEmployeeId =
       this.storageService
-        .getCurrentUser();
+        .getCurrentEmployeeId();
 
     this.currentRoleId =
-      Number(
-        currentUser?.maQuyen,
-      ) || 0;
+      this.storageService
+        .getCurrentRoleId() ?? 0;
 
     this.isSelfServiceView =
       this.currentRoleId ===
       MA_QUYEN.NHAN_VIEN &&
-      Number(
-        currentUser?.maNV,
-      ) === this.employeeId;
+      currentEmployeeId ===
+      this.employeeId;
 
     if (
       !this.visibleTabs.some(

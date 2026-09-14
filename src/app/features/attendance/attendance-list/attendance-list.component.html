@@ -61,6 +61,7 @@
         <input type="month" [(ngModel)]="selectedMonth" (change)="applyFilters()" [disabled]="isLoading" />
     </label>
 
+    @if (!isSelfServiceView && !isManagerView) {
     <label class="attendance-filter">
         <span>Phòng ban</span>
 
@@ -79,6 +80,7 @@
             }
         </select>
     </label>
+    }
 </section>
 
 <section class="attendance-legend" aria-label="Chú thích trạng thái">
@@ -111,6 +113,16 @@
                 Dữ liệu chấm công trong tháng
                 {{ selectedMonth }}
             </p>
+
+            @if (canManageAttendance) {
+            <small class="attendance-edit-hint">
+                Nhấp vào từng ô ngày để thêm, cập nhật hoặc xóa chấm công.
+            </small>
+            } @else {
+            <small class="attendance-edit-hint">
+                Chế độ chỉ xem dữ liệu chấm công.
+            </small>
+            }
         </div>
 
         <span class="attendance-table-card__total">
@@ -203,29 +215,63 @@
                     ) {
 
                     <td class="attendance-table__day-column">
+                        @if (canManageAttendance) {
+                        <button type="button" class="attendance-cell attendance-cell--interactive" [ngClass]="
+                            'attendance-cell--' +
+                            getStatusClass(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        " [title]="
+                            getAttendanceCellTitle(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        " [attr.aria-label]="
+                            getAttendanceCellTitle(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        " [disabled]="isLoading || isSavingAttendance" (click)="openAttendanceEditor(row, day)">
+                            {{
+                            getStatusCode(
+                            findCell(
+                            row,
+                            day
+                            )
+                            )
+                            }}
+                        </button>
+                        } @else {
                         <span class="attendance-cell" [ngClass]="
-                    'attendance-cell--' +
-                    getStatusClass(
-                        findCell(
-                            row,
-                            day
-                        )
-                    )
-                " [title]="
-                    getAttendanceCellTitle(
-                        findCell(
-                            row,
-                            day
-                        )
-                    )
-                " [attr.aria-label]="
-                    getAttendanceCellTitle(
-                        findCell(
-                            row,
-                            day
-                        )
-                    )
-                ">
+                            'attendance-cell--' +
+                            getStatusClass(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        " [title]="
+                            getAttendanceCellTitle(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        " [attr.aria-label]="
+                            getAttendanceCellTitle(
+                                findCell(
+                                    row,
+                                    day
+                                )
+                            )
+                        ">
                             {{
                             getStatusCode(
                             findCell(
@@ -235,6 +281,7 @@
                             )
                             }}
                         </span>
+                        }
                     </td>
 
                     }
@@ -393,6 +440,150 @@
         </small>
     </article>
 </section>
+
+@if (
+isAttendanceEditorOpen &&
+editingRow &&
+editingDay !== null
+) {
+<div class="attendance-modal-backdrop" role="presentation" (click)="closeAttendanceEditor()">
+    <section class="attendance-modal" role="dialog" aria-modal="true" aria-labelledby="attendance-editor-title"
+        (click)="$event.stopPropagation()">
+        <header class="attendance-modal__header">
+            <div>
+                <span class="attendance-modal__eyebrow">
+                    {{ editingCell ? 'Bản ghi hiện có' : 'Bản ghi mới' }}
+                </span>
+
+                <h2 id="attendance-editor-title">
+                    {{ editorTitle }}
+                </h2>
+
+                <p>
+                    {{ editingRow.hoTen }} · NV-{{ editingRow.maNV }}
+                </p>
+            </div>
+
+            <button type="button" class="attendance-modal__close" aria-label="Đóng" [disabled]="isSavingAttendance"
+                (click)="closeAttendanceEditor()">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+        </header>
+
+        <div class="attendance-modal__meta">
+            <span>
+                Ngày
+                <strong>{{ editorDate }}</strong>
+            </span>
+
+            <span>
+                Phòng ban
+                <strong>{{ editingRow.tenPB || 'Chưa phân phòng' }}</strong>
+            </span>
+        </div>
+
+        <form class="attendance-editor-form" (ngSubmit)="saveAttendance()">
+            <div class="attendance-editor-grid">
+                <label class="attendance-editor-field">
+                    <span>Ca làm việc <b>*</b></span>
+
+                    <select name="maCa" [(ngModel)]="attendanceForm.maCa" (change)="onShiftChange()"
+                        [disabled]="isSavingAttendance" required>
+                        <option [ngValue]="null">
+                            Chọn ca làm việc
+                        </option>
+
+                        @for (
+                        shift of shifts;
+                        track shift.maCa
+                        ) {
+                        <option [ngValue]="shift.maCa">
+                            {{ shift.tenCa }}
+                            ({{ shift.gioBatDau.slice(0, 5) }} - {{ shift.gioKetThuc.slice(0, 5) }})
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Trạng thái <b>*</b></span>
+
+                    <select name="trangThai" [(ngModel)]="attendanceForm.trangThai" (change)="onStatusChange()"
+                        [disabled]="isSavingAttendance" required>
+                        @for (
+                        option of statusOptions;
+                        track option.value
+                        ) {
+                        <option [ngValue]="option.value">
+                            {{ option.label }}
+                        </option>
+                        }
+                    </select>
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Giờ vào</span>
+
+                    <input type="time" name="gioVao" [(ngModel)]="attendanceForm.gioVao"
+                        [disabled]="isSavingAttendance" />
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Giờ ra</span>
+
+                    <input type="time" name="gioRa" [(ngModel)]="attendanceForm.gioRa"
+                        [disabled]="isSavingAttendance" />
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Số giờ làm</span>
+
+                    <input type="number" name="soGioLam" [(ngModel)]="attendanceForm.soGioLam" min="0" step="0.25"
+                        [disabled]="isSavingAttendance" />
+                </label>
+
+                <label class="attendance-editor-field attendance-editor-field--full">
+                    <span>Ghi chú</span>
+
+                    <textarea name="ghiChu" [(ngModel)]="attendanceForm.ghiChu" rows="3"
+                        placeholder="Nhập ghi chú nếu có..." [disabled]="isSavingAttendance"></textarea>
+                </label>
+            </div>
+
+            <footer class="attendance-modal__footer">
+                <div>
+                    @if (editingCell?.maCC) {
+                    <button type="button" class="attendance-danger-button" [disabled]="isSavingAttendance"
+                        (click)="deleteAttendance()">
+                        Xóa chấm công
+                    </button>
+                    }
+                </div>
+
+                <div class="attendance-modal__footer-actions">
+                    <button type="button" class="secondary-button" [disabled]="isSavingAttendance"
+                        (click)="closeAttendanceEditor()">
+                        Hủy
+                    </button>
+
+                    <button type="submit" class="primary-button" [disabled]="isSavingAttendance || !shifts.length">
+                        @if (isSavingAttendance) {
+                        Đang lưu...
+                        } @else {
+                        {{ editingCell ? 'Lưu thay đổi' : 'Thêm chấm công' }}
+                        }
+                    </button>
+                </div>
+            </footer>
+        </form>
+    </section>
+</div>
+}
+
 @if (toastMessage) {
 <div class="page-toast" role="status">{{ toastMessage }}</div>
 }

@@ -13,15 +13,23 @@
         </nav>
 
         <h1>
-            Danh sách bảng lương
+            {{
+            isEmployeeView
+            ? 'Bảng lương của tôi'
+            : 'Danh sách bảng lương'
+            }}
         </h1>
 
         <p>
-            Quản lý và theo dõi thu nhập
-            của nhân viên theo từng tháng.
+            {{
+            isEmployeeView
+            ? 'Theo dõi thu nhập và các khoản lương của bạn theo từng tháng.'
+            : 'Quản lý và theo dõi thu nhập của nhân viên theo từng tháng.'
+            }}
         </p>
     </div>
 
+    @if (canManagePayroll) {
     <button class="export-button" type="button" (click)="exportReport()" [disabled]="
                         isLoading ||
                         deletingPayrollId !== null
@@ -35,6 +43,7 @@
 
         Xuất Excel
     </button>
+    }
 </section>
 
 @if (errorMessage) {
@@ -63,8 +72,11 @@
         </strong>
 
         <p>
-            Đang lấy bảng lương,
-            nhân viên và phòng ban.
+            {{
+            isEmployeeView
+            ? 'Đang lấy dữ liệu bảng lương cá nhân.'
+            : 'Đang lấy bảng lương, nhân viên và phòng ban.'
+            }}
         </p>
     </div>
 </section>
@@ -123,15 +135,27 @@
 
         <div>
             <span>
-                Tổng nhân viên
+                {{
+                isEmployeeView
+                ? 'Số kỳ lương'
+                : 'Tổng nhân viên'
+                }}
             </span>
 
             <strong>
-                {{ stats.tongNhanVien }}
+                {{
+                isEmployeeView
+                ? filteredPayrollRecords.length
+                : stats.tongNhanVien
+                }}
             </strong>
 
             <p>
-                Có dữ liệu bảng lương
+                {{
+                isEmployeeView
+                ? 'Kỳ lương phù hợp bộ lọc'
+                : 'Có dữ liệu bảng lương'
+                }}
             </p>
         </div>
     </article>
@@ -206,6 +230,7 @@
 </section>
 
 <section class="payroll-filter-card" aria-label="Bộ lọc bảng lương">
+    @if (!isEmployeeView) {
     <label class="payroll-search-filter">
         <span>
             Tìm kiếm
@@ -223,6 +248,7 @@
                 placeholder="Tên nhân viên, mã NV, mã bảng lương..." [disabled]="isLoading" />
         </div>
     </label>
+    }
 
     <label class="payroll-filter">
         <span>Tháng</span>
@@ -262,6 +288,7 @@
         </select>
     </label>
 
+    @if (!isEmployeeView) {
     <label class="payroll-filter">
         <span>
             Phòng ban
@@ -282,6 +309,7 @@
             }
         </select>
     </label>
+    }
 
     <button class="reset-filter-button" type="button" (click)="resetFilters()" [disabled]="isLoading">
         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -336,9 +364,11 @@
                         Thực lĩnh
                     </th>
 
+                    @if (canManagePayroll) {
                     <th>
                         Thao tác
                     </th>
+                    }
                 </tr>
             </thead>
 
@@ -346,7 +376,7 @@
                 @if (isLoading) {
 
                 <tr>
-                    <td colspan="10" class="payroll-empty-cell">
+                    <td [attr.colspan]="canManagePayroll ? 10 : 9" class="payroll-empty-cell">
                         <div class="empty-state">
                             <span class="payroll-loading__spinner" aria-hidden="true"></span>
 
@@ -371,6 +401,7 @@
 
                 <tr>
                     <td>
+                        @if (canManagePayroll) {
                         <button class="payroll-code" type="button" (click)="viewPayroll(record)" [disabled]="
                                             deletingPayrollId !== null
                                         ">
@@ -380,6 +411,15 @@
                             )
                             }}
                         </button>
+                        } @else {
+                        <strong>
+                            {{
+                            formatPayrollCode(
+                            record.maLuong
+                            )
+                            }}
+                        </strong>
+                        }
                     </td>
 
                     <td>
@@ -485,6 +525,7 @@
                         </strong>
                     </td>
 
+                    @if (canManagePayroll) {
                     <td>
                         <div class="table-actions">
 
@@ -607,12 +648,13 @@
                             }
                         </div>
                     </td>
+                    }
                 </tr>
 
                 } @empty {
 
                 <tr>
-                    <td colspan="10" class="payroll-empty-cell">
+                    <td [attr.colspan]="canManagePayroll ? 10 : 9" class="payroll-empty-cell">
                         <div class="empty-state">
                             <span class="empty-state__icon">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -634,9 +676,11 @@
                                 hiện tại.
                             </p>
 
+                            @if (canManagePayroll) {
                             <button type="button" (click)="createPayroll()">
                                 Tạo bảng lương
                             </button>
+                            }
                         </div>
                     </td>
                 </tr>

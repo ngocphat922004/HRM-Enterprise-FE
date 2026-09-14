@@ -28,6 +28,14 @@ import {
 } from 'rxjs';
 
 import {
+    MA_QUYEN,
+} from '../../../core/constants/role.constants';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
     NhanVienChiTiet,
 } from '../../employees/models/nhan-vien.model';
 
@@ -90,6 +98,9 @@ export class PayrollDetailComponent
     toastMessage =
         '';
 
+    currentRoleId =
+        0;
+
     private shouldPrintAfterLoad =
         false;
 
@@ -112,12 +123,20 @@ export class PayrollDetailComponent
         private readonly nhanVienService:
             NhanVienService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
     ngOnInit():
         void {
+
+        this.currentRoleId =
+            this.storageService
+                .getCurrentRoleId() ??
+            0;
 
         this.shouldPrintAfterLoad =
             this.route
@@ -142,6 +161,26 @@ export class PayrollDetailComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get isEmployeeSelfView():
+        boolean {
+
+        return (
+            this.currentRoleId ===
+            MA_QUYEN.NHAN_VIEN
+        );
+    }
+
+    get canEditPayroll():
+        boolean {
+
+        return (
+            this.currentRoleId ===
+            MA_QUYEN.QUAN_TRI_VIEN ||
+            this.currentRoleId ===
+            MA_QUYEN.KE_TOAN
+        );
     }
 
     get summary():
@@ -250,6 +289,17 @@ export class PayrollDetailComponent
 
     editPayroll():
         void {
+
+        if (
+            !this.canEditPayroll
+        ) {
+
+            this.showToast(
+                'Bạn không có quyền chỉnh sửa bảng lương.',
+            );
+
+            return;
+        }
 
         if (
             !this.payroll ||
@@ -433,14 +483,119 @@ export class PayrollDetailComponent
             return;
         }
 
-        this.isLoading =
-            true;
+        if (
+            this.isEmployeeSelfView
+        ) {
 
-        this.errorMessage =
-            '';
+            this.loadMyPayrollDetail();
 
-        this.payroll =
-            null;
+            return;
+        }
+
+        this.loadManagedPayrollDetail();
+    }
+
+    private loadMyPayrollDetail():
+        void {
+
+        if (
+            this.payrollId ===
+            null
+        ) {
+
+            return;
+        }
+
+        this.preparePayrollLoad();
+
+        forkJoin({
+            payrolls:
+                this.bangLuongService
+                    .getMe(),
+
+            employee:
+                this.nhanVienService
+                    .getMe(),
+        })
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+
+                next: ({
+                    payrolls,
+                    employee,
+                }) => {
+
+                    const payroll =
+                        payrolls.find(
+                            item =>
+                                item.maLuong ===
+                                this.payrollId,
+                        );
+
+                    if (
+                        !payroll ||
+                        payroll.maNV !==
+                        employee.maNV
+                    ) {
+
+                        this.payroll =
+                            null;
+
+                        this.errorMessage =
+                            'Bạn chỉ có thể xem bảng lương của chính mình.';
+
+                        this.showToast(
+                            this.errorMessage,
+                        );
+
+                        return;
+                    }
+
+                    this.payroll =
+                        this.mapPayrollDetail(
+                            payroll,
+                            employee as
+                            NhanVienChiTiet,
+                        );
+
+                    this.finishPayrollLoad();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    this.handlePayrollLoadError(
+                        error,
+                    );
+                },
+            });
+    }
+
+    private loadManagedPayrollDetail():
+        void {
+
+        if (
+            this.payrollId ===
+            null
+        ) {
+
+            return;
+        }
+
+        this.preparePayrollLoad();
 
         forkJoin({
 
@@ -476,9 +631,7 @@ export class PayrollDetailComponent
 
                     const employee =
                         employees.find(
-                            (
-                                item,
-                            ) =>
+                            item =>
                                 item.maNV ===
                                 payroll.maNV,
                         );
@@ -489,46 +642,75 @@ export class PayrollDetailComponent
                             employee,
                         );
 
-                    this.changeDetectorRef
-                        .markForCheck();
-
-                    if (
-                        this.shouldPrintAfterLoad
-                    ) {
-
-                        this.shouldPrintAfterLoad =
-                            false;
-
-                        window.setTimeout(
-                            () => {
-
-                                this.printPayslip();
-
-                            },
-                            250,
-                        );
-                    }
+                    this.finishPayrollLoad();
                 },
 
                 error: (
                     error:
                         HttpErrorResponse,
                 ) => {
-                    this.payroll =
-                        null;
 
-                    this.errorMessage =
-                        this.getApiErrorMessage(
-                            error,
-
-                            'Không thể tải chi tiết bảng lương.',
-                        );
-
-                    this.showToast(
-                        this.errorMessage,
+                    this.handlePayrollLoadError(
+                        error,
                     );
                 },
             });
+    }
+
+    private preparePayrollLoad():
+        void {
+
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        this.payroll =
+            null;
+    }
+
+    private finishPayrollLoad():
+        void {
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        if (
+            this.shouldPrintAfterLoad
+        ) {
+
+            this.shouldPrintAfterLoad =
+                false;
+
+            window.setTimeout(
+                () => {
+
+                    this.printPayslip();
+
+                },
+                250,
+            );
+        }
+    }
+
+    private handlePayrollLoadError(
+        error:
+            HttpErrorResponse,
+    ): void {
+
+        this.payroll =
+            null;
+
+        this.errorMessage =
+            this.getApiErrorMessage(
+                error,
+                'Không thể tải chi tiết bảng lương.',
+            );
+
+        this.showToast(
+            this.errorMessage,
+        );
     }
 
     private mapPayrollDetail(

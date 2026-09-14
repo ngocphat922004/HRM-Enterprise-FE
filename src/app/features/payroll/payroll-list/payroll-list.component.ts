@@ -26,8 +26,16 @@ import {
 } from 'rxjs';
 
 import {
+    MA_QUYEN,
+} from '../../../core/constants/role.constants';
+
+import {
     ExcelExportService,
 } from '../../../core/services/excel-export.service';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     PhongBanService,
@@ -155,6 +163,12 @@ export class PayrollListComponent
         PayrollListItem[] =
         [];
 
+    readonly isEmployeeView:
+        boolean;
+
+    readonly canManagePayroll:
+        boolean;
+
     constructor(
         private readonly router:
             Router,
@@ -168,12 +182,29 @@ export class PayrollListComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly excelExportService:
             ExcelExportService,
 
         private readonly changeDetectorRef:
             ChangeDetectorRef,
-    ) { }
+    ) {
+        const roleId =
+            this.storageService
+                .getCurrentRoleId();
+
+        this.isEmployeeView =
+            roleId ===
+            MA_QUYEN.NHAN_VIEN;
+
+        this.canManagePayroll =
+            roleId ===
+            MA_QUYEN.QUAN_TRI_VIEN ||
+            roleId ===
+            MA_QUYEN.KE_TOAN;
+    }
 
     ngOnInit():
         void {
@@ -187,6 +218,13 @@ export class PayrollListComponent
         if (
             this.isLoading
         ) {
+            return;
+        }
+
+        if (
+            this.isEmployeeView
+        ) {
+            this.loadMyPayrollData();
             return;
         }
 
@@ -285,10 +323,19 @@ export class PayrollListComponent
                                         employee?.hoTen ??
                                         `Nhân viên #${payroll.maNV}`,
 
+                                    email:
+                                        employee?.email ??
+                                        null,
+
                                     tenPB:
                                         department
                                             ?.tenPB ??
+                                        employee?.tenPB ??
                                         'Chưa phân phòng',
+
+                                    tenCV:
+                                        employee?.tenCV ??
+                                        null,
 
                                     thang:
                                         payroll.thang,
@@ -399,6 +446,174 @@ export class PayrollListComponent
                             error,
 
                             'Không thể tải dữ liệu bảng lương.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
+    }
+
+    private loadMyPayrollData():
+        void {
+
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        forkJoin({
+            payrolls:
+                this.bangLuongService
+                    .getMe(),
+
+            employee:
+                this.nhanVienService
+                    .getMe(),
+        })
+            .pipe(
+                finalize(
+                    () => {
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: ({
+                    payrolls,
+                    employee,
+                }) => {
+                    this.departments =
+                        [];
+
+                    this.payrollRecords =
+                        payrolls
+                            .map(
+                                (
+                                    payroll,
+                                ) => ({
+                                    maLuong:
+                                        payroll.maLuong,
+
+                                    maNV:
+                                        payroll.maNV,
+
+                                    hoTen:
+                                        employee.hoTen,
+
+                                    email:
+                                        employee.email ??
+                                        null,
+
+                                    tenPB:
+                                        null,
+
+                                    tenCV:
+                                        null,
+
+                                    thang:
+                                        payroll.thang,
+
+                                    nam:
+                                        payroll.nam,
+
+                                    luongCoBan:
+                                        Number(
+                                            payroll.luongCoBan ??
+                                            0,
+                                        ),
+
+                                    tongPhuCap:
+                                        Number(
+                                            payroll.tongPhuCap ??
+                                            0,
+                                        ),
+
+                                    tongThuong:
+                                        Number(
+                                            payroll.tongThuong ??
+                                            0,
+                                        ),
+
+                                    tongKhauTru:
+                                        Number(
+                                            payroll.tongKhauTru ??
+                                            0,
+                                        ),
+
+                                    soNgayCong:
+                                        Number(
+                                            payroll.soNgayCong ??
+                                            0,
+                                        ),
+
+                                    tongLuong:
+                                        Number(
+                                            payroll.tongLuong ??
+                                            0,
+                                        ),
+                                } as
+                                    PayrollListItem),
+                            )
+                            .sort(
+                                (
+                                    a,
+                                    b,
+                                ) => {
+                                    if (
+                                        a.nam !==
+                                        b.nam
+                                    ) {
+                                        return (
+                                            b.nam -
+                                            a.nam
+                                        );
+                                    }
+
+                                    if (
+                                        a.thang !==
+                                        b.thang
+                                    ) {
+                                        return (
+                                            b.thang -
+                                            a.thang
+                                        );
+                                    }
+
+                                    return (
+                                        b.maLuong -
+                                        a.maLuong
+                                    );
+                                },
+                            );
+
+                    this.currentPage =
+                        1;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.payrollRecords =
+                        [];
+
+                    this.departments =
+                        [];
+
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải bảng lương cá nhân.',
                         );
 
                     this.showToast(
@@ -617,51 +832,41 @@ export class PayrollListComponent
     get stats():
         PayrollListStats {
 
-        return this
-            .filteredPayrollRecords
-            .reduce<
-                PayrollListStats
+        const records =
+            this.filteredPayrollRecords;
+
+        const totals =
+            records.reduce<
+                Omit<
+                    PayrollListStats,
+                    'tongNhanVien'
+                >
             >(
                 (
                     result,
                     record,
                 ) => ({
-
-                    tongNhanVien:
-                        result
-                            .tongNhanVien +
-                        1,
-
                     tongLuongCoBan:
-                        result
-                            .tongLuongCoBan +
+                        result.tongLuongCoBan +
                         record.luongCoBan,
 
                     tongPhuCap:
-                        result
-                            .tongPhuCap +
+                        result.tongPhuCap +
                         record.tongPhuCap,
 
                     tongThuong:
-                        result
-                            .tongThuong +
+                        result.tongThuong +
                         record.tongThuong,
 
                     tongKhauTru:
-                        result
-                            .tongKhauTru +
+                        result.tongKhauTru +
                         record.tongKhauTru,
 
                     tongThucLinh:
-                        result
-                            .tongThucLinh +
+                        result.tongThucLinh +
                         record.tongLuong,
                 }),
-
                 {
-                    tongNhanVien:
-                        0,
-
                     tongLuongCoBan:
                         0,
 
@@ -678,7 +883,20 @@ export class PayrollListComponent
                         0,
                 },
             );
+
+        return {
+            tongNhanVien:
+                new Set(
+                    records.map(
+                        record =>
+                            record.maNV,
+                    ),
+                ).size,
+
+            ...totals,
+        };
     }
+
 
     applyFilters():
         void {
@@ -731,6 +949,7 @@ export class PayrollListComponent
         void {
 
         if (
+            !this.canManagePayroll ||
             this.isLoading ||
             this.deletingPayrollId !==
             null
@@ -752,6 +971,7 @@ export class PayrollListComponent
     ): void {
 
         if (
+            !this.canManagePayroll ||
             this.deletingPayrollId !==
             null
         ) {
@@ -772,6 +992,7 @@ export class PayrollListComponent
     ): void {
 
         if (
+            !this.canManagePayroll ||
             this.deletingPayrollId !==
             null
         ) {
@@ -800,6 +1021,7 @@ export class PayrollListComponent
     ): void {
 
         if (
+            !this.canManagePayroll ||
             this.deletingPayrollId !==
             null
         ) {
@@ -821,6 +1043,7 @@ export class PayrollListComponent
     ): void {
 
         if (
+            !this.canManagePayroll ||
             this.deletingPayrollId !==
             null
         ) {
@@ -924,6 +1147,12 @@ export class PayrollListComponent
     exportReport():
         void {
 
+        if (
+            !this.canManagePayroll
+        ) {
+            return;
+        }
+
         const data = this.filteredPayrollRecords.map((record) => ({
             'Mã bảng lương': this.formatPayrollCode(record.maLuong),
             'Mã nhân viên': `NV-${String(record.maNV).padStart(4, '0')}`,
@@ -966,6 +1195,7 @@ export class PayrollListComponent
     ): void {
 
         if (
+            !this.canManagePayroll ||
             this.deletingPayrollId !==
             null
         ) {

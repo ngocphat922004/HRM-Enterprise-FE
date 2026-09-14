@@ -1,11 +1,13 @@
 import { inject } from '@angular/core';
+
 import {
     CanActivateChildFn,
     Router,
     UrlTree,
 } from '@angular/router';
+
 import { LoginData } from '../models/login-response.model';
-import { AuthService } from '../services/auth.service';
+import { StorageService } from '../services/storage.service';
 
 export type RoleKey =
     | 'admin'
@@ -61,9 +63,24 @@ export const roleGuard: CanActivateChildFn = (
     _route,
     state,
 ) => {
-    const authService = inject(AuthService);
-    const router = inject(Router);
-    const currentUser = authService.getCurrentUser();
+    const storageService =
+        inject(StorageService);
+
+    const router =
+        inject(Router);
+
+    /*
+     * Luôn lấy user từ StorageService.
+     *
+     * StorageService đã normalize:
+     * maQuyen = 0
+     * tenQuyen = "Quản trị viên"
+     *
+     * thành:
+     * maQuyen = 1
+     */
+    const currentUser =
+        storageService.getCurrentUser();
 
     if (!currentUser) {
         return router.createUrlTree(
@@ -76,16 +93,14 @@ export const roleGuard: CanActivateChildFn = (
         );
     }
 
-    const path = normalizePath(state.url);
+    const path =
+        normalizePath(state.url);
 
-    if (path === '/dashboard') {
-        return true;
-    }
-
-    const requestedTab = getQueryParam(
-        state.url,
-        'tab',
-    );
+    const requestedTab =
+        getQueryParam(
+            state.url,
+            'tab',
+        );
 
     if (
         canUserAccessPath(
@@ -109,17 +124,41 @@ export function canUserAccessPath(
     rawPath: string,
     requestedTab: string | null = null,
 ): boolean {
-    const path = normalizePath(rawPath);
+    const path =
+        normalizePath(rawPath);
 
-    if (path === '/dashboard') {
-        return true;
-    }
-
-    const role = resolveUserRole(currentUser);
+    const role =
+        resolveUserRole(currentUser);
 
     if (!role) {
         return false;
     }
+
+    /*
+     * =========================================================
+     * DASHBOARD
+     * =========================================================
+     *
+     * Nhân viên không được vào Dashboard tổng hợp.
+     * Dashboard chứa dữ liệu tổng nhân sự, nghỉ phép,
+     * chấm công, hợp đồng...
+     */
+    if (path === '/dashboard') {
+        return isOneOf(
+            role,
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
+        );
+    }
+
+    /*
+     * =========================================================
+     * NHÂN VIÊN
+     * =========================================================
+     */
 
     if (path === '/employees/add') {
         return isOneOf(
@@ -129,7 +168,14 @@ export function canUserAccessPath(
         );
     }
 
-    if (/^\/employees\/\d+\/edit$/.test(path)) {
+    if (
+        /^\/employees\/\d+\/edit$/.test(
+            path,
+        )
+    ) {
+        /*
+         * Admin + HR được sửa hồ sơ nhân viên.
+         */
         if (
             isOneOf(
                 role,
@@ -140,17 +186,32 @@ export function canUserAccessPath(
             return true;
         }
 
+        /*
+         * Kế toán chỉ được đi vào tab
+         * phụ cấp nếu hệ thống hiện tại
+         * đang dùng flow này.
+         */
         return (
             role === 'accountant' &&
             requestedTab === 'allowances'
         );
     }
 
-    const employeeDetailMatch = path.match(
-        /^\/employees\/(\d+)$/,
-    );
+    const employeeDetailMatch =
+        path.match(
+            /^\/employees\/(\d+)$/,
+        );
 
     if (employeeDetailMatch) {
+        const employeeId =
+            Number(
+                employeeDetailMatch[1],
+            );
+
+        /*
+         * Admin / HR / Trưởng phòng:
+         * xem hồ sơ nhân viên.
+         */
         if (
             isOneOf(
                 role,
@@ -162,10 +223,16 @@ export function canUserAccessPath(
             return true;
         }
 
+        /*
+         * Nhân viên:
+         * chỉ được xem hồ sơ của chính mình.
+         */
         return (
             role === 'employee' &&
-            Number(employeeDetailMatch[1]) ===
-            toPositiveInteger(currentUser.maNV)
+            employeeId ===
+            toPositiveInteger(
+                currentUser.maNV,
+            )
         );
     }
 
@@ -178,7 +245,15 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/departments')) {
+    /*
+     * =========================================================
+     * DANH MỤC NHÂN SỰ
+     * =========================================================
+     */
+
+    if (
+        path.startsWith('/departments')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -186,7 +261,9 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/positions')) {
+    if (
+        path.startsWith('/positions')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -194,7 +271,9 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/qualifications')) {
+    if (
+        path.startsWith('/qualifications')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -202,7 +281,9 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/contracts')) {
+    if (
+        path.startsWith('/contracts')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -210,7 +291,30 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/attendance')) {
+    /*
+     * =========================================================
+     * CHẤM CÔNG
+     * =========================================================
+     */
+
+    if (
+        path === '/attendance/overview'
+    ) {
+        /*
+         * Overview tổng hợp không cho nhân viên
+         * xem toàn bộ dữ liệu.
+         */
+        return isOneOf(
+            role,
+            'admin',
+            'accountant',
+            'manager',
+        );
+    }
+
+    if (
+        path.startsWith('/attendance')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -220,11 +324,47 @@ export function canUserAccessPath(
         );
     }
 
+    /*
+     * =========================================================
+     * NGHỈ PHÉP
+     * =========================================================
+     */
+
     if (path === '/leave/add') {
-        return true;
+        return isOneOf(
+            role,
+            'admin',
+            'hr',
+            'manager',
+            'employee',
+        );
     }
 
-    if (path.startsWith('/leave')) {
+    if (path === '/leave') {
+        return isOneOf(
+            role,
+            'admin',
+            'hr',
+            'manager',
+            'employee',
+        );
+    }
+
+    if (
+        /^\/leave\/\d+$/.test(path)
+    ) {
+        return isOneOf(
+            role,
+            'admin',
+            'hr',
+            'manager',
+            'employee',
+        );
+    }
+
+    if (
+        path.startsWith('/leave')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -233,7 +373,39 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/payroll')) {
+    /*
+     * =========================================================
+     * BẢNG LƯƠNG
+     * =========================================================
+     */
+
+    if (path === '/payroll') {
+        return isOneOf(
+            role,
+            'admin',
+            'accountant',
+            'employee',
+        );
+    }
+
+    if (
+        /^\/payroll\/\d+$/.test(path)
+    ) {
+        return isOneOf(
+            role,
+            'admin',
+            'accountant',
+            'employee',
+        );
+    }
+
+    /*
+     * Add/Edit payroll:
+     * Nhân viên không được thao tác CRUD.
+     */
+    if (
+        path.startsWith('/payroll')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -241,7 +413,17 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/rewards-discipline')) {
+    /*
+     * =========================================================
+     * KHEN THƯỞNG / KỶ LUẬT
+     * =========================================================
+     */
+
+    if (
+        path.startsWith(
+            '/rewards-discipline',
+        )
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -249,7 +431,15 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/reports')) {
+    /*
+     * =========================================================
+     * BÁO CÁO
+     * =========================================================
+     */
+
+    if (
+        path.startsWith('/reports')
+    ) {
         return isOneOf(
             role,
             'admin',
@@ -258,7 +448,15 @@ export function canUserAccessPath(
         );
     }
 
-    if (path.startsWith('/settings')) {
+    /*
+     * =========================================================
+     * CÀI ĐẶT
+     * =========================================================
+     */
+
+    if (
+        path.startsWith('/settings')
+    ) {
         return role === 'admin';
     }
 
@@ -272,23 +470,32 @@ export function resolveUserRole(
         return null;
     }
 
-    const roleId = toPositiveInteger(
-        user.maQuyen,
-    );
+    const roleId =
+        toPositiveInteger(
+            user.maQuyen,
+        );
 
-    if (roleId && ROLE_BY_ID[roleId]) {
+    if (
+        roleId &&
+        ROLE_BY_ID[roleId]
+    ) {
         return ROLE_BY_ID[roleId];
     }
 
-    const normalizedRoleName = normalizeRoleName(
-        user.tenQuyen,
-    );
+    const normalizedRoleName =
+        normalizeRoleName(
+            user.tenQuyen,
+        );
 
     if (!normalizedRoleName) {
         return null;
     }
 
-    return ROLE_BY_NAME[normalizedRoleName] ?? null;
+    return (
+        ROLE_BY_NAME[
+        normalizedRoleName
+        ] ?? null
+    );
 }
 
 function createDefaultRoute(
@@ -296,24 +503,42 @@ function createDefaultRoute(
     currentUser: LoginData,
     accessDenied: boolean,
 ): UrlTree {
-    const role = resolveUserRole(currentUser);
-    const employeeId = toPositiveInteger(
-        currentUser.maNV,
-    );
+    const role =
+        resolveUserRole(
+            currentUser,
+        );
 
+    const employeeId =
+        toPositiveInteger(
+            currentUser.maNV,
+        );
+
+    /*
+     * Nhân viên:
+     * về hồ sơ cá nhân.
+     *
+     * Các role khác:
+     * về Dashboard.
+     */
     const commands =
-        role === 'employee' && employeeId
-            ? ['/employees', employeeId]
+        role === 'employee' &&
+            employeeId
+            ? [
+                '/employees',
+                employeeId,
+            ]
             : ['/dashboard'];
 
     return router.createUrlTree(
         commands,
         {
-            queryParams: accessDenied
-                ? {
-                    accessDenied: 'true',
-                }
-                : undefined,
+            queryParams:
+                accessDenied
+                    ? {
+                        accessDenied:
+                            'true',
+                    }
+                    : undefined,
         },
     );
 }
@@ -321,15 +546,19 @@ function createDefaultRoute(
 function normalizePath(
     url: string,
 ): string {
-    const path = url
-        .split('?')[0]
-        .split('#')[0];
+    const path =
+        url
+            .split('?')[0]
+            .split('#')[0];
 
     if (
         path.length > 1 &&
         path.endsWith('/')
     ) {
-        return path.slice(0, -1);
+        return path.slice(
+            0,
+            -1,
+        );
     }
 
     return path;
@@ -338,27 +567,47 @@ function normalizePath(
 function normalizeRoleName(
     value: unknown,
 ): string {
-    if (typeof value !== 'string') {
+    if (
+        typeof value !==
+        'string'
+    ) {
         return '';
     }
 
     return value
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLocaleLowerCase('vi-VN')
-        .replace(/đ/g, 'd')
-        .replace(/[_\-.]+/g, ' ')
-        .replace(/\s+/g, ' ')
+        .replace(
+            /[\u0300-\u036f]/g,
+            '',
+        )
+        .toLocaleLowerCase(
+            'vi-VN',
+        )
+        .replace(
+            /đ/g,
+            'd',
+        )
+        .replace(
+            /[_\-.]+/g,
+            ' ',
+        )
+        .replace(
+            /\s+/g,
+            ' ',
+        )
         .trim();
 }
 
 function toPositiveInteger(
     value: unknown,
 ): number | null {
-    const numberValue = Number(value);
+    const numberValue =
+        Number(value);
 
     return (
-        Number.isInteger(numberValue) &&
+        Number.isInteger(
+            numberValue,
+        ) &&
         numberValue > 0
     )
         ? numberValue
@@ -369,22 +618,30 @@ function getQueryParam(
     url: string,
     key: string,
 ): string | null {
-    const queryIndex = url.indexOf('?');
+    const queryIndex =
+        url.indexOf('?');
 
     if (queryIndex < 0) {
         return null;
     }
 
-    const query = url
-        .slice(queryIndex + 1)
-        .split('#')[0];
+    const query =
+        url
+            .slice(
+                queryIndex + 1,
+            )
+            .split('#')[0];
 
-    return new URLSearchParams(query).get(key);
+    return new URLSearchParams(
+        query,
+    ).get(key);
 }
 
 function isOneOf(
     role: RoleKey,
     ...allowedRoles: RoleKey[]
 ): boolean {
-    return allowedRoles.includes(role);
+    return allowedRoles.includes(
+        role,
+    );
 }

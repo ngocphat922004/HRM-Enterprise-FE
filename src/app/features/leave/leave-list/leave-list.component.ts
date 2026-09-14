@@ -9,14 +9,16 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize, forkJoin } from 'rxjs';
+import { MA_QUYEN } from '../../../core/constants/role.constants';
 import {
     NGHI_PHEP_TRANG_THAI,
     NghiPhepTrangThai,
 } from '../../../core/constants/status.constants';
 import { ExcelExportService } from '../../../core/services/excel-export.service';
+import { StorageService } from '../../../core/services/storage.service';
 import { PhongBan } from '../../departments/models/phong-ban.model';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
-import { NhanVienChiTiet } from '../../employees/models/nhan-vien.model';
+import { NhanVien } from '../../employees/models/nhan-vien.model';
 import { NhanVienService } from '../../employees/services/nhan-vien.service';
 import { LoaiNghiPhep, NghiPhep, NghiPhepService } from '../services/nghi-phep.service';
 import {
@@ -45,9 +47,10 @@ export class LeaveListComponent implements OnInit {
     errorMessage = '';
     isLoading = false;
     processingRequestId: number | null = null;
+    currentRoleId = 0;
 
     private totalEmployees = 0;
-    private employeesData: NhanVienChiTiet[] = [];
+    private employeesData: NhanVien[] = [];
 
     readonly leaveStatus = NGHI_PHEP_TRANG_THAI;
 
@@ -69,11 +72,45 @@ export class LeaveListComponent implements OnInit {
         private readonly nhanVienService: NhanVienService,
         private readonly phongBanService: PhongBanService,
         private readonly excelExportService: ExcelExportService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
+        const currentUser = this.storageService.getCurrentUser();
+
+        this.currentRoleId =
+            Number(currentUser?.maQuyen) || 0;
+
         this.loadLeaveData();
+    }
+
+    get isEmployeeView(): boolean {
+        return (
+            this.currentRoleId ===
+            MA_QUYEN.NHAN_VIEN
+        );
+    }
+
+    get canManageLeave(): boolean {
+        return [
+            MA_QUYEN.QUAN_TRI_VIEN,
+            MA_QUYEN.NHAN_VIEN_NHAN_SU,
+            MA_QUYEN.TRUONG_PHONG,
+        ].includes(
+            this.currentRoleId as
+            1 | 2 | 4,
+        );
+    }
+
+    get canDeleteLeave(): boolean {
+        return [
+            MA_QUYEN.QUAN_TRI_VIEN,
+            MA_QUYEN.NHAN_VIEN_NHAN_SU,
+        ].includes(
+            this.currentRoleId as
+            1 | 2,
+        );
     }
 
     loadLeaveData(): void {
@@ -81,14 +118,30 @@ export class LeaveListComponent implements OnInit {
             return;
         }
 
+        if (this.isEmployeeView) {
+            this.loadEmployeeLeaveData();
+            return;
+        }
+
+        this.loadManagementLeaveData();
+    }
+
+    private loadEmployeeLeaveData(): void {
         this.isLoading = true;
         this.errorMessage = '';
 
         forkJoin({
-            leaveRequests: this.nghiPhepService.getAll(),
-            employees: this.nhanVienService.getAll(),
-            departments: this.phongBanService.getAll(),
-            leaveTypes: this.nghiPhepService.getLeaveTypes(),
+            leaveRequests:
+                this.nghiPhepService
+                    .getMe(),
+
+            employee:
+                this.nhanVienService
+                    .getMe(),
+
+            leaveTypes:
+                this.nghiPhepService
+                    .getLeaveTypes(),
         })
             .pipe(
                 finalize(() => {
@@ -97,38 +150,169 @@ export class LeaveListComponent implements OnInit {
                 }),
             )
             .subscribe({
-                next: ({ leaveRequests, employees, departments, leaveTypes }) => {
+                next: ({
+                    leaveRequests,
+                    employee,
+                    leaveTypes,
+                }) => {
+                    const employees: NhanVien[] = [
+                        employee,
+                    ];
+
                     this.employeesData = employees;
-                    this.totalEmployees = employees.length;
-                    this.departments = departments.map((department) => ({
-                        maPB: department.maPB,
-                        tenPB: department.tenPB,
-                    }));
-                    this.leaveTypes = leaveTypes.map((leaveType) => ({
-                        maLoaiNP: leaveType.maLoaiNP,
-                        tenLoaiNP: leaveType.tenLoaiNP,
-                    }));
+                    this.totalEmployees = 1;
+                    this.departments = [];
+
+                    this.leaveTypes = leaveTypes.map(
+                        (leaveType) => ({
+                            maLoaiNP:
+                                leaveType.maLoaiNP,
+                            tenLoaiNP:
+                                leaveType.tenLoaiNP,
+                        }),
+                    );
+
                     this.leaveRequests = leaveRequests
+                        .filter(
+                            (request) =>
+                                request.maNV ===
+                                employee.maNV,
+                        )
                         .map((request) =>
                             this.mapLeaveRequest(
                                 request,
                                 employees,
-                                departments,
+                                [],
                                 leaveTypes,
                             ),
                         )
-                        .sort((a, b) => b.maNP - a.maNP);
+                        .sort(
+                            (a, b) =>
+                                b.maNP - a.maNP,
+                        );
+
+                    this.selectedDepartment = '';
                     this.currentPage = 1;
                     this.errorMessage = '';
                     this.calculateStats();
                     this.changeDetectorRef.markForCheck();
                 },
+
                 error: (error: HttpErrorResponse) => {
-                    this.errorMessage = this.getApiErrorMessage(
-                        error,
-                        'Không thể tải dữ liệu nghỉ phép.',
+                    this.resetLeaveData();
+
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải danh sách nghỉ phép cá nhân.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
                     );
-                    this.showToast(this.errorMessage);
+                },
+            });
+    }
+
+    private loadManagementLeaveData(): void {
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        forkJoin({
+            leaveRequests:
+                this.nghiPhepService
+                    .getAll(),
+
+            employees:
+                this.nhanVienService
+                    .getAll(),
+
+            departments:
+                this.phongBanService
+                    .getAll(),
+
+            leaveTypes:
+                this.nghiPhepService
+                    .getLeaveTypes(),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading = false;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    leaveRequests,
+                    employees,
+                    departments,
+                    leaveTypes,
+                }) => {
+                    const scopedData =
+                        this.scopeManagementData(
+                            leaveRequests,
+                            employees,
+                            departments,
+                        );
+
+                    this.employeesData =
+                        scopedData.employees;
+
+                    this.totalEmployees =
+                        scopedData.employees.length;
+
+                    this.departments =
+                        scopedData.departments.map(
+                            (department) => ({
+                                maPB:
+                                    department.maPB,
+                                tenPB:
+                                    department.tenPB,
+                            }),
+                        );
+
+                    this.leaveTypes = leaveTypes.map(
+                        (leaveType) => ({
+                            maLoaiNP:
+                                leaveType.maLoaiNP,
+                            tenLoaiNP:
+                                leaveType.tenLoaiNP,
+                        }),
+                    );
+
+                    this.leaveRequests =
+                        scopedData.leaveRequests
+                            .map((request) =>
+                                this.mapLeaveRequest(
+                                    request,
+                                    scopedData.employees,
+                                    scopedData.departments,
+                                    leaveTypes,
+                                ),
+                            )
+                            .sort(
+                                (a, b) =>
+                                    b.maNP - a.maNP,
+                            );
+
+                    this.currentPage = 1;
+                    this.errorMessage = '';
+                    this.calculateStats();
+                    this.changeDetectorRef.markForCheck();
+                },
+
+                error: (error: HttpErrorResponse) => {
+                    this.resetLeaveData();
+
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải dữ liệu nghỉ phép.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
                 },
             });
     }
@@ -253,6 +437,15 @@ export class LeaveListComponent implements OnInit {
             return;
         }
 
+        const nguoiDuyet = this.storageService.getCurrentEmployeeId();
+
+        if (nguoiDuyet === null) {
+            this.showToast(
+                'Không xác định được mã nhân viên của người duyệt. Vui lòng đăng xuất và đăng nhập lại.',
+            );
+            return;
+        }
+
         const confirmed = window.confirm(
             `Bạn có chắc muốn duyệt đơn ${this.formatLeaveCode(request.maNP)} của ${request.hoTen}?`,
         );
@@ -264,7 +457,7 @@ export class LeaveListComponent implements OnInit {
         this.processingRequestId = request.maNP;
 
         this.nghiPhepService
-            .approve(request.maNP)
+            .approve(request.maNP, nguoiDuyet)
             .pipe(
                 finalize(() => {
                     this.processingRequestId = null;
@@ -295,6 +488,15 @@ export class LeaveListComponent implements OnInit {
             return;
         }
 
+        const nguoiDuyet = this.storageService.getCurrentEmployeeId();
+
+        if (nguoiDuyet === null) {
+            this.showToast(
+                'Không xác định được mã nhân viên của người xử lý. Vui lòng đăng xuất và đăng nhập lại.',
+            );
+            return;
+        }
+
         const confirmed = window.confirm(
             `Bạn có chắc muốn từ chối đơn ${this.formatLeaveCode(request.maNP)} của ${request.hoTen}?`,
         );
@@ -306,7 +508,7 @@ export class LeaveListComponent implements OnInit {
         this.processingRequestId = request.maNP;
 
         this.nghiPhepService
-            .reject(request.maNP)
+            .reject(request.maNP, nguoiDuyet)
             .pipe(
                 finalize(() => {
                     this.processingRequestId = null;
@@ -333,7 +535,10 @@ export class LeaveListComponent implements OnInit {
     }
 
     deleteLeaveRequest(request: LeaveListItem): void {
-        if (this.processingRequestId !== null) {
+        if (
+            !this.canDeleteRequest(request) ||
+            this.processingRequestId !== null
+        ) {
             return;
         }
 
@@ -382,7 +587,21 @@ export class LeaveListComponent implements OnInit {
     }
 
     canProcess(request: LeaveListItem): boolean {
-        return request.trangThai === NGHI_PHEP_TRANG_THAI.CHO_DUYET;
+        return (
+            this.canManageLeave &&
+            request.trangThai ===
+            NGHI_PHEP_TRANG_THAI.CHO_DUYET
+        );
+    }
+
+    canDeleteRequest(
+        request: LeaveListItem,
+    ): boolean {
+        return (
+            this.canDeleteLeave &&
+            request.trangThai ===
+            NGHI_PHEP_TRANG_THAI.CHO_DUYET
+        );
     }
 
     isProcessing(request: LeaveListItem): boolean {
@@ -454,11 +673,19 @@ export class LeaveListComponent implements OnInit {
 
     private mapLeaveRequest(
         request: NghiPhep,
-        employees: NhanVienChiTiet[],
+        employees: NhanVien[],
         departments: PhongBan[],
         leaveTypes: LoaiNghiPhep[],
     ): LeaveListItem {
         const employee = employees.find((item) => item.maNV === request.maNV);
+
+        const employeeExtra =
+            employee as
+            | (NhanVien & {
+                tenPB?: string | null;
+            })
+            | undefined;
+
         const department = employee?.maPB
             ? departments.find((item) => item.maPB === employee.maPB)
             : undefined;
@@ -474,7 +701,7 @@ export class LeaveListComponent implements OnInit {
             maNV: request.maNV,
             hoTen: employee?.hoTen ?? `Nhân viên #${request.maNV}`,
             maPB: employee?.maPB ?? null,
-            tenPB: department?.tenPB ?? null,
+            tenPB: department?.tenPB ?? employeeExtra?.tenPB ?? null,
             maLoaiNP: request.maLoaiNP,
             tenLoaiNP: leaveType?.tenLoaiNP ?? `Loại nghỉ #${request.maLoaiNP}`,
             tuNgay: request.tuNgay,
@@ -502,6 +729,109 @@ export class LeaveListComponent implements OnInit {
                 }
                 : request,
         );
+    }
+
+    private scopeManagementData(
+        leaveRequests: NghiPhep[],
+        employees: NhanVien[],
+        departments: PhongBan[],
+    ): {
+        leaveRequests: NghiPhep[];
+        employees: NhanVien[];
+        departments: PhongBan[];
+    } {
+        if (
+            this.currentRoleId !==
+            MA_QUYEN.TRUONG_PHONG
+        ) {
+            return {
+                leaveRequests,
+                employees,
+                departments,
+            };
+        }
+
+        const managerId =
+            this.storageService
+                .getCurrentEmployeeId();
+
+        const manager =
+            managerId === null
+                ? undefined
+                : employees.find(
+                    (employee) =>
+                        employee.maNV ===
+                        managerId,
+                );
+
+        const managerDepartmentId =
+            manager?.maPB ?? null;
+
+        if (
+            managerDepartmentId === null
+        ) {
+            return {
+                leaveRequests: [],
+                employees: [],
+                departments: [],
+            };
+        }
+
+        const scopedEmployees =
+            employees.filter(
+                (employee) =>
+                    employee.maPB ===
+                    managerDepartmentId,
+            );
+
+        const scopedEmployeeIds =
+            new Set(
+                scopedEmployees.map(
+                    (employee) =>
+                        employee.maNV,
+                ),
+            );
+
+        return {
+            leaveRequests:
+                leaveRequests.filter(
+                    (request) =>
+                        scopedEmployeeIds.has(
+                            request.maNV,
+                        ),
+                ),
+
+            employees:
+                scopedEmployees,
+
+            departments:
+                departments.filter(
+                    (department) =>
+                        department.maPB ===
+                        managerDepartmentId,
+                ),
+        };
+    }
+
+    private resetLeaveData(): void {
+        this.employeesData = [];
+        this.totalEmployees = 0;
+        this.departments = [];
+        this.leaveTypes = [];
+        this.leaveRequests = [];
+
+        this.stats = {
+            choDuyet: 0,
+            tongDonTrongThang: 0,
+            tongNgayNghi: 0,
+            tyLeVangMat: 0,
+            nhanVienDangNghi: 0,
+        };
+
+        this.currentPage = 1;
+
+        this.changeDetectorRef
+            .markForCheck();
     }
 
     private calculateStats(): void {

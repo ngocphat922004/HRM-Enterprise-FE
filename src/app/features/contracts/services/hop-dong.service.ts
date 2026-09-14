@@ -94,10 +94,20 @@ export class HopDongService {
     }
 
     update(maHD: number, payload: UpdateHopDongRequest): Observable<HopDong> {
+        const request: HopDong = {
+            maHD,
+            maNV: payload.maNV,
+            maLoaiHD: payload.maLoaiHD,
+            ngayBatDau: payload.ngayBatDau,
+            ngayKetThuc: payload.ngayKetThuc,
+            luongCoBan: payload.luongCoBan,
+            trangThai: payload.trangThai,
+        };
+
         return this.http
             .put<ApiResponse<HopDongApiItem | null> | HopDongApiItem | null>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.hopDongById(maHD)}`,
-                payload,
+                request,
             )
             .pipe(
                 map((response) => {
@@ -107,15 +117,7 @@ export class HopDongService {
                         return this.normalizeContract(contract);
                     }
 
-                    return {
-                        maHD,
-                        maNV: payload.maNV,
-                        maLoaiHD: payload.maLoaiHD,
-                        ngayBatDau: payload.ngayBatDau,
-                        ngayKetThuc: payload.ngayKetThuc,
-                        luongCoBan: payload.luongCoBan,
-                        trangThai: payload.trangThai,
-                    };
+                    return request;
                 }),
             );
     }

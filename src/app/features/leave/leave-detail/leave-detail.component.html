@@ -32,8 +32,13 @@
                 </h1>
 
                 <p>
+                    @if (isEmployeeSelfView) {
+                    Theo dõi thông tin và trạng thái
+                    xử lý đơn nghỉ phép của bạn.
+                    } @else {
                     Xem thông tin và xử lý
                     yêu cầu theo quyền được cấp.
+                    }
                 </p>
             </div>
         </div>
@@ -84,9 +89,14 @@
     </strong>
 
     <p>
+        @if (isEmployeeSelfView) {
+        Đang lấy dữ liệu đơn nghỉ phép
+        và thông tin của bạn.
+        } @else {
         Đang lấy dữ liệu đơn,
         nhân viên, phòng ban
         và loại nghỉ phép.
+        }
     </p>
 </section>
 
@@ -106,7 +116,11 @@
 
                 <div>
                     <span>
+                        @if (isEmployeeSelfView) {
+                        Người gửi đơn · Bạn
+                        } @else {
                         Người gửi đơn
+                        }
                     </span>
 
                     <h2>
@@ -367,6 +381,17 @@
                 </button>
             </div>
 
+            } @else if (
+            isEmployeeSelfView &&
+            leaveRequest.trangThai === leaveStatus.CHO_DUYET
+            ) {
+
+            <p>
+                Đơn của bạn đang chờ
+                người có thẩm quyền
+                xem xét và xử lý.
+            </p>
+
             } @else {
 
             <p>
@@ -513,8 +538,10 @@
     </strong>
 
     <p>
-        Không tìm thấy dữ liệu
-        hoặc dữ liệu đơn không thể tải.
+        {{
+        errorMessage ||
+        'Không tìm thấy dữ liệu hoặc dữ liệu đơn không thể tải.'
+        }}
     </p>
 
     <div class="detail-empty__actions">

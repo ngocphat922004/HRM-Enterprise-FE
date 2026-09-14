@@ -9,10 +9,12 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, finalize, forkJoin, takeUntil } from 'rxjs';
+import { MA_QUYEN } from '../../../core/constants/role.constants';
 import { NGHI_PHEP_TRANG_THAI } from '../../../core/constants/status.constants';
+import { StorageService } from '../../../core/services/storage.service';
 import { PhongBan } from '../../departments/models/phong-ban.model';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
-import { NhanVienChiTiet } from '../../employees/models/nhan-vien.model';
+import { NhanVien } from '../../employees/models/nhan-vien.model';
 import { NhanVienService } from '../../employees/services/nhan-vien.service';
 import { LoaiNghiPhep, NghiPhep, NghiPhepService } from '../services/nghi-phep.service';
 import { LeaveDetail, LeaveProcessStep } from './leave-detail.model';
@@ -34,8 +36,9 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
     isProcessing = false;
     toastMessage = '';
     errorMessage = '';
+    currentRoleId = 0;
 
-    private employees: NhanVienChiTiet[] = [];
+    private employees: NhanVien[] = [];
     private departments: PhongBan[] = [];
     private leaveTypes: LoaiNghiPhep[] = [];
 
@@ -45,12 +48,16 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
         private readonly route: ActivatedRoute,
         private readonly router: Router,
         private readonly nghiPhepService: NghiPhepService,
+        private readonly storageService: StorageService,
         private readonly nhanVienService: NhanVienService,
         private readonly phongBanService: PhongBanService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
+        this.currentRoleId =
+            this.storageService.getCurrentRoleId() ?? 0;
+
         this.route.paramMap
             .pipe(takeUntil(this.destroy$))
             .subscribe((params) => {
@@ -77,8 +84,30 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
             : this.formatLeaveCode(this.leaveId);
     }
 
+    get isEmployeeSelfView(): boolean {
+        return (
+            this.currentRoleId ===
+            MA_QUYEN.NHAN_VIEN
+        );
+    }
+
+    get canReviewLeave(): boolean {
+        return [
+            MA_QUYEN.QUAN_TRI_VIEN,
+            MA_QUYEN.NHAN_VIEN_NHAN_SU,
+            MA_QUYEN.TRUONG_PHONG,
+        ].includes(
+            this.currentRoleId as
+            1 | 2 | 4,
+        );
+    }
+
     get canProcess(): boolean {
-        return this.leaveRequest?.trangThai === NGHI_PHEP_TRANG_THAI.CHO_DUYET;
+        return (
+            this.canReviewLeave &&
+            this.leaveRequest?.trangThai ===
+            NGHI_PHEP_TRANG_THAI.CHO_DUYET
+        );
     }
 
     get processSteps(): LeaveProcessStep[] {
@@ -127,7 +156,20 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
     }
 
     loadLeaveDetail(): void {
-        if (this.leaveId === null || this.isLoading && this.leaveRequest !== null) {
+        if (this.leaveId === null) {
+            return;
+        }
+
+        if (this.isEmployeeSelfView) {
+            this.loadEmployeeLeaveDetail();
+            return;
+        }
+
+        this.loadManagementLeaveDetail();
+    }
+
+    private loadEmployeeLeaveDetail(): void {
+        if (this.leaveId === null) {
             return;
         }
 
@@ -135,10 +177,14 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
         this.errorMessage = '';
 
         forkJoin({
-            leave: this.nghiPhepService.getById(this.leaveId),
-            employees: this.nhanVienService.getAll(),
-            departments: this.phongBanService.getAll(),
-            leaveTypes: this.nghiPhepService.getLeaveTypes(),
+            leaveRequests:
+                this.nghiPhepService.getMe(),
+
+            employee:
+                this.nhanVienService.getMe(),
+
+            leaveTypes:
+                this.nghiPhepService.getLeaveTypes(),
         })
             .pipe(
                 takeUntil(this.destroy$),
@@ -148,27 +194,145 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
                 }),
             )
             .subscribe({
-                next: ({ leave, employees, departments, leaveTypes }) => {
+                next: ({
+                    leaveRequests,
+                    employee,
+                    leaveTypes,
+                }) => {
+                    const leave =
+                        leaveRequests.find(
+                            (item) =>
+                                item.maNP === this.leaveId &&
+                                item.maNV === employee.maNV,
+                        );
+
+                    if (!leave) {
+                        this.leaveRequest = null;
+                        this.errorMessage =
+                            'Bạn chỉ có thể xem đơn nghỉ phép của chính mình.';
+                        this.showToast(this.errorMessage);
+                        return;
+                    }
+
+                    this.employees = [employee];
+                    this.departments = [];
+                    this.leaveTypes = leaveTypes;
+                    this.leaveRequest =
+                        this.mapLeaveDetail(leave);
+                    this.errorMessage = '';
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (error: HttpErrorResponse) => {
+                    this.leaveRequest = null;
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải chi tiết đơn nghỉ phép của bạn.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
+    }
+
+    private loadManagementLeaveDetail(): void {
+        if (this.leaveId === null) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        forkJoin({
+            leave:
+                this.nghiPhepService
+                    .getById(this.leaveId),
+
+            employees:
+                this.nhanVienService
+                    .getAll(),
+
+            departments:
+                this.phongBanService
+                    .getAll(),
+
+            leaveTypes:
+                this.nghiPhepService
+                    .getLeaveTypes(),
+        })
+            .pipe(
+                takeUntil(this.destroy$),
+                finalize(() => {
+                    this.isLoading = false;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    leave,
+                    employees,
+                    departments,
+                    leaveTypes,
+                }) => {
+                    if (
+                        this.currentRoleId ===
+                        MA_QUYEN.TRUONG_PHONG &&
+                        !this.managerCanAccessLeave(
+                            leave,
+                            employees,
+                        )
+                    ) {
+                        this.leaveRequest = null;
+                        this.errorMessage =
+                            'Bạn chỉ có thể xem đơn nghỉ phép của nhân viên thuộc phòng ban mình quản lý.';
+                        this.showToast(
+                            this.errorMessage,
+                        );
+                        return;
+                    }
+
                     this.employees = employees;
                     this.departments = departments;
                     this.leaveTypes = leaveTypes;
-                    this.leaveRequest = this.mapLeaveDetail(leave);
+                    this.leaveRequest =
+                        this.mapLeaveDetail(leave);
                     this.errorMessage = '';
-                    this.changeDetectorRef.markForCheck();
+
+                    this.changeDetectorRef
+                        .markForCheck();
                 },
+
                 error: (error: HttpErrorResponse) => {
                     this.leaveRequest = null;
-                    this.errorMessage = this.getApiErrorMessage(
-                        error,
-                        'Không thể tải chi tiết đơn nghỉ phép.',
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải chi tiết đơn nghỉ phép.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
                     );
-                    this.showToast(this.errorMessage);
                 },
             });
     }
 
     approveRequest(): void {
         if (!this.canProcess || this.isProcessing || this.leaveId === null) {
+            return;
+        }
+
+        const nguoiDuyet = this.storageService.getCurrentEmployeeId();
+
+        if (nguoiDuyet === null) {
+            this.showToast(
+                'Không xác định được mã nhân viên của người duyệt. Vui lòng đăng xuất và đăng nhập lại.',
+            );
             return;
         }
 
@@ -183,7 +347,7 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
         this.isProcessing = true;
 
         this.nghiPhepService
-            .approve(this.leaveId)
+            .approve(this.leaveId, nguoiDuyet)
             .pipe(
                 takeUntil(this.destroy$),
                 finalize(() => {
@@ -213,6 +377,15 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
             return;
         }
 
+        const nguoiDuyet = this.storageService.getCurrentEmployeeId();
+
+        if (nguoiDuyet === null) {
+            this.showToast(
+                'Không xác định được mã nhân viên của người xử lý. Vui lòng đăng xuất và đăng nhập lại.',
+            );
+            return;
+        }
+
         const confirmed = window.confirm(
             `Bạn có chắc muốn từ chối đơn ${this.leaveCode}?`,
         );
@@ -224,7 +397,7 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
         this.isProcessing = true;
 
         this.nghiPhepService
-            .reject(this.leaveId)
+            .reject(this.leaveId, nguoiDuyet)
             .pipe(
                 takeUntil(this.destroy$),
                 finalize(() => {
@@ -317,35 +490,118 @@ export class LeaveDetailComponent implements OnInit, OnDestroy {
     }
 
     private mapLeaveDetail(leave: NghiPhep): LeaveDetail {
-        const employee = this.employees.find((item) => item.maNV === leave.maNV);
+        const employee =
+            this.employees.find(
+                (item) =>
+                    item.maNV === leave.maNV,
+            );
+
+        const employeeExtra =
+            employee as
+            | (NhanVien & {
+                tenPB?: string | null;
+                tenCV?: string | null;
+            })
+            | undefined;
+
         const department = employee?.maPB
-            ? this.departments.find((item) => item.maPB === employee.maPB)
+            ? this.departments.find(
+                (item) =>
+                    item.maPB === employee.maPB,
+            )
             : undefined;
-        const leaveType = this.leaveTypes.find(
-            (item) => item.maLoaiNP === leave.maLoaiNP,
-        );
+
+        const leaveType =
+            this.leaveTypes.find(
+                (item) =>
+                    item.maLoaiNP ===
+                    leave.maLoaiNP,
+            );
+
         const approver = leave.nguoiDuyet
-            ? this.employees.find((item) => item.maNV === leave.nguoiDuyet)
+            ? this.employees.find(
+                (item) =>
+                    item.maNV ===
+                    leave.nguoiDuyet,
+            )
             : undefined;
+
+        const approverExtra =
+            approver as
+            | (NhanVien & {
+                tenCV?: string | null;
+            })
+            | undefined;
 
         return {
             maNP: leave.maNP,
             maNV: leave.maNV,
-            hoTen: employee?.hoTen ?? `Nhân viên #${leave.maNV}`,
-            email: employee?.email ?? null,
-            tenPB: department?.tenPB ?? null,
-            tenCV: employee?.tenCV ?? null,
+            hoTen:
+                employee?.hoTen ??
+                `Nhân viên #${leave.maNV}`,
+            email:
+                employee?.email ?? null,
+            tenPB:
+                department?.tenPB ??
+                employeeExtra?.tenPB ??
+                null,
+            tenCV:
+                employeeExtra?.tenCV ??
+                null,
             maLoaiNP: leave.maLoaiNP,
-            tenLoaiNP: leaveType?.tenLoaiNP ?? `Loại nghỉ #${leave.maLoaiNP}`,
+            tenLoaiNP:
+                leaveType?.tenLoaiNP ??
+                `Loại nghỉ #${leave.maLoaiNP}`,
             tuNgay: leave.tuNgay,
             denNgay: leave.denNgay,
-            soNgay: this.calculateLeaveDays(leave.tuNgay, leave.denNgay),
+            soNgay:
+                this.calculateLeaveDays(
+                    leave.tuNgay,
+                    leave.denNgay,
+                ),
             lyDo: leave.lyDo,
             trangThai: leave.trangThai,
             nguoiDuyet: leave.nguoiDuyet,
-            tenNguoiDuyet: approver?.hoTen ?? null,
-            chucVuNguoiDuyet: approver?.tenCV ?? null,
+            tenNguoiDuyet:
+                approver?.hoTen ?? null,
+            chucVuNguoiDuyet:
+                approverExtra?.tenCV ??
+                null,
         };
+    }
+
+    private managerCanAccessLeave(
+        leave: NghiPhep,
+        employees: NhanVien[],
+    ): boolean {
+        const managerId =
+            this.storageService
+                .getCurrentEmployeeId();
+
+        if (managerId === null) {
+            return false;
+        }
+
+        const manager =
+            employees.find(
+                (employee) =>
+                    employee.maNV ===
+                    managerId,
+            );
+
+        const leaveEmployee =
+            employees.find(
+                (employee) =>
+                    employee.maNV ===
+                    leave.maNV,
+            );
+
+        return Boolean(
+            manager?.maPB !== null &&
+            manager?.maPB !== undefined &&
+            leaveEmployee?.maPB ===
+            manager.maPB,
+        );
     }
 
     private calculateLeaveDays(tuNgay: string, denNgay: string): number {
