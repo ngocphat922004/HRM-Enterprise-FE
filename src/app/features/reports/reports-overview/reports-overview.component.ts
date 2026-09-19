@@ -8,7 +8,7 @@ import {
     OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, of } from 'rxjs';
 
 import {
     CHAM_CONG_TRANG_THAI,
@@ -16,12 +16,27 @@ import {
     NGHI_PHEP_TRANG_THAI,
     NHAN_VIEN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
+import {
+    canViewAttendance as canViewAttendanceForRole,
+    canViewEmployeeDirectory,
+    canViewLeave as canViewLeaveForRole,
+    canViewOrganization,
+    canViewPayroll as canViewPayrollForRole,
+    canViewReports as canViewReportsForRole,
+    canViewRewards,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
 import { ExcelExportService } from '../../../core/services/excel-export.service';
+import { StorageService } from '../../../core/services/storage.service';
 import { ChamCong } from '../../attendance/models/cham-cong.model';
 import { ChamCongService } from '../../attendance/services/cham-cong.service';
 import { PhongBan } from '../../departments/models/phong-ban.model';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
-import { NhanVienChiTiet } from '../../employees/models/nhan-vien.model';
+import {
+    NhanVien,
+    NhanVienChiTiet,
+} from '../../employees/models/nhan-vien.model';
 import { NhanVienService } from '../../employees/services/nhan-vien.service';
 import { NghiPhep } from '../../leave/models/nghi-phep.model';
 import { NghiPhepService } from '../../leave/services/nghi-phep.service';
@@ -81,6 +96,8 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     private payrollsData: BangLuong[] = [];
     private decisionsData: KhenThuongKyLuat[] = [];
     private hasLoadedData = false;
+    private currentRole: RoleKey | null = null;
+    private managerDepartmentId: number | null = null;
     private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
@@ -91,6 +108,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         private readonly bangLuongService: BangLuongService,
         private readonly khenThuongKyLuatService: KhenThuongKyLuatService,
         private readonly excelExportService: ExcelExportService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) {
         const today = new Date();
@@ -105,13 +123,71 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.loadReport();
+        this.currentRole = resolveUserRole(
+            this.storageService.getCurrentUser(),
+        );
+
+        this.loadPermissions();
     }
 
     ngOnDestroy(): void {
         if (this.toastTimer) {
             clearTimeout(this.toastTimer);
         }
+    }
+
+    get canViewReports(): boolean {
+        return canViewReportsForRole(
+            this.currentRole,
+        );
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.currentRole,
+        );
+    }
+
+    get canViewDepartments(): boolean {
+        return canViewOrganization(
+            this.currentRole,
+        );
+    }
+
+    get canViewAttendance(): boolean {
+        return (
+            this.canViewReports &&
+            canViewAttendanceForRole(
+                this.currentRole,
+            )
+        );
+    }
+
+    get canViewLeave(): boolean {
+        return (
+            this.canViewReports &&
+            canViewLeaveForRole(
+                this.currentRole,
+            )
+        );
+    }
+
+    get canViewPayroll(): boolean {
+        return (
+            this.canViewReports &&
+            canViewPayrollForRole(
+                this.currentRole,
+            )
+        );
+    }
+
+    get canViewRewardsDiscipline(): boolean {
+        return (
+            this.canViewReports &&
+            canViewRewards(
+                this.currentRole,
+            )
+        );
     }
 
     get periodLabel(): string {
@@ -170,7 +246,10 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     }
 
     applyFilters(): void {
-        if (this.isLoading) {
+        if (
+            !this.canViewReports ||
+            this.isLoading
+        ) {
             return;
         }
 
@@ -183,7 +262,10 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     }
 
     resetFilters(): void {
-        if (this.isLoading) {
+        if (
+            !this.canViewReports ||
+            this.isLoading
+        ) {
             return;
         }
 
@@ -191,7 +273,10 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         this.filter = {
             thang: today.getMonth() + 1,
             nam: today.getFullYear(),
-            maPB: null,
+            maPB:
+                this.currentRole === 'manager'
+                    ? this.managerDepartmentId
+                    : null,
         };
 
         if (!this.years.includes(this.filter.nam)) {
@@ -208,13 +293,19 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     }
 
     retry(): void {
-        if (!this.isLoading) {
+        if (
+            this.canViewReports &&
+            !this.isLoading
+        ) {
             this.loadReport();
         }
     }
 
     exportReport(): void {
-        if (this.isLoading) {
+        if (
+            !this.canViewReports ||
+            this.isLoading
+        ) {
             return;
         }
 
@@ -375,7 +466,10 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     }
 
     printReport(): void {
-        if (this.isLoading) {
+        if (
+            !this.canViewReports ||
+            this.isLoading
+        ) {
             return;
         }
 
@@ -413,18 +507,80 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         );
     }
 
+    private loadPermissions(): void {
+        this.errorMessage = '';
+
+        if (
+            !this.canViewReports
+        ) {
+            this.resetReportData();
+
+            this.errorMessage =
+                'Bạn không có quyền xem báo cáo.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.loadReport();
+    }
+
     private loadReport(): void {
+        if (
+            !this.canViewReports ||
+            this.isLoading
+        ) {
+            return;
+        }
+
         this.isLoading = true;
         this.errorMessage = '';
         this.changeDetectorRef.markForCheck();
 
         forkJoin({
-            employees: this.nhanVienService.getAll(),
-            departments: this.phongBanService.getAll(),
-            attendance: this.chamCongService.getAll(),
-            leaves: this.nghiPhepService.getAll(),
-            payrolls: this.bangLuongService.getAll(),
-            decisions: this.khenThuongKyLuatService.getAll(),
+            currentEmployee:
+                this.currentRole === 'manager'
+                    ? this.nhanVienService
+                        .getMe()
+                    : of<NhanVien | null>(null),
+
+            employees:
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of<NhanVienChiTiet[]>([]),
+
+            departments:
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of<PhongBan[]>([]),
+
+            attendance:
+                this.canViewAttendance
+                    ? this.chamCongService
+                        .getAll()
+                    : of<ChamCong[]>([]),
+
+            leaves:
+                this.canViewLeave
+                    ? this.nghiPhepService
+                        .getAll()
+                    : of<NghiPhep[]>([]),
+
+            payrolls:
+                this.canViewPayroll
+                    ? this.bangLuongService
+                        .getAll()
+                    : of<BangLuong[]>([]),
+
+            decisions:
+                this.canViewRewardsDiscipline
+                    ? this.khenThuongKyLuatService
+                        .getAll()
+                    : of<KhenThuongKyLuat[]>([]),
         })
             .pipe(
                 finalize(() => {
@@ -434,6 +590,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             )
             .subscribe({
                 next: ({
+                    currentEmployee,
                     employees,
                     departments,
                     attendance,
@@ -441,34 +598,153 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                     payrolls,
                     decisions,
                 }) => {
-                    this.employeesData = employees;
-                    this.departmentsData = departments;
-                    this.attendanceData = attendance;
-                    this.leavesData = leaves;
-                    this.payrollsData = payrolls;
-                    this.decisionsData = decisions;
-                    this.hasLoadedData = true;
-
-                    this.departments = departments
-                        .map((department) => ({
-                            maPB: department.maPB,
-                            tenPB: department.tenPB,
-                        }))
-                        .sort((a, b) => a.tenPB.localeCompare(b.tenPB, 'vi'));
+                    let scopedEmployees = employees;
+                    let scopedDepartments = departments;
+                    let scopedAttendance = attendance;
+                    let scopedLeaves = leaves;
+                    let scopedPayrolls = payrolls;
+                    let scopedDecisions = decisions;
 
                     if (
-                        this.filter.maPB !== null &&
-                        !departments.some(
-                            (department) => department.maPB === this.filter.maPB,
+                        this.currentRole ===
+                        'manager'
+                    ) {
+                        const departmentId =
+                            currentEmployee
+                                ?.maPB ??
+                            null;
+
+                        if (
+                            departmentId ===
+                            null
+                        ) {
+                            this.resetReportData();
+
+                            this.errorMessage =
+                                'Không xác định được phòng ban của Trưởng phòng.';
+
+                            this.changeDetectorRef
+                                .markForCheck();
+
+                            return;
+                        }
+
+                        this.managerDepartmentId =
+                            departmentId;
+
+                        scopedEmployees =
+                            employees.filter(
+                                (employee) =>
+                                    employee.maPB ===
+                                    departmentId,
+                            );
+
+                        const employeeIds =
+                            new Set(
+                                scopedEmployees.map(
+                                    (employee) =>
+                                        employee.maNV,
+                                ),
+                            );
+
+                        scopedDepartments =
+                            departments.filter(
+                                (department) =>
+                                    department.maPB ===
+                                    departmentId,
+                            );
+
+                        scopedAttendance =
+                            attendance.filter(
+                                (item) =>
+                                    employeeIds.has(
+                                        item.maNV,
+                                    ),
+                            );
+
+                        scopedLeaves =
+                            leaves.filter(
+                                (leave) =>
+                                    employeeIds.has(
+                                        leave.maNV,
+                                    ),
+                            );
+
+                        scopedPayrolls =
+                            payrolls.filter(
+                                (payroll) =>
+                                    employeeIds.has(
+                                        payroll.maNV,
+                                    ),
+                            );
+
+                        scopedDecisions =
+                            decisions.filter(
+                                (decision) =>
+                                    employeeIds.has(
+                                        decision.maNV,
+                                    ),
+                            );
+
+                        this.filter.maPB =
+                            departmentId;
+                    } else {
+                        this.managerDepartmentId =
+                            null;
+                    }
+
+                    this.employeesData =
+                        scopedEmployees;
+                    this.departmentsData =
+                        scopedDepartments;
+                    this.attendanceData =
+                        scopedAttendance;
+                    this.leavesData =
+                        scopedLeaves;
+                    this.payrollsData =
+                        scopedPayrolls;
+                    this.decisionsData =
+                        scopedDecisions;
+                    this.hasLoadedData =
+                        true;
+
+                    this.departments =
+                        scopedDepartments
+                            .map(
+                                (department) => ({
+                                    maPB:
+                                        department.maPB,
+                                    tenPB:
+                                        department.tenPB,
+                                }),
+                            )
+                            .sort(
+                                (a, b) =>
+                                    a.tenPB.localeCompare(
+                                        b.tenPB,
+                                        'vi',
+                                    ),
+                            );
+
+                    if (
+                        this.filter.maPB !==
+                        null &&
+                        !scopedDepartments.some(
+                            (department) =>
+                                department.maPB ===
+                                this.filter.maPB,
                         )
                     ) {
-                        this.filter.maPB = null;
+                        this.filter.maPB =
+                            null;
                     }
 
                     this.updateAvailableYears();
                     this.buildReport();
                 },
                 error: (error: unknown) => {
+                    this.resetReportData();
+
                     this.errorMessage = this.getErrorMessage(
                         error,
                         'Không thể tải dữ liệu báo cáo.',
@@ -959,6 +1235,24 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         }
 
         return fallback;
+    }
+
+    private resetReportData(): void {
+        this.employeesData = [];
+        this.departmentsData = [];
+        this.attendanceData = [];
+        this.leavesData = [];
+        this.payrollsData = [];
+        this.decisionsData = [];
+        this.departments = [];
+        this.stats = this.createEmptyStats();
+        this.payrollSummary =
+            this.createEmptyPayrollSummary();
+        this.decisionSummary =
+            this.createEmptyDecisionSummary();
+        this.departmentRows = [];
+        this.monthlyPoints = [];
+        this.hasLoadedData = false;
     }
 
     private showToast(message: string): void {

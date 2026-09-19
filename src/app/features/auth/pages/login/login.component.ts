@@ -86,7 +86,7 @@ export class LoginComponent {
           '',
           [
             Validators.required,
-            Validators.maxLength(50),
+            Validators.maxLength(100),
           ],
         ],
 

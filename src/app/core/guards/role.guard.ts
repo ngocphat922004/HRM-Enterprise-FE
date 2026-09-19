@@ -1,13 +1,8 @@
 import { inject } from '@angular/core';
-
-import {
-    CanActivateChildFn,
-    Router,
-    UrlTree,
-} from '@angular/router';
+import { CanActivateChildFn, Router, UrlTree } from '@angular/router';
 
 import { LoginData } from '../models/login-response.model';
-import { StorageService } from '../services/storage.service';
+import { AuthService } from '../services/auth.service';
 
 export type RoleKey =
     | 'admin'
@@ -24,6 +19,15 @@ const ROLE_BY_ID: Record<number, RoleKey> = {
     4: 'manager',
     5: 'director',
     6: 'employee',
+};
+
+const ROLE_ID_BY_KEY: Record<RoleKey, number> = {
+    admin: 1,
+    hr: 2,
+    accountant: 3,
+    manager: 4,
+    director: 5,
+    employee: 6,
 };
 
 const ROLE_BY_NAME: Record<string, RoleKey> = {
@@ -59,64 +63,41 @@ const ROLE_BY_NAME: Record<string, RoleKey> = {
     'nhan vien': 'employee',
 };
 
-export const roleGuard: CanActivateChildFn = (
-    _route,
-    state,
-) => {
-    const storageService =
-        inject(StorageService);
-
-    const router =
-        inject(Router);
-
-    /*
-     * Luôn lấy user từ StorageService.
-     *
-     * StorageService đã normalize:
-     * maQuyen = 0
-     * tenQuyen = "Quản trị viên"
-     *
-     * thành:
-     * maQuyen = 1
-     */
-    const currentUser =
-        storageService.getCurrentUser();
+export const roleGuard: CanActivateChildFn = (route, state) => {
+    const authService = inject(AuthService);
+    const router = inject(Router);
+    const currentUser = authService.getCurrentUser();
 
     if (!currentUser) {
-        return router.createUrlTree(
-            ['/login'],
-            {
-                queryParams: {
-                    returnUrl: state.url,
-                },
+        return router.createUrlTree(['/login'], {
+            queryParams: {
+                returnUrl: state.url,
             },
-        );
+        });
     }
 
-    const path =
-        normalizePath(state.url);
+    if (!resolveUserRole(currentUser)) {
+        authService.clearSession();
 
-    const requestedTab =
-        getQueryParam(
-            state.url,
-            'tab',
-        );
+        return router.createUrlTree(['/login'], {
+            queryParams: {
+                returnUrl: state.url,
+            },
+        });
+    }
 
-    if (
-        canUserAccessPath(
-            currentUser,
-            path,
-            requestedTab,
-        )
-    ) {
+    if (!isAllowedByRouteMetadata(currentUser, route.data?.['roles'])) {
+        return createDefaultRoute(router, currentUser, true);
+    }
+
+    const path = normalizePath(state.url);
+    const requestedTab = getQueryParam(state.url, 'tab');
+
+    if (canUserAccessPath(currentUser, path, requestedTab)) {
         return true;
     }
 
-    return createDefaultRoute(
-        router,
-        currentUser,
-        true,
-    );
+    return createDefaultRoute(router, currentUser, true);
 };
 
 export function canUserAccessPath(
@@ -124,25 +105,13 @@ export function canUserAccessPath(
     rawPath: string,
     requestedTab: string | null = null,
 ): boolean {
-    const path =
-        normalizePath(rawPath);
-
-    const role =
-        resolveUserRole(currentUser);
+    const path = normalizePath(rawPath);
+    const role = resolveUserRole(currentUser);
 
     if (!role) {
         return false;
     }
 
-    /*
-     * =========================================================
-     * DASHBOARD
-     * =========================================================
-     *
-     * Nhân viên không được vào Dashboard tổng hợp.
-     * Dashboard chứa dữ liệu tổng nhân sự, nghỉ phép,
-     * chấm công, hợp đồng...
-     */
     if (path === '/dashboard') {
         return isOneOf(
             role,
@@ -154,348 +123,449 @@ export function canUserAccessPath(
         );
     }
 
-    /*
-     * =========================================================
-     * NHÂN VIÊN
-     * =========================================================
-     */
-
     if (path === '/employees/add') {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
+        return canManageEmployees(role);
     }
 
-    if (
-        /^\/employees\/\d+\/edit$/.test(
-            path,
-        )
-    ) {
-        /*
-         * Admin + HR được sửa hồ sơ nhân viên.
-         */
-        if (
-            isOneOf(
-                role,
-                'admin',
-                'hr',
-            )
-        ) {
+    if (/^\/employees\/\d+\/edit$/.test(path)) {
+        if (canManageEmployees(role)) {
             return true;
         }
 
-        /*
-         * Kế toán chỉ được đi vào tab
-         * phụ cấp nếu hệ thống hiện tại
-         * đang dùng flow này.
-         */
-        return (
-            role === 'accountant' &&
-            requestedTab === 'allowances'
-        );
+        return role === 'accountant' && requestedTab === 'allowances';
     }
 
-    const employeeDetailMatch =
-        path.match(
-            /^\/employees\/(\d+)$/,
-        );
+    const employeeDetailMatch = path.match(/^\/employees\/(\d+)$/);
 
     if (employeeDetailMatch) {
-        const employeeId =
-            Number(
-                employeeDetailMatch[1],
-            );
+        const employeeId = Number(employeeDetailMatch[1]);
 
-        /*
-         * Admin / HR / Trưởng phòng:
-         * xem hồ sơ nhân viên.
-         */
-        if (
-            isOneOf(
-                role,
-                'admin',
-                'hr',
-                'manager',
-            )
-        ) {
+        if (canViewEmployeeDirectory(role)) {
             return true;
         }
 
-        /*
-         * Nhân viên:
-         * chỉ được xem hồ sơ của chính mình.
-         */
         return (
             role === 'employee' &&
-            employeeId ===
-            toPositiveInteger(
-                currentUser.maNV,
-            )
+            isOwnEmployeeProfile(currentUser, employeeId)
         );
     }
 
     if (path === '/employees') {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-            'manager',
-        );
+        return canViewEmployeeDirectory(role);
     }
 
-    /*
-     * =========================================================
-     * DANH MỤC NHÂN SỰ
-     * =========================================================
-     */
-
-    if (
-        path.startsWith('/departments')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
+    if (path === '/departments/add') {
+        return canManageOrganization(role);
     }
 
-    if (
-        path.startsWith('/positions')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
+    if (/^\/departments\/\d+\/edit$/.test(path)) {
+        return canManageOrganization(role);
     }
 
-    if (
-        path.startsWith('/qualifications')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
+    if (path === '/departments' || /^\/departments\/\d+$/.test(path)) {
+        return canViewOrganization(role);
+    }
+
+    if (path === '/positions/add') {
+        return canManageOrganization(role);
+    }
+
+    if (/^\/positions\/\d+\/edit$/.test(path)) {
+        return canManageOrganization(role);
+    }
+
+    if (path === '/positions' || /^\/positions\/\d+$/.test(path)) {
+        return canViewOrganization(role);
+    }
+
+    if (path === '/qualifications/add') {
+        return canManageOrganization(role);
+    }
+
+    if (/^\/qualifications\/\d+\/edit$/.test(path)) {
+        return canManageOrganization(role);
     }
 
     if (
-        path.startsWith('/contracts')
+        path === '/qualifications' ||
+        /^\/qualifications\/\d+$/.test(path)
     ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
+        return canViewOrganization(role);
     }
 
-    /*
-     * =========================================================
-     * CHẤM CÔNG
-     * =========================================================
-     */
-
-    if (
-        path === '/attendance/overview'
-    ) {
-        /*
-         * Overview tổng hợp không cho nhân viên
-         * xem toàn bộ dữ liệu.
-         */
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-            'manager',
-        );
+    if (path === '/contracts/add') {
+        return canManageContracts(role);
     }
 
-    if (
-        path.startsWith('/attendance')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-            'manager',
-            'employee',
-        );
+    if (/^\/contracts\/\d+\/edit$/.test(path)) {
+        return canManageContracts(role);
     }
 
-    /*
-     * =========================================================
-     * NGHỈ PHÉP
-     * =========================================================
-     */
+    if (path === '/contracts' || /^\/contracts\/\d+$/.test(path)) {
+        return canViewContracts(role);
+    }
+
+    if (path === '/attendance/overview' || path === '/attendance') {
+        return canViewAttendance(role);
+    }
+
+    if (path.startsWith('/attendance')) {
+        return false;
+    }
 
     if (path === '/leave/add') {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-            'manager',
-            'employee',
+        return (
+            canCreateLeave(role) &&
+            toPositiveInteger(currentUser.maNV) !== null
         );
     }
 
-    if (path === '/leave') {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-            'manager',
-            'employee',
-        );
+    if (path === '/leave' || /^\/leave\/\d+$/.test(path)) {
+        return canViewLeave(role);
     }
 
-    if (
-        /^\/leave\/\d+$/.test(path)
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-            'manager',
-            'employee',
-        );
+    if (path.startsWith('/leave')) {
+        return false;
     }
 
-    if (
-        path.startsWith('/leave')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-            'manager',
-        );
+    if (path === '/payroll/add') {
+        return canManagePayroll(role);
     }
 
-    /*
-     * =========================================================
-     * BẢNG LƯƠNG
-     * =========================================================
-     */
+    if (/^\/payroll\/\d+\/edit$/.test(path)) {
+        return canManagePayroll(role);
+    }
 
-    if (path === '/payroll') {
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-            'employee',
-        );
+    if (path === '/payroll' || /^\/payroll\/\d+$/.test(path)) {
+        return canViewPayroll(role);
+    }
+
+    if (path === '/rewards-discipline/add') {
+        return canManageRewards(role);
+    }
+
+    if (/^\/rewards-discipline\/\d+\/edit$/.test(path)) {
+        return canManageRewards(role);
     }
 
     if (
-        /^\/payroll\/\d+$/.test(path)
+        path === '/rewards-discipline' ||
+        /^\/rewards-discipline\/\d+$/.test(path)
     ) {
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-            'employee',
-        );
+        return canViewRewards(role);
     }
 
-    /*
-     * Add/Edit payroll:
-     * Nhân viên không được thao tác CRUD.
-     */
-    if (
-        path.startsWith('/payroll')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-        );
+    if (path.startsWith('/reports')) {
+        return canViewReports(role);
     }
 
-    /*
-     * =========================================================
-     * KHEN THƯỞNG / KỶ LUẬT
-     * =========================================================
-     */
-
-    if (
-        path.startsWith(
-            '/rewards-discipline',
-        )
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'hr',
-        );
-    }
-
-    /*
-     * =========================================================
-     * BÁO CÁO
-     * =========================================================
-     */
-
-    if (
-        path.startsWith('/reports')
-    ) {
-        return isOneOf(
-            role,
-            'admin',
-            'accountant',
-            'director',
-        );
-    }
-
-    /*
-     * =========================================================
-     * CÀI ĐẶT
-     * =========================================================
-     */
-
-    if (
-        path.startsWith('/settings')
-    ) {
-        return role === 'admin';
+    if (path.startsWith('/settings')) {
+        return canManageSettings(role);
     }
 
     return false;
 }
 
-export function resolveUserRole(
-    user: LoginData | null,
-): RoleKey | null {
+export function resolveUserRole(user: LoginData | null): RoleKey | null {
     if (!user) {
         return null;
     }
 
-    const roleId =
-        toPositiveInteger(
-            user.maQuyen,
-        );
+    const roleId = toPositiveInteger(user.maQuyen);
 
-    if (
-        roleId &&
-        ROLE_BY_ID[roleId]
-    ) {
+    if (roleId !== null && ROLE_BY_ID[roleId]) {
         return ROLE_BY_ID[roleId];
     }
 
-    const normalizedRoleName =
-        normalizeRoleName(
-            user.tenQuyen,
-        );
+    const normalizedRoleName = normalizeRoleName(user.tenQuyen);
 
     if (!normalizedRoleName) {
         return null;
     }
 
-    return (
-        ROLE_BY_NAME[
-        normalizedRoleName
-        ] ?? null
+    return ROLE_BY_NAME[normalizedRoleName] ?? null;
+}
+
+export function canManageEmployees(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewEmployeeDirectory(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant', 'manager', 'director');
+}
+
+export function canManageOrganization(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewOrganization(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant', 'manager', 'director');
+}
+
+export function canManageContracts(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewContracts(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+        'employee',
     );
+}
+
+export function canManagePayroll(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'accountant');
+}
+
+export function canViewPayroll(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant', 'director', 'employee');
+}
+
+export function canManageRewards(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewRewards(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+        'employee',
+    );
+}
+
+
+export function canViewAttendance(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+        'employee',
+    );
+}
+
+export function canManageAttendance(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant');
+}
+
+export function canViewShiftTypes(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+    );
+}
+
+export function canManageShiftTypes(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant');
+}
+
+export function canViewLeave(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+        'employee',
+    );
+}
+
+export function canCreateLeave(role: RoleKey | null): boolean {
+    return role === 'employee';
+}
+
+export function canApproveLeave(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'manager');
+}
+
+export function canDeleteLeave(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewLeaveTypes(role: RoleKey | null): boolean {
+    return canViewLeave(role);
+}
+
+export function canManageLeaveTypes(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr');
+}
+
+export function canViewAllowances(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(
+        role,
+        'admin',
+        'hr',
+        'accountant',
+        'manager',
+        'director',
+        'employee',
+    );
+}
+
+export function canManageAllowances(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant');
+}
+
+export function canViewReports(role: RoleKey | null): boolean {
+    if (!role) {
+        return false;
+    }
+
+    return isOneOf(role, 'admin', 'hr', 'accountant', 'manager', 'director');
+}
+
+export function canUseAi(role: RoleKey | null): boolean {
+    return canViewReports(role);
+}
+
+export function canManageSettings(role: RoleKey | null): boolean {
+    return role === 'admin';
+}
+
+export function isOwnEmployeeProfile(
+    currentUser: LoginData | null,
+    employeeId: number,
+): boolean {
+    if (!currentUser || !Number.isInteger(employeeId) || employeeId <= 0) {
+        return false;
+    }
+
+    const currentEmployeeId = toPositiveInteger(currentUser.maNV);
+
+    return currentEmployeeId !== null && currentEmployeeId === employeeId;
+}
+
+function isAllowedByRouteMetadata(
+    currentUser: LoginData,
+    configuredRoles: unknown,
+): boolean {
+    const allowedRoleIds = normalizeConfiguredRoleIds(configuredRoles);
+
+    if (allowedRoleIds.length === 0) {
+        return true;
+    }
+
+    const currentRoleId = resolveUserRoleId(currentUser);
+
+    return currentRoleId !== null && allowedRoleIds.includes(currentRoleId);
+}
+
+function normalizeConfiguredRoleIds(value: unknown): number[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((roleId) => toPositiveInteger(roleId))
+        .filter((roleId): roleId is number => roleId !== null);
+}
+
+function resolveUserRoleId(user: LoginData): number | null {
+    const roleId = toPositiveInteger(user.maQuyen);
+
+    if (roleId !== null && ROLE_BY_ID[roleId]) {
+        return roleId;
+    }
+
+    const role = resolveUserRole(user);
+
+    return role ? ROLE_ID_BY_KEY[role] : null;
 }
 
 function createDefaultRoute(
@@ -503,145 +573,70 @@ function createDefaultRoute(
     currentUser: LoginData,
     accessDenied: boolean,
 ): UrlTree {
-    const role =
-        resolveUserRole(
-            currentUser,
-        );
+    const role = resolveUserRole(currentUser);
+    const employeeId = toPositiveInteger(currentUser.maNV);
 
-    const employeeId =
-        toPositiveInteger(
-            currentUser.maNV,
-        );
-
-    /*
-     * Nhân viên:
-     * về hồ sơ cá nhân.
-     *
-     * Các role khác:
-     * về Dashboard.
-     */
     const commands =
-        role === 'employee' &&
-            employeeId
-            ? [
-                '/employees',
-                employeeId,
-            ]
+        role === 'employee'
+            ? employeeId !== null
+                ? ['/employees', employeeId]
+                : ['/attendance/overview']
             : ['/dashboard'];
 
-    return router.createUrlTree(
-        commands,
-        {
-            queryParams:
-                accessDenied
-                    ? {
-                        accessDenied:
-                            'true',
-                    }
-                    : undefined,
-        },
-    );
+    return router.createUrlTree(commands, {
+        queryParams: accessDenied
+            ? {
+                accessDenied: 'true',
+            }
+            : undefined,
+    });
 }
 
-function normalizePath(
-    url: string,
-): string {
-    const path =
-        url
-            .split('?')[0]
-            .split('#')[0];
+function normalizePath(url: string): string {
+    const path = url.split('?')[0].split('#')[0];
 
-    if (
-        path.length > 1 &&
-        path.endsWith('/')
-    ) {
-        return path.slice(
-            0,
-            -1,
-        );
+    if (path.length > 1 && path.endsWith('/')) {
+        return path.slice(0, -1);
     }
 
     return path;
 }
 
-function normalizeRoleName(
-    value: unknown,
-): string {
-    if (
-        typeof value !==
-        'string'
-    ) {
+function normalizeRoleName(value: unknown): string {
+    if (typeof value !== 'string') {
         return '';
     }
 
     return value
         .normalize('NFD')
-        .replace(
-            /[\u0300-\u036f]/g,
-            '',
-        )
-        .toLocaleLowerCase(
-            'vi-VN',
-        )
-        .replace(
-            /đ/g,
-            'd',
-        )
-        .replace(
-            /[_\-.]+/g,
-            ' ',
-        )
-        .replace(
-            /\s+/g,
-            ' ',
-        )
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('vi-VN')
+        .replace(/đ/g, 'd')
+        .replace(/[_\-.]+/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim();
 }
 
-function toPositiveInteger(
-    value: unknown,
-): number | null {
-    const numberValue =
-        Number(value);
+function toPositiveInteger(value: unknown): number | null {
+    const numberValue = Number(value);
 
-    return (
-        Number.isInteger(
-            numberValue,
-        ) &&
-        numberValue > 0
-    )
+    return Number.isInteger(numberValue) && numberValue > 0
         ? numberValue
         : null;
 }
 
-function getQueryParam(
-    url: string,
-    key: string,
-): string | null {
-    const queryIndex =
-        url.indexOf('?');
+function getQueryParam(url: string, key: string): string | null {
+    const queryIndex = url.indexOf('?');
 
     if (queryIndex < 0) {
         return null;
     }
 
-    const query =
-        url
-            .slice(
-                queryIndex + 1,
-            )
-            .split('#')[0];
+    const query = url.slice(queryIndex + 1).split('#')[0];
 
-    return new URLSearchParams(
-        query,
-    ).get(key);
+    return new URLSearchParams(query).get(key);
 }
 
-function isOneOf(
-    role: RoleKey,
-    ...allowedRoles: RoleKey[]
-): boolean {
-    return allowedRoles.includes(
-        role,
-    );
+function isOneOf(role: RoleKey, ...allowedRoles: RoleKey[]): boolean {
+    return allowedRoles.includes(role);
 }

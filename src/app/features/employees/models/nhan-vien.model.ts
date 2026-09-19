@@ -41,6 +41,7 @@ export interface CreateNhanVienRequest {
 }
 
 export interface UpdateNhanVienRequest {
+    maNV: number;
     hoTen: string;
     gioiTinh: string;
     ngaySinh: string;

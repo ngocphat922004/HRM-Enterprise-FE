@@ -4,7 +4,6 @@ import {
     EventEmitter,
     Output,
 } from '@angular/core';
-
 import {
     Router,
     RouterModule,
@@ -14,8 +13,9 @@ import {
     canUserAccessPath,
     resolveUserRole,
 } from '../../../core/guards/role.guard';
-
-import { StorageService } from '../../../core/services/storage.service';
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 type SidebarIcon =
     | 'dashboard'
@@ -36,14 +36,19 @@ interface SidebarItem {
     icon: SidebarIcon;
     route: string;
     exact: boolean;
+    selfOnly?: boolean;
 }
 
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [RouterModule],
-    templateUrl: './sidebar.component.html',
-    styleUrl: './sidebar.component.scss',
+    imports: [
+        RouterModule,
+    ],
+    templateUrl:
+        './sidebar.component.html',
+    styleUrl:
+        './sidebar.component.scss',
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
@@ -107,6 +112,7 @@ export class SidebarComponent {
                 icon: 'leave',
                 route: '/leave/add',
                 exact: true,
+                selfOnly: true,
             },
             {
                 label: 'Bảng lương',
@@ -115,7 +121,8 @@ export class SidebarComponent {
                 exact: false,
             },
             {
-                label: 'Khen thưởng, kỷ luật',
+                label:
+                    'Khen thưởng, kỷ luật',
                 icon: 'award',
                 route:
                     '/rewards-discipline',
@@ -136,12 +143,15 @@ export class SidebarComponent {
         ];
 
     constructor(
-        private readonly router: Router,
+        private readonly router:
+            Router,
+
         private readonly storageService:
             StorageService,
     ) { }
 
-    get items(): SidebarItem[] {
+    get items():
+        SidebarItem[] {
         const currentUser =
             this.storageService
                 .getCurrentUser();
@@ -155,49 +165,62 @@ export class SidebarComponent {
                 currentUser,
             );
 
-        const visibleItems =
-            this.allItems.filter(
-                (item) =>
-                    canUserAccessPath(
-                        currentUser,
-                        item.route,
-                    ),
-            );
-
-        if (
-            role !== 'employee'
-        ) {
-            return visibleItems;
+        if (!role) {
+            return [];
         }
 
-        const employeeId =
+        const currentEmployeeId =
             this.storageService
                 .getCurrentEmployeeId();
 
+        const visibleItems =
+            this.allItems
+                .filter(
+                    (item) => {
+                        if (
+                            item.selfOnly &&
+                            currentEmployeeId ===
+                            null
+                        ) {
+                            return false;
+                        }
+
+                        return canUserAccessPath(
+                            currentUser,
+                            item.route,
+                        );
+                    },
+                );
+
         if (
-            !employeeId ||
-            employeeId <= 0
+            currentEmployeeId ===
+            null
         ) {
             return visibleItems;
         }
 
         return [
             {
-                label: 'Hồ sơ của tôi',
-                icon: 'employees',
+                label:
+                    'Hồ sơ của tôi',
+                icon:
+                    'employees',
                 route:
-                    `/employees/${employeeId}`,
-                exact: true,
+                    `/employees/${currentEmployeeId}`,
+                exact:
+                    true,
             },
             ...visibleItems,
         ];
     }
 
-    close(): void {
+    close():
+        void {
         this.navigation.emit();
     }
 
-    logout(): void {
+    logout():
+        void {
         this.storageService
             .clearAuthSession();
 

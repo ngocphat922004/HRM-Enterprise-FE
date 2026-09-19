@@ -1,8 +1,14 @@
 <section class="add-leave-heading">
     <nav class="breadcrumb" aria-label="Điều hướng">
+        @if (canViewLeave) {
         <a routerLink="/leave">
             Nghỉ phép
         </a>
+        } @else {
+        <span>
+            Nghỉ phép
+        </span>
+        }
 
         <span>/</span>
 
@@ -54,9 +60,14 @@
         {{ errorMessage }}
     </span>
 
-    <button type="button" class="alert-retry-button" (click)="loadFormData()" [disabled]="isLoading || isSaving">
+    @if (canUseLeaveForm) {
+    <button type="button" class="alert-retry-button" (click)="loadFormData()" [disabled]="
+        isLoading ||
+        isSaving
+    ">
         Thử lại
     </button>
+    }
 </div>
 }
 
@@ -71,13 +82,13 @@
         </strong>
 
         <p>
-            Đang lấy thông tin người gửi,
-            phòng ban và loại nghỉ phép.
+            Đang kiểm tra quyền thao tác
+            và tải dữ liệu cần thiết để tạo đơn.
         </p>
     </div>
 </section>
 
-} @else {
+} @else if (canUseLeaveForm) {
 
 <form class="add-leave-layout" (ngSubmit)="saveRequest()" novalidate>
     <div class="add-leave-main">
@@ -146,12 +157,14 @@
                                 selectedEmployee.maNV
                                 }}
 
+                                @if (canViewDepartments) {
                                 ·
 
                                 {{
                                 selectedEmployee.tenPB ||
                                 'Chưa phân phòng'
                                 }}
+                                }
                             </span>
 
                             <small>
@@ -188,7 +201,10 @@
                                         form.maLoaiNP
                                     " [class.form-control--invalid]="
                                         isLeaveTypeInvalid
-                                    " [disabled]="isSaving">
+                                    " [disabled]="
+                                        !canUseLeaveForm ||
+                                        isSaving
+                                    ">
                         <option [ngValue]="null">
                             Chọn loại nghỉ phép
                         </option>
@@ -249,7 +265,10 @@
                                             onDateChange()
                                         " [class.form-control--invalid]="
                                             isStartDateInvalid
-                                        " [disabled]="isSaving" />
+                                        " [disabled]="
+                                            !canUseLeaveForm ||
+                                            isSaving
+                                        " />
                     </div>
 
                     @if (
@@ -276,7 +295,10 @@
                                         " [class.form-control--invalid]="
                                             isEndDateInvalid ||
                                             isDateRangeInvalid
-                                        " [disabled]="isSaving" />
+                                        " [disabled]="
+                                            !canUseLeaveForm ||
+                                            isSaving
+                                        " />
                     </div>
 
                     @if (
@@ -311,7 +333,10 @@
                         placeholder="Mô tả lý do nghỉ phép và thông tin bàn giao công việc nếu có..."
                         [class.form-control--invalid]="
                                         isReasonInvalid
-                                    " [disabled]="isSaving"></textarea>
+                                    " [disabled]="
+                                        !canUseLeaveForm ||
+                                        isSaving
+                                    "></textarea>
 
                     <span class="character-counter">
                         {{
@@ -337,6 +362,7 @@
             </button>
 
             <button class="submit-button" type="submit" [disabled]="
+                                !canUseLeaveForm ||
                                 isSaving ||
                                 isLoading
                             ">
@@ -449,6 +475,26 @@
 
     </aside>
 </form>
+
+} @else {
+
+<section class="add-leave-loading" role="alert">
+    <span class="add-leave-loading__spinner" aria-hidden="true"></span>
+
+    <div>
+        <strong>
+            Không thể tạo đơn nghỉ phép
+        </strong>
+
+        <p>
+            @if (!canCreateLeave) {
+            Bạn không có quyền tạo đơn nghỉ phép.
+            } @else {
+            Không thể sử dụng biểu mẫu tạo đơn với quyền hiện tại.
+            }
+        </p>
+    </div>
+</section>
 
 }
 

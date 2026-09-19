@@ -24,7 +24,10 @@ import {
   catchError,
   finalize,
   forkJoin,
+  map,
   of,
+  shareReplay,
+  switchMap,
 } from 'rxjs';
 
 import {
@@ -34,7 +37,20 @@ import {
   NHAN_VIEN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
 
-import { MA_QUYEN } from '../../../core/constants/role.constants';
+
+import {
+  RoleKey,
+  canManageContracts as canManageContractsForRole,
+  canManageEmployees,
+  canViewContracts as canViewContractsForRole,
+  canViewEmployeeDirectory,
+  canViewPayroll as canViewPayrollForRole,
+  canViewRewards as canViewRewardsForRole,
+  resolveUserRole,
+} from '../../../core/guards/role.guard';
+
+
+
 import { StorageService } from '../../../core/services/storage.service';
 
 
@@ -91,6 +107,7 @@ import {
 } from '../../rewards-discipline/services/khen-thuong-ky-luat.service';
 
 import {
+  NhanVien,
   NhanVienChiTiet,
 } from '../models/nhan-vien.model';
 
@@ -141,11 +158,12 @@ export class EmployeeProfileComponent
   employeeId =
     0;
 
-  currentRoleId =
-    0;
-
   isSelfServiceView =
     false;
+
+  private currentRole:
+    RoleKey | null =
+    null;
 
   isLoading =
     false;
@@ -232,58 +250,48 @@ export class EmployeeProfileComponent
   get visibleTabs():
     EmployeeProfileTabItem[] {
 
-    let allowedTabs:
-      EmployeeProfileTab[];
-
-    switch (
-    this.currentRoleId
+    if (
+      !this.canViewEmployeeProfile
     ) {
-      case MA_QUYEN.QUAN_TRI_VIEN:
-        allowedTabs = [
-          'personal',
-          'work',
-          'contract',
-          'attendance',
-          'salary',
-          'history',
-        ];
-        break;
+      return [];
+    }
 
-      case MA_QUYEN.NHAN_VIEN_NHAN_SU:
-        allowedTabs = [
-          'personal',
-          'work',
-          'contract',
-          'attendance',
-          'history',
-        ];
-        break;
+    const allowedTabs:
+      EmployeeProfileTab[] = [
+        'personal',
+        'work',
+      ];
 
-      case MA_QUYEN.TRUONG_PHONG:
-        allowedTabs = [
-          'personal',
-          'work',
-          'attendance',
-        ];
-        break;
+    if (
+      this.canViewContractData
+    ) {
+      allowedTabs.push(
+        'contract',
+      );
+    }
 
-      case MA_QUYEN.NHAN_VIEN:
-        allowedTabs = [
-          'personal',
-          'work',
-          'contract',
-          'attendance',
-          'salary',
-          'history',
-        ];
-        break;
+    if (
+      this.canViewAttendanceData
+    ) {
+      allowedTabs.push(
+        'attendance',
+      );
+    }
 
-      default:
-        allowedTabs = [
-          'personal',
-          'work',
-        ];
-        break;
+    if (
+      this.canViewSalaryData
+    ) {
+      allowedTabs.push(
+        'salary',
+      );
+    }
+
+    if (
+      this.canViewHistoryData
+    ) {
+      allowedTabs.push(
+        'history',
+      );
     }
 
     return this.tabs.filter(
@@ -294,55 +302,195 @@ export class EmployeeProfileComponent
     );
   }
 
+  get canViewEmployeeProfile():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    if (
+      this.currentRole ===
+      'employee'
+    ) {
+      return this.isSelfServiceView;
+    }
+
+    return canViewEmployeeDirectory(
+      this.currentRole,
+    );
+  }
+
   get canEditEmployeeProfile():
     boolean {
 
-    return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN ||
-      this.currentRoleId ===
-      MA_QUYEN.NHAN_VIEN_NHAN_SU
+    return canManageEmployees(
+      this.currentRole,
+    );
+  }
+
+  get canViewContracts():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    if (
+      this.currentRole ===
+      'employee' &&
+      !this.isSelfServiceView
+    ) {
+      return false;
+    }
+
+    return canViewContractsForRole(
+      this.currentRole,
+    );
+  }
+
+  get canCreateContracts():
+    boolean {
+
+    return canManageContractsForRole(
+      this.currentRole,
+    );
+  }
+
+  get canEditContracts():
+    boolean {
+
+    return canManageContractsForRole(
+      this.currentRole,
     );
   }
 
   get canManageContracts():
     boolean {
 
-    return this.canEditEmployeeProfile;
+    return canManageContractsForRole(
+      this.currentRole,
+    );
   }
 
   get canManageAllowances():
     boolean {
 
     return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN
+      this.currentRole ===
+      'admin' ||
+      this.currentRole ===
+      'hr' ||
+      this.currentRole ===
+      'accountant'
     );
+  }
+
+  get canPrintProfile():
+    boolean {
+
+    return this.canViewEmployeeProfile;
   }
 
   private get canViewContractData():
     boolean {
 
-    return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN ||
-      this.currentRoleId ===
-      MA_QUYEN.NHAN_VIEN_NHAN_SU ||
-      this.isSelfServiceView
-    );
+    return this.canViewContracts;
   }
 
   private get canViewAttendanceData():
     boolean {
 
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
     return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN ||
-      this.currentRoleId ===
-      MA_QUYEN.NHAN_VIEN_NHAN_SU ||
-      this.currentRoleId ===
-      MA_QUYEN.TRUONG_PHONG ||
+      this.currentRole !==
+      'employee' ||
       this.isSelfServiceView
+    );
+  }
+
+  private get canViewLeaveData():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    return (
+      this.currentRole !==
+      'employee' ||
+      this.isSelfServiceView
+    );
+  }
+
+  private get canViewPayrollData():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    if (
+      this.currentRole ===
+      'employee' &&
+      !this.isSelfServiceView
+    ) {
+      return false;
+    }
+
+    return canViewPayrollForRole(
+      this.currentRole,
+    );
+  }
+
+  private get canViewAllowanceData():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    return (
+      this.currentRole !==
+      'employee' ||
+      this.isSelfServiceView
+    );
+  }
+
+  private get canViewRewardsData():
+    boolean {
+
+    if (
+      !this.currentRole
+    ) {
+      return false;
+    }
+
+    if (
+      this.currentRole ===
+      'employee' &&
+      !this.isSelfServiceView
+    ) {
+      return false;
+    }
+
+    return canViewRewardsForRole(
+      this.currentRole,
     );
   }
 
@@ -350,9 +498,8 @@ export class EmployeeProfileComponent
     boolean {
 
     return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN ||
-      this.isSelfServiceView
+      this.canViewPayrollData ||
+      this.canViewAllowanceData
     );
   }
 
@@ -360,11 +507,12 @@ export class EmployeeProfileComponent
     boolean {
 
     return (
-      this.currentRoleId ===
-      MA_QUYEN.QUAN_TRI_VIEN ||
-      this.currentRoleId ===
-      MA_QUYEN.NHAN_VIEN_NHAN_SU ||
-      this.isSelfServiceView
+      this.canViewContractData ||
+      this.canViewAttendanceData ||
+      this.canViewLeaveData ||
+      this.canViewPayrollData ||
+      this.canViewAllowanceData ||
+      this.canViewRewardsData
     );
   }
 
@@ -505,34 +653,21 @@ export class EmployeeProfileComponent
     this.employeeId =
       id;
 
+    this.currentRole =
+      resolveUserRole(
+        this.storageService
+          .getCurrentUser(),
+      );
+
     const currentEmployeeId =
       this.storageService
         .getCurrentEmployeeId();
 
-    this.currentRoleId =
-      this.storageService
-        .getCurrentRoleId() ?? 0;
-
     this.isSelfServiceView =
-      this.currentRoleId ===
-      MA_QUYEN.NHAN_VIEN &&
       currentEmployeeId ===
       this.employeeId;
 
-    if (
-      !this.visibleTabs.some(
-        tab =>
-          tab.id ===
-          this.activeTab,
-      )
-    ) {
-      this.activeTab =
-        this.visibleTabs[0]
-          ?.id ??
-        'personal';
-    }
-
-    this.loadEmployee();
+    this.loadPermissions();
   }
 
   ngOnDestroy():
@@ -677,7 +812,7 @@ export class EmployeeProfileComponent
 
     if (
       !contract ||
-      !this.canManageContracts
+      !this.canViewContracts
     ) {
       return;
     }
@@ -731,7 +866,8 @@ export class EmployeeProfileComponent
 
     if (
       !contract ||
-      !this.canManageContracts ||
+      !this.canViewContracts ||
+      !this.canCreateContracts ||
       !this.canRenewContract(
         contract,
       )
@@ -817,13 +953,14 @@ export class EmployeeProfileComponent
 
     if (
       this.isLoading ||
+      !this.canPrintProfile ||
       this.employeeId <=
       0
     ) {
       return;
     }
 
-    this.loadEmployee();
+    this.loadPermissions();
   }
 
   printProfile():
@@ -847,8 +984,147 @@ export class EmployeeProfileComponent
     window.print();
   }
 
-  private loadEmployee():
+  private loadPermissions():
     void {
+
+    this.errorMessage =
+      '';
+
+    if (
+      !this.canViewEmployeeProfile
+    ) {
+      this.resetProfileData();
+
+      this.errorMessage =
+        'Bạn không có quyền xem hồ sơ nhân viên này.';
+
+      this.changeDetectorRef
+        .markForCheck();
+
+      return;
+    }
+
+    if (
+      !this.visibleTabs.some(
+        tab =>
+          tab.id ===
+          this.activeTab,
+      )
+    ) {
+      this.activeTab =
+        this.visibleTabs[0]
+          ?.id ??
+        'personal';
+    }
+
+    if (
+      this.currentRole ===
+      'manager' &&
+      !this.isSelfServiceView
+    ) {
+      this.validateManagerScopeAndLoad();
+      return;
+    }
+
+    this.loadEmployee();
+  }
+
+  private validateManagerScopeAndLoad():
+    void {
+
+    this.isLoading =
+      true;
+
+    this.errorMessage =
+      '';
+
+    this.changeDetectorRef
+      .markForCheck();
+
+    forkJoin({
+      manager:
+        this.nhanVienService
+          .getMe(),
+
+      employee:
+        this.nhanVienService
+          .getById(
+            this.employeeId,
+          ),
+    })
+      .subscribe({
+        next: ({
+          manager,
+          employee,
+        }) => {
+          const sameDepartment =
+            manager.maPB !==
+            null &&
+            employee.maPB !==
+            null &&
+            manager.maPB ===
+            employee.maPB;
+
+          if (
+            !sameDepartment
+          ) {
+            this.resetProfileData();
+
+            this.isLoading =
+              false;
+
+            this.errorMessage =
+              'Bạn chỉ được xem hồ sơ nhân viên thuộc phòng ban của mình.';
+
+            this.changeDetectorRef
+              .markForCheck();
+
+            return;
+          }
+
+          this.isLoading =
+            false;
+
+          this.loadEmployee(
+            employee,
+          );
+        },
+
+        error: (
+          error:
+            unknown,
+        ) => {
+          this.resetProfileData();
+
+          this.isLoading =
+            false;
+
+          this.errorMessage =
+            this.getApiErrorMessage(
+              error,
+              'Không thể xác minh phạm vi phòng ban của nhân viên.',
+            );
+
+          this.changeDetectorRef
+            .markForCheck();
+        },
+      });
+  }
+
+  private loadEmployee(
+    preloadedEmployee:
+      NhanVien | NhanVienChiTiet | null =
+      null,
+  ):
+    void {
+
+    if (
+      !this.canViewEmployeeProfile ||
+      this.employeeId <=
+      0
+    ) {
+      return;
+    }
 
     this.isLoading =
       true;
@@ -877,12 +1153,126 @@ export class EmployeeProfileComponent
     this.changeDetectorRef
       .markForCheck();
 
+    const employeeAllowancesRequest =
+      (
+        this.canViewAllowanceData
+          ? this.isSelfServiceView
+            ? this.nhanVienPhuCapService.getMe()
+            : this.nhanVienPhuCapService.getAll()
+          : of([] as NhanVienPhuCap[])
+      )
+        .pipe(
+          catchError(
+            (
+              error:
+                unknown,
+            ) => {
+
+              this.allowanceErrorMessage =
+                this.getApiErrorMessage(
+                  error,
+                  'Không thể tải phụ cấp của nhân viên.',
+                );
+
+              return of(
+                [] as NhanVienPhuCap[],
+              );
+            },
+          ),
+          shareReplay({
+            bufferSize: 1,
+            refCount: true,
+          }),
+        );
+
+    const allowanceTypesRequest =
+      (
+        !this.canViewAllowanceData
+          ? of([] as PhuCap[])
+          : this.isSelfServiceView
+            ? employeeAllowancesRequest
+              .pipe(
+                switchMap(
+                  (employeeAllowances) => {
+                    const allowanceIds =
+                      [
+                        ...new Set(
+                          employeeAllowances
+                            .map(
+                              (allowance) =>
+                                Number(allowance.maPC),
+                            )
+                            .filter(
+                              (allowanceId) =>
+                                Number.isInteger(allowanceId) &&
+                                allowanceId > 0,
+                            ),
+                        ),
+                      ];
+
+                    if (allowanceIds.length === 0) {
+                      return of([] as PhuCap[]);
+                    }
+
+                    return forkJoin(
+                      allowanceIds.map(
+                        (allowanceId) =>
+                          this.phuCapService
+                            .getById(allowanceId)
+                            .pipe(
+                              catchError(
+                                () => of(null),
+                              ),
+                            ),
+                      ),
+                    )
+                      .pipe(
+                        map(
+                          (allowances) =>
+                            allowances.filter(
+                              (allowance): allowance is PhuCap =>
+                                allowance !== null,
+                            ),
+                        ),
+                      );
+                  },
+                ),
+              )
+            : this.phuCapService.getAll()
+      )
+        .pipe(
+          catchError(
+            (
+              error:
+                unknown,
+            ) => {
+
+              this.allowanceErrorMessage =
+                this.getApiErrorMessage(
+                  error,
+                  'Không thể tải danh mục phụ cấp.',
+                );
+
+              return of(
+                [] as PhuCap[],
+              );
+            },
+          ),
+        );
+
     forkJoin({
       employee:
-        this.nhanVienService
-          .getById(
-            this.employeeId,
-          ),
+        preloadedEmployee
+          ? of(
+            preloadedEmployee,
+          )
+          : this.isSelfServiceView
+            ? this.nhanVienService
+              .getMe()
+            : this.nhanVienService
+              .getById(
+                this.employeeId,
+              ),
 
       contracts:
         (
@@ -914,7 +1304,9 @@ export class EmployeeProfileComponent
 
       contractTypes:
         (
-          this.canViewContractData
+          this.canViewContracts &&
+            this.currentRole !==
+            'employee'
             ? this.hopDongService.getContractTypes()
             : of([])
         )
@@ -959,7 +1351,9 @@ export class EmployeeProfileComponent
 
       shifts:
         (
-          this.canViewAttendanceData
+          this.canViewAttendanceData &&
+            this.currentRole !==
+            'employee'
             ? this.chamCongService.getShiftTypes()
             : of([] as LoaiCa[])
         )
@@ -976,7 +1370,7 @@ export class EmployeeProfileComponent
 
       leaves:
         (
-          this.canViewAttendanceData
+          this.canViewLeaveData
             ? this.isSelfServiceView
               ? this.nghiPhepService.getMe()
               : this.nghiPhepService.getAll()
@@ -1004,7 +1398,7 @@ export class EmployeeProfileComponent
 
       leaveTypes:
         (
-          this.canViewAttendanceData
+          this.canViewLeaveData
             ? this.nghiPhepService.getLeaveTypes()
             : of([] as LoaiNghiPhep[])
         )
@@ -1021,7 +1415,7 @@ export class EmployeeProfileComponent
 
       payrolls:
         (
-          this.canViewSalaryData
+          this.canViewPayrollData
             ? this.isSelfServiceView
               ? this.bangLuongService.getMe()
               : this.bangLuongService.getAll()
@@ -1048,62 +1442,14 @@ export class EmployeeProfileComponent
           ),
 
       employeeAllowances:
-        (
-          this.canViewSalaryData
-            ? this.isSelfServiceView
-              ? this.nhanVienPhuCapService.getMe()
-              : this.nhanVienPhuCapService.getAll()
-            : of([] as NhanVienPhuCap[])
-        )
-          .pipe(
-            catchError(
-              (
-                error:
-                  unknown,
-              ) => {
-
-                this.allowanceErrorMessage =
-                  this.getApiErrorMessage(
-                    error,
-                    'Không thể tải phụ cấp của nhân viên.',
-                  );
-
-                return of(
-                  [] as NhanVienPhuCap[],
-                );
-              },
-            ),
-          ),
+        employeeAllowancesRequest,
 
       allowanceTypes:
-        (
-          this.canViewSalaryData
-            ? this.phuCapService.getAll()
-            : of([] as PhuCap[])
-        )
-          .pipe(
-            catchError(
-              (
-                error:
-                  unknown,
-              ) => {
-
-                this.allowanceErrorMessage =
-                  this.getApiErrorMessage(
-                    error,
-                    'Không thể tải danh mục phụ cấp.',
-                  );
-
-                return of(
-                  [] as PhuCap[],
-                );
-              },
-            ),
-          ),
+        allowanceTypesRequest,
 
       rewardsDiscipline:
         (
-          this.canViewHistoryData
+          this.canViewRewardsData
             ? this.isSelfServiceView
               ? this.khenThuongKyLuatService.getMe()
               : this.khenThuongKyLuatService.getAll()
@@ -1318,32 +1664,7 @@ export class EmployeeProfileComponent
             unknown,
         ) => {
 
-          this.employee =
-            this.createEmptyEmployee();
-
-          this.employee.id =
-            this.employeeId;
-
-          this.contracts =
-            [];
-
-          this.attendanceRecords =
-            [];
-
-          this.leaveRequests =
-            [];
-
-          this.payrollRecords =
-            [];
-
-          this.allowances =
-            [];
-
-          this.historyItems =
-            [];
-
-          this.selectedContractId =
-            null;
+          this.resetProfileData();
 
           this.errorMessage =
             this.getApiErrorMessage(
@@ -2274,14 +2595,50 @@ export class EmployeeProfileComponent
     return date.getTime();
   }
 
+  private resetProfileData():
+    void {
+
+    this.employee =
+      this.createEmptyEmployee();
+
+    this.employee.id =
+      this.employeeId;
+
+    this.contracts =
+      [];
+
+    this.attendanceRecords =
+      [];
+
+    this.leaveRequests =
+      [];
+
+    this.payrollRecords =
+      [];
+
+    this.allowances =
+      [];
+
+    this.historyItems =
+      [];
+
+    this.selectedContractId =
+      null;
+  }
+
   private mapEmployee(
     employee:
-      NhanVienChiTiet,
+      | NhanVien
+      | NhanVienChiTiet,
   ): EmployeeProfile {
 
     const fullName =
       employee.hoTen
         .trim();
+
+    const detailedEmployee =
+      employee as
+      Partial<NhanVienChiTiet>;
 
     return {
       id:
@@ -2312,12 +2669,20 @@ export class EmployeeProfileComponent
         employee.trangThai,
 
       position:
-        employee.tenCV ??
-        'Chưa có chức vụ',
+        detailedEmployee.tenCV ??
+        (
+          employee.maCV
+            ? `Chức vụ #${employee.maCV}`
+            : 'Chưa có chức vụ'
+        ),
 
       department:
-        employee.tenPB ??
-        'Chưa phân phòng',
+        detailedEmployee.tenPB ??
+        (
+          employee.maPB
+            ? `Phòng ban #${employee.maPB}`
+            : 'Chưa phân phòng'
+        ),
 
       joinDate:
         this.formatDate(

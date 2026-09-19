@@ -1,18 +1,25 @@
 <section class="edit-payroll-heading">
     <nav class="breadcrumb" aria-label="Điều hướng">
+        @if (canViewPayroll) {
         <a routerLink="/payroll">Bảng lương</a>
+        } @else {
+        <span>Bảng lương</span>
+        }
         <span>/</span>
-        @if (payrollId) {
+        @if (
+        canViewPayroll &&
+        payrollId
+        ) {
         <a [routerLink]="['/payroll', payrollId]">Chi tiết</a>
         <span>/</span>
         }
-        <strong>Chỉnh sửa</strong>
+        <strong>Kiểm tra lại</strong>
     </nav>
 
     <div class="edit-payroll-heading__title">
         <div>
-            <h1>Chỉnh sửa bảng lương</h1>
-            <p>Chọn nhân viên và kỳ lương, tính lại kết quả rồi kiểm tra trước khi cập nhật.</p>
+            <h1>Kiểm tra lại bảng lương</h1>
+            <p>Chọn nhân viên và kỳ lương, tính lại kết quả rồi xác minh dữ liệu bảng lương trên hệ thống.</p>
         </div>
 
         <span class="identity-note">
@@ -43,7 +50,7 @@
 <section class="page-state" aria-live="polite">
     <span class="state-spinner" aria-hidden="true"></span>
     <strong>Đang tải bảng lương...</strong>
-    <p>Đang lấy thông tin bảng lương và danh sách nhân viên.</p>
+    <p>Đang kiểm tra quyền thao tác và tải dữ liệu được phép sử dụng.</p>
 </section>
 } @else if (loadError && !payroll) {
 <section class="page-state">
@@ -59,7 +66,10 @@
     <p>{{ loadError }}</p>
     <div class="page-state__actions">
         <button class="secondary-button" type="button" (click)="cancel()">Quay lại</button>
-        @if (payrollId) {
+        @if (
+        payrollId &&
+        canUsePayrollForm
+        ) {
         <button class="primary-button" type="button" (click)="retry()">Thử lại</button>
         }
     </div>
@@ -79,7 +89,7 @@
     <p>Không tìm thấy bảng lương cần chỉnh sửa.</p>
     <button class="secondary-button" type="button" (click)="cancel()">Quay lại</button>
 </section>
-} @else {
+} @else if (canUsePayrollForm) {
 <form class="edit-payroll-layout" (ngSubmit)="savePayroll()" novalidate>
     <div class="edit-payroll-main">
         <section class="form-card">
@@ -94,7 +104,7 @@
                 </span>
                 <div>
                     <h2>Thông tin nhân viên và kỳ lương</h2>
-                    <p>Chọn thông tin cần tính lại trước khi cập nhật bảng lương.</p>
+                    <p>Chọn thông tin cần tính lại trước khi kiểm tra dữ liệu bảng lương trên hệ thống.</p>
                 </div>
             </header>
 
@@ -102,11 +112,18 @@
                 <label class="form-field form-field--full">
                     <span>Nhân viên <b>*</b></span>
                     <select name="maNV" [(ngModel)]="form.maNV" (ngModelChange)="onCalculationInputChange()"
-                        [class.form-control--invalid]="employeeInvalid" [disabled]="isCalculating || isSaving">
+                        [class.form-control--invalid]="employeeInvalid" [disabled]="
+                            !canUsePayrollForm ||
+                            isCalculating ||
+                            isSaving
+                        ">
                         <option [ngValue]="null">Chọn nhân viên</option>
                         @for (employee of employees; track employee.maNV) {
                         <option [ngValue]="employee.maNV">
-                            {{ employee.hoTen }} · Mã NV {{ employee.maNV }} · {{ employee.tenPB || 'Chưa phân phòng' }}
+                            {{ employee.hoTen }} · Mã NV {{ employee.maNV }}
+                            @if (canViewDepartments) {
+                            · {{ employee.tenPB || 'Chưa phân phòng' }}
+                            }
                         </option>
                         }
                     </select>
@@ -126,8 +143,13 @@
                     <div>
                         <strong>{{ selectedEmployee.hoTen }}</strong>
                         <span>
-                            Mã NV {{ selectedEmployee.maNV }} · {{ selectedEmployee.tenPB || 'Chưa phân phòng' }} ·
-                            {{ selectedEmployee.tenCV || 'Chưa có chức vụ' }}
+                            Mã NV {{ selectedEmployee.maNV }}
+                            @if (canViewDepartments) {
+                            · {{ selectedEmployee.tenPB || 'Chưa phân phòng' }}
+                            }
+                            @if (canViewPositions) {
+                            · {{ selectedEmployee.tenCV || 'Chưa có chức vụ' }}
+                            }
                         </span>
                         <small>{{ selectedEmployee.email || 'Chưa có email' }}</small>
                     </div>
@@ -137,7 +159,11 @@
                 <label class="form-field">
                     <span>Tháng <b>*</b></span>
                     <select name="thang" [(ngModel)]="form.thang" (ngModelChange)="onCalculationInputChange()"
-                        [class.form-control--invalid]="periodInvalid" [disabled]="isCalculating || isSaving">
+                        [class.form-control--invalid]="periodInvalid" [disabled]="
+                            !canUsePayrollForm ||
+                            isCalculating ||
+                            isSaving
+                        ">
                         @for (month of months; track month.value) {
                         <option [ngValue]="month.value">{{ month.label }}</option>
                         }
@@ -147,7 +173,11 @@
                 <label class="form-field">
                     <span>Năm <b>*</b></span>
                     <select name="nam" [(ngModel)]="form.nam" (ngModelChange)="onCalculationInputChange()"
-                        [class.form-control--invalid]="periodInvalid" [disabled]="isCalculating || isSaving">
+                        [class.form-control--invalid]="periodInvalid" [disabled]="
+                            !canUsePayrollForm ||
+                            isCalculating ||
+                            isSaving
+                        ">
                         @for (year of years; track year) {
                         <option [ngValue]="year">{{ year }}</option>
                         }
@@ -162,8 +192,12 @@
             </div>
 
             <footer class="form-actions">
-                <button class="submit-button" type="button" (click)="calculatePayroll()"
-                    [disabled]="isCalculating || isSaving || employees.length === 0">
+                <button class="submit-button" type="button" (click)="calculatePayroll()" [disabled]="
+                        !canUsePayrollForm ||
+                        isCalculating ||
+                        isSaving ||
+                        employees.length === 0
+                    ">
                     @if (isCalculating) {
                     <span class="button-spinner" aria-hidden="true"></span>
                     Đang tính lại...
@@ -190,8 +224,11 @@
                 <path d="M12 16h.01"></path>
             </svg>
             <span>{{ calculationError }}</span>
-            <button class="cancel-button" type="button" (click)="retryCalculation()"
-                [disabled]="isCalculating || isSaving">
+            <button class="cancel-button" type="button" (click)="retryCalculation()" [disabled]="
+                    !canUsePayrollForm ||
+                    isCalculating ||
+                    isSaving
+                ">
                 Thử lại
             </button>
         </div>
@@ -202,7 +239,7 @@
             <button class="submit-button" type="submit" [disabled]="!canSave">
                 @if (isSaving) {
                 <span class="button-spinner" aria-hidden="true"></span>
-                Đang cập nhật...
+                Đang kiểm tra...
                 } @else {
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -210,7 +247,7 @@
                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
                     <polyline points="7 3 7 8 15 8"></polyline>
                 </svg>
-                Cập nhật bảng lương
+                Kiểm tra dữ liệu hệ thống
                 }
             </button>
         </footer>
@@ -268,6 +305,33 @@
         </section>
     </aside>
 </form>
+} @else {
+<section class="page-state" role="alert">
+    <span class="page-state__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
+        </svg>
+    </span>
+
+    <strong>Không thể kiểm tra lại bảng lương</strong>
+
+    <p>
+        @if (!canEditPayroll) {
+        Bạn không có quyền tính lại hoặc kiểm tra bảng lương.
+        } @else if (!canViewPayroll) {
+        Bạn cần quyền xem bảng lương để tải dữ liệu cần kiểm tra.
+        } @else if (!canViewEmployees) {
+        Bạn cần quyền xem nhân viên để chọn nhân viên tính lương.
+        }
+    </p>
+
+    <button class="secondary-button" type="button" (click)="cancel()">
+        Quay lại
+    </button>
+</section>
 }
 
 @if (toastMessage) {

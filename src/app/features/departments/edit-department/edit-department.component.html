@@ -1,14 +1,20 @@
 <section class="department-edit-heading">
     <p class="breadcrumb">
-        <a routerLink="/employees">
+        <span>
             Nhân sự
-        </a>
+        </span>
 
         <span>/</span>
 
+        @if (canViewDepartment) {
         <a routerLink="/departments">
             Phòng ban
         </a>
+        } @else {
+        <span>
+            Phòng ban
+        </span>
+        }
 
         <span>/</span>
 
@@ -56,14 +62,17 @@
 </section>
 } @else if (
 errorMessage &&
-!isCreateMode &&
-!form.tenPB
+!canUseDepartmentForm
 ) {
-<section class="department-edit-card">
+<section class="department-edit-card" role="alert">
     <div style="
                 padding: 40px 24px;
                 text-align: center;
             ">
+        <strong>
+            Không thể sử dụng biểu mẫu phòng ban
+        </strong>
+
         <p>
             {{ errorMessage }}
         </p>
@@ -72,19 +81,51 @@ errorMessage &&
                     justify-content: center;
                     margin-top: 20px;
                 ">
-            <button type="button" class="cancel-button" (click)="cancel()">
+            <button type="button" class="cancel-button" (click)="cancel()" [disabled]="isSaving">
+                Quay lại
+            </button>
+        </div>
+    </div>
+</section>
+} @else if (
+errorMessage &&
+!isCreateMode &&
+!form.tenPB
+) {
+<section class="department-edit-card" role="alert">
+    <div style="
+                padding: 40px 24px;
+                text-align: center;
+            ">
+        <strong>
+            Không thể tải phòng ban
+        </strong>
+
+        <p>
+            {{ errorMessage }}
+        </p>
+
+        <div class="form-actions" style="
+                    justify-content: center;
+                    margin-top: 20px;
+                ">
+            <button type="button" class="cancel-button" (click)="cancel()" [disabled]="isSaving">
                 Quay lại
             </button>
 
-            @if (departmentId !== null) {
-            <button type="button" class="save-button" (click)="retry()">
+            @if (
+            departmentId !== null &&
+            canViewDepartment &&
+            canEditDepartment
+            ) {
+            <button type="button" class="save-button" (click)="retry()" [disabled]="isLoading || isSaving">
                 Thử lại
             </button>
             }
         </div>
     </div>
 </section>
-} @else {
+} @else if (canUseDepartmentForm) {
 <section class="department-edit-card">
     <form (ngSubmit)="saveChanges()" novalidate>
         @if (
@@ -130,7 +171,10 @@ errorMessage &&
                     </span>
 
                     <input type="text" [(ngModel)]="form.tenPB" name="tenPB" maxlength="100"
-                        placeholder="Nhập tên phòng ban" [disabled]="isSaving" required />
+                        placeholder="Nhập tên phòng ban" [disabled]="
+                            !canUseDepartmentForm ||
+                            isSaving
+                        " required />
 
                     @if (departmentNameInvalid) {
                     <small>
@@ -194,7 +238,10 @@ errorMessage &&
                     </span>
 
                     <textarea [(ngModel)]="form.moTa" name="moTa" rows="5" maxlength="255"
-                        placeholder="Mô tả chức năng, nhiệm vụ của phòng ban" [disabled]="isSaving"></textarea>
+                        placeholder="Mô tả chức năng, nhiệm vụ của phòng ban" [disabled]="
+                            !canUseDepartmentForm ||
+                            isSaving
+                        "></textarea>
 
                     <small>
                         {{
@@ -210,7 +257,10 @@ errorMessage &&
                     }
                 </label>
 
-                <fieldset class="status-field" [disabled]="isSaving">
+                <fieldset class="status-field" [disabled]="
+                    !canUseDepartmentForm ||
+                    isSaving
+                ">
                     <legend>
                         Trạng thái
                     </legend>
@@ -250,6 +300,7 @@ errorMessage &&
             </button>
 
             <button type="submit" class="save-button" [disabled]="
+                        !canUseDepartmentForm ||
                         isSaving ||
                         isLoading
                     ">
@@ -273,7 +324,33 @@ errorMessage &&
         </footer>
     </form>
 </section>
+} @else {
+<section class="department-edit-card" role="alert">
+    <div style="
+                padding: 40px 24px;
+                text-align: center;
+            ">
+        <strong>
+            Không thể sử dụng biểu mẫu phòng ban
+        </strong>
+
+        <p>
+            @if (isCreateMode && !canCreateDepartment) {
+            Bạn không có quyền thêm phòng ban.
+            } @else if (!isCreateMode && !canEditDepartment) {
+            Bạn không có quyền chỉnh sửa phòng ban.
+            } @else if (!isCreateMode && !canViewDepartment) {
+            Bạn cần quyền xem phòng ban để tải dữ liệu cần chỉnh sửa.
+            }
+        </p>
+
+        <button type="button" class="cancel-button" (click)="cancel()" [disabled]="isSaving">
+            Quay lại
+        </button>
+    </div>
+</section>
 }
+
 @if (toastMessage) {
 <div class="toast-message" role="status">
     {{ toastMessage }}

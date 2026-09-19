@@ -1,14 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, switchMap } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
-import {
-    BangLuong,
-    CreateBangLuongRequest,
-    UpdateBangLuongRequest,
-} from '../models/bang-luong.model';
+import { BangLuong } from '../models/bang-luong.model';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -60,19 +56,23 @@ export class BangLuongService {
             .pipe(map((response) => this.normalize(this.unwrapItem(response))));
     }
 
-    create(payload: CreateBangLuongRequest): Observable<BangLuong> {
-        return this.http
-            .post<ApiResult<BangLuongApiItem>>(this.apiUrl, payload)
-            .pipe(map((response) => this.normalize(this.unwrapItem(response))));
-    }
 
     calculateSalary(
         maNV: number,
         thang: number,
         nam: number,
     ): Observable<BangLuong> {
+        /*
+         * Swagger chỉ khai báo POST /tinh-luong trả 200 OK,
+         * không có response body/schema.
+         *
+         * Vì vậy không được phụ thuộc vào body của POST.
+         * Sau khi backend tính lương thành công, đọc lại dữ
+         * liệu thật từ GET /api/bang-luongs và trả về bản ghi
+         * đúng nhân viên/kỳ lương.
+         */
         return this.http
-            .post<ApiResult<BangLuongApiItem>>(
+            .post<unknown>(
                 this.calculateSalaryUrl,
                 null,
                 {
@@ -83,22 +83,37 @@ export class BangLuongService {
                     },
                 },
             )
-            .pipe(map((response) => this.normalize(this.unwrapItem(response))));
-    }
-
-    update(maLuong: number, payload: UpdateBangLuongRequest): Observable<BangLuong> {
-        return this.http
-            .put<ApiResult<BangLuongApiItem> | null>(
-                `${environment.apiBaseUrl}${API_ENDPOINTS.bangLuongById(maLuong)}`,
-                payload,
-            )
             .pipe(
-                map((response) => {
-                    const item = this.tryUnwrapItem(response);
-                    return item ? this.normalize(item) : { maLuong, ...payload };
+                switchMap(
+                    () =>
+                        this.getAll(),
+                ),
+                map((payrolls) => {
+                    const calculatedPayroll =
+                        payrolls
+                            .filter(
+                                (item) =>
+                                    item.maNV === maNV &&
+                                    item.thang === thang &&
+                                    item.nam === nam,
+                            )
+                            .sort(
+                                (a, b) =>
+                                    b.maLuong -
+                                    a.maLuong,
+                            )[0];
+
+                    if (!calculatedPayroll) {
+                        throw new Error(
+                            'Backend đã phản hồi tính lương thành công nhưng chưa tìm thấy bảng lương của kỳ vừa tính.',
+                        );
+                    }
+
+                    return calculatedPayroll;
                 }),
             );
     }
+
 
     delete(maLuong: number): Observable<void> {
         return this.http

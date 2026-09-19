@@ -1,8 +1,14 @@
 <section class="leave-detail-heading">
     <nav class="breadcrumb" aria-label="Điều hướng">
+        @if (canViewLeave) {
         <a routerLink="/leave">
             Nghỉ phép
         </a>
+        } @else {
+        <span>
+            Nghỉ phép
+        </span>
+        }
 
         <span>/</span>
 
@@ -32,7 +38,7 @@
                 </h1>
 
                 <p>
-                    @if (isEmployeeSelfView) {
+                    @if (isSelfScopedView) {
                     Theo dõi thông tin và trạng thái
                     xử lý đơn nghỉ phép của bạn.
                     } @else {
@@ -43,6 +49,7 @@
             </div>
         </div>
 
+        @if (canViewLeave) {
         <button class="print-button" type="button" (click)="printRequest()" [disabled]="
                             isLoading ||
                             isProcessing ||
@@ -59,6 +66,7 @@
 
             In đơn
         </button>
+        }
     </div>
 </section>
 
@@ -89,13 +97,12 @@
     </strong>
 
     <p>
-        @if (isEmployeeSelfView) {
+        @if (isSelfScopedView) {
         Đang lấy dữ liệu đơn nghỉ phép
         và thông tin của bạn.
         } @else {
-        Đang lấy dữ liệu đơn,
-        nhân viên, phòng ban
-        và loại nghỉ phép.
+        Đang tải đơn nghỉ phép
+        và dữ liệu liên quan được phép xem.
         }
     </p>
 </section>
@@ -107,16 +114,23 @@
         <article class="employee-card">
             <div class="employee-card__profile">
                 <span class="employee-avatar">
+                    @if (
+                    isSelfScopedView ||
+                    canViewEmployees
+                    ) {
                     {{
                     getInitials(
                     leaveRequest.hoTen
                     )
                     }}
+                    } @else {
+                    NV
+                    }
                 </span>
 
                 <div>
                     <span>
-                        @if (isEmployeeSelfView) {
+                        @if (isSelfScopedView) {
                         Người gửi đơn · Bạn
                         } @else {
                         Người gửi đơn
@@ -124,25 +138,48 @@
                     </span>
 
                     <h2>
+                        @if (
+                        isSelfScopedView ||
+                        canViewEmployees
+                        ) {
                         {{ leaveRequest.hoTen }}
+                        } @else {
+                        Nhân viên #{{ leaveRequest.maNV }}
+                        }
                     </h2>
 
                     <p>
                         Mã NV
                         {{ leaveRequest.maNV }}
 
+                        @if (
+                        isSelfScopedView ||
+                        (
+                        canViewEmployees &&
+                        canViewDepartments
+                        )
+                        ) {
                         ·
 
                         {{
                         leaveRequest.tenPB ||
                         'Chưa phân phòng'
                         }}
+                        }
                     </p>
                 </div>
             </div>
 
+            @if (
+            isSelfScopedView ||
+            canViewEmployees
+            ) {
             <button class="employee-link" type="button" (click)="viewEmployee()" [disabled]="isProcessing">
-                Xem hồ sơ
+                {{
+                isSelfScopedView
+                ? 'Xem hồ sơ của tôi'
+                : 'Xem hồ sơ'
+                }}
 
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -151,6 +188,7 @@
                     <path d="m12 5 7 7-7 7"></path>
                 </svg>
             </button>
+            }
         </article>
 
         <article class="detail-card">
@@ -382,14 +420,23 @@
             </div>
 
             } @else if (
-            isEmployeeSelfView &&
             leaveRequest.trangThai === leaveStatus.CHO_DUYET
             ) {
 
             <p>
+                @if (isSelfScopedView) {
                 Đơn của bạn đang chờ
-                người có thẩm quyền
+                người có quyền duyệt
                 xem xét và xử lý.
+                } @else if (!canApproveLeave) {
+                Đơn đang chờ xử lý.
+                Bạn không có quyền duyệt
+                hoặc từ chối đơn này.
+                } @else {
+                Đơn đang chờ xử lý
+                nhưng không thể thao tác
+                trong phạm vi hiện tại.
+                }
             </p>
 
             } @else {
@@ -488,14 +535,38 @@
                     </strong>
 
                     <p>
+                        @if (
+                        isSelfScopedView ||
+                        canViewPositions
+                        ) {
                         {{
                         leaveRequest
                         .chucVuNguoiDuyet ||
                         'Người phê duyệt'
                         }}
+                        } @else {
+                        Người phê duyệt
+                        }
                     </p>
 
                 </div>
+            </div>
+
+            } @else if (leaveRequest.nguoiDuyet) {
+
+            <div class="approver-empty">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"></circle>
+
+                    <path d="M4 21a8 8 0 0 1 16 0"></path>
+                </svg>
+
+                <p>
+                    Đơn đã có người xử lý,
+                    nhưng bạn không có quyền xem
+                    thông tin chi tiết người xử lý.
+                </p>
             </div>
 
             } @else {
@@ -545,9 +616,11 @@
     </p>
 
     <div class="detail-empty__actions">
+        @if (canViewLeave) {
         <button type="button" (click)="loadLeaveDetail()" [disabled]="isLoading">
             Thử lại
         </button>
+        }
 
         <button type="button" class="detail-empty__secondary" (click)="goBack()">
             Quay lại danh sách

@@ -35,6 +35,18 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    canManageContracts,
+    canViewContracts as canViewContractsForRole,
+    canViewEmployeeDirectory,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
     NhanVienService,
 } from '../../employees/services/nhan-vien.service';
 
@@ -77,6 +89,8 @@ export class AddContractComponent
     isSaving = false;
 
     toastMessage = '';
+
+    errorMessage = '';
 
     readonly contractStatus =
         HOP_DONG_TRANG_THAI;
@@ -128,13 +142,51 @@ export class AddContractComponent
         private readonly hopDongService:
             HopDongService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
         this.readRenewalContractId();
-        this.loadFormData();
+        this.loadPermissions();
+    }
+
+    get canViewContracts(): boolean {
+        return canViewContractsForRole(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canCreateContract(): boolean {
+        return canManageContracts(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
+        );
+    }
+
+    get isRenewalRequest(): boolean {
+        return this.renewalContractId !==
+            null;
+    }
+
+    get canUseContractForm(): boolean {
+        if (!this.canCreateContract) {
+            return false;
+        }
+
+        if (this.isRenewalRequest) {
+            return this.canViewContracts;
+        }
+
+        return this.canViewEmployees;
     }
 
     get isRenewalMode():
@@ -188,9 +240,78 @@ export class AddContractComponent
         );
     }
 
+    private loadPermissions(): void {
+        this.errorMessage =
+            '';
+
+        if (
+            !this.canCreateContract
+        ) {
+            this.resetFormData();
+
+            this.isLoadingData =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền thêm hợp đồng.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            this.isRenewalRequest &&
+            !this.canViewContracts
+        ) {
+            this.resetFormData();
+
+            this.isLoadingData =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền xem hợp đồng cần gia hạn.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            !this.isRenewalRequest &&
+            !this.canViewEmployees
+        ) {
+            this.resetFormData();
+
+            this.isLoadingData =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền xem danh sách nhân viên để tạo hợp đồng.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.loadFormData();
+    }
+
     loadFormData(): void {
+        if (
+            this.isLoadingData ||
+            !this.canUseContractForm
+        ) {
+            return;
+        }
+
         this.isLoadingData =
             true;
+
+        this.errorMessage = '';
 
         const renewalSource$ =
             this.renewalContractId ===
@@ -231,8 +352,10 @@ export class AddContractComponent
 
         forkJoin({
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
             contractTypes:
                 this.hopDongService
@@ -307,11 +430,14 @@ export class AddContractComponent
                     this.contractTypes =
                         [];
 
-                    this.showToast(
+                    this.errorMessage =
                         this.getApiErrorMessage(
                             error,
                             'Không thể tải dữ liệu hợp đồng.',
-                        ),
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
                     );
 
                     this.changeDetectorRef
@@ -440,6 +566,7 @@ export class AddContractComponent
         boolean {
 
         return (
+            !this.canUseContractForm ||
             this.isRenewalSourceInvalid ||
             this.isEmployeeInvalid ||
             this.isContractTypeInvalid ||
@@ -457,6 +584,7 @@ export class AddContractComponent
         }
 
         if (
+            this.canViewContracts &&
             this.isRenewalMode &&
             this.renewalSourceContract
         ) {
@@ -470,9 +598,20 @@ export class AddContractComponent
             return;
         }
 
+        if (
+            this.canViewContracts
+        ) {
+            void this.router
+                .navigate([
+                    '/contracts',
+                ]);
+
+            return;
+        }
+
         void this.router
             .navigate([
-                '/contracts',
+                '/dashboard',
             ]);
     }
 
@@ -481,6 +620,7 @@ export class AddContractComponent
             true;
 
         if (
+            !this.canUseContractForm ||
             this.isFormInvalid ||
             this.isSaving ||
             this.isLoadingData
@@ -580,7 +720,8 @@ export class AddContractComponent
                             if (
                                 this.isRenewalMode &&
                                 renewalEmployeeId !==
-                                null
+                                null &&
+                                this.canViewEmployees
                             ) {
                                 void this.router
                                     .navigate(
@@ -602,10 +743,21 @@ export class AddContractComponent
                                 return;
                             }
 
+                            if (
+                                this.canViewContracts
+                            ) {
+                                void this.router
+                                    .navigate([
+                                        '/contracts',
+                                        contract.maHD,
+                                    ]);
+
+                                return;
+                            }
+
                             void this.router
                                 .navigate([
-                                    '/contracts',
-                                    contract.maHD,
+                                    '/dashboard',
                                 ]);
                         },
                         700,
@@ -685,6 +837,17 @@ export class AddContractComponent
                     );
                 },
             });
+    }
+
+    retryLoad(): void {
+        if (
+            this.isLoadingData ||
+            this.isSaving
+        ) {
+            return;
+        }
+
+        this.loadPermissions();
     }
 
     private readRenewalContractId():
@@ -876,6 +1039,24 @@ export class AddContractComponent
         return `${year}-${month}-${day}`;
     }
 
+    private resetFormData(): void {
+        this.employees = [];
+
+        this.contractTypes = [];
+
+        this.renewalSourceContract =
+            null;
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
+    }
+
     private getApiErrorMessage(
         error:
             HttpErrorResponse,
@@ -958,4 +1139,4 @@ export class AddContractComponent
             2800,
         );
     }
-}
+}   

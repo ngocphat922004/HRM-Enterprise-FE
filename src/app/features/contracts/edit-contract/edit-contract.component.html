@@ -1,15 +1,27 @@
 <section class="contract-form-heading">
     <div>
         <p class="breadcrumb">
+            @if (canViewEmployees) {
             <a routerLink="/employees">
                 Nhân sự
             </a>
+            } @else {
+            <span>
+                Nhân sự
+            </span>
+            }
 
             <span>/</span>
 
+            @if (canViewContracts) {
             <a routerLink="/contracts">
                 Hợp đồng
             </a>
+            } @else {
+            <span>
+                Hợp đồng
+            </span>
+            }
 
             <span>/</span>
 
@@ -33,9 +45,12 @@
             Hủy bỏ
         </button>
 
+        @if (canEditContract) {
         <button class="save-button" type="submit" form="edit-contract-form" [disabled]="
+                !canUseContractForm ||
                 isSaving ||
-                isLoading
+                isLoading ||
+                !!errorMessage
             ">
             @if (isSaving) {
 
@@ -62,12 +77,35 @@
 
             }
         </button>
+        }
     </div>
 </section>
 
 @if (errorMessage) {
 <div class="form-alert" role="alert">
-    {{ errorMessage }}
+    <strong>
+        Không thể tải biểu mẫu chỉnh sửa hợp đồng
+    </strong>
+
+    <span>
+        {{ errorMessage }}
+    </span>
+
+    <div class="heading-actions">
+        <button class="cancel-button" type="button" (click)="cancel()" [disabled]="isSaving">
+            Quay lại
+        </button>
+
+        @if (
+        canViewContracts &&
+        canEditContract &&
+        form.maHD > 0
+        ) {
+        <button class="save-button" type="button" (click)="retryLoad()" [disabled]="isLoading || isSaving">
+            Thử lại
+        </button>
+        }
+    </div>
 </div>
 }
 
@@ -81,7 +119,10 @@
     </span>
 </div>
 
-} @else {
+} @else if (
+!errorMessage &&
+canUseContractForm
+) {
 
 <div class="contract-form-layout">
     <form id="edit-contract-form" class="contract-form-card" (ngSubmit)="saveChanges()" novalidate>
@@ -130,10 +171,14 @@
                         <strong>*</strong>
                     </span>
 
+                    @if (canViewEmployees) {
                     <select [(ngModel)]="form.maNV" name="maNV" (ngModelChange)="
                             onEmployeeChange()
                         " [class.input-invalid]="
                             isEmployeeInvalid
+                        " [disabled]="
+                            !canUseContractForm ||
+                            isSaving
                         ">
                         <option [ngValue]="null">
                             Chọn nhân viên
@@ -173,6 +218,18 @@
                         để lựa chọn.
                     </p>
                     }
+                    } @else {
+                    <input class="readonly-input" type="text" [value]="
+                        form.maNV !== null
+                            ? 'NV-' + form.maNV.toString().padStart(4, '0')
+                            : 'Chưa xác định'
+                    " readonly />
+
+                    <p class="field-hint">
+                        Bạn không có quyền xem danh sách nhân viên.
+                        Hợp đồng sẽ giữ nguyên nhân viên hiện tại.
+                    </p>
+                    }
                 </label>
 
                 <label class="form-field">
@@ -187,6 +244,9 @@
                             onContractTypeChange()
                         " [class.input-invalid]="
                             isContractTypeInvalid
+                        " [disabled]="
+                            !canUseContractForm ||
+                            isSaving
                         ">
                         <option [ngValue]="null">
                             Chọn loại hợp đồng
@@ -255,6 +315,9 @@
                             form.ngayBatDau
                         " name="ngayBatDau" [class.input-invalid]="
                             isStartDateInvalid
+                        " [disabled]="
+                            !canUseContractForm ||
+                            isSaving
                         " />
 
                     @if (
@@ -276,6 +339,9 @@
                             form.ngayKetThuc
                         " name="ngayKetThuc" [class.input-invalid]="
                             isEndDateInvalid
+                        " [disabled]="
+                            !canUseContractForm ||
+                            isSaving
                         " />
 
                     @if (
@@ -324,7 +390,10 @@
                         ">
                         <input type="number" [(ngModel)]="
                                 form.luongCoBan
-                            " name="luongCoBan" min="1" step="100000" placeholder="Ví dụ: 15000000" />
+                            " name="luongCoBan" min="1" step="100000" placeholder="Ví dụ: 15000000" [disabled]="
+                                !canUseContractForm ||
+                                isSaving
+                            " />
 
                         <span>
                             VNĐ
@@ -349,7 +418,10 @@
 
                     <select [(ngModel)]="
                             form.trangThai
-                        " name="trangThai">
+                        " name="trangThai" [disabled]="
+                            !canUseContractForm ||
+                            isSaving
+                        ">
                         <option [ngValue]="
                                 contractStatus
                                     .CON_HIEU_LUC
@@ -429,7 +501,31 @@
     </aside>
 </div>
 
+} @else if (!errorMessage) {
+<section class="contract-form-card" role="alert">
+    <div style="
+        padding: 48px 24px;
+        text-align: center;
+    ">
+        <strong>
+            Không thể chỉnh sửa hợp đồng
+        </strong>
+
+        <p>
+            @if (!canEditContract) {
+            Bạn không có quyền chỉnh sửa hợp đồng.
+            } @else if (!canViewContracts) {
+            Bạn cần quyền xem hợp đồng để tải dữ liệu cần chỉnh sửa.
+            }
+        </p>
+
+        <button class="cancel-button" type="button" (click)="cancel()">
+            Quay lại
+        </button>
+    </div>
+</section>
 }
+
 @if (toastMessage) {
 <div class="toast-message" role="status">
     {{ toastMessage }}

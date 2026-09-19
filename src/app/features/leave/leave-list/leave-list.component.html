@@ -13,28 +13,29 @@
         </nav>
 
         <h1>
-            @if (isEmployeeView) {
-            Nghỉ phép của tôi
-            } @else {
             Quản lý Nghỉ phép
-            }
         </h1>
 
         <p>
             @if (isEmployeeView) {
-            Theo dõi các đơn nghỉ phép của bạn
-            và trạng thái xử lý từng yêu cầu.
+            Theo dõi và quản lý các đơn nghỉ phép
+            của bạn.
+            } @else if (isManagerView) {
+            Theo dõi và xử lý các yêu cầu nghỉ phép
+            của nhân viên trong phòng ban.
             } @else {
-            Theo dõi, phê duyệt và quản lý
-            các yêu cầu nghỉ phép của nhân viên
+            Theo dõi và quản lý các yêu cầu nghỉ phép
             trong hệ thống.
             }
         </p>
     </div>
 
     <div class="leave-heading__actions">
-        <button class="primary-button" type="button" (click)="openCreateRequest()"
-            [disabled]="isLoading || processingRequestId !== null">
+        @if (canCreateLeave) {
+        <button class="primary-button" type="button" (click)="openCreateRequest()" [disabled]="
+                    isLoading ||
+                    processingRequestId !== null
+                ">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 5v14"></path>
@@ -43,12 +44,31 @@
 
             Tạo đơn nghỉ phép
         </button>
+        }
 
-        @if (!isEmployeeView) {
+        @if (canViewLeaveTypes) {
+        <button class="secondary-button" type="button" (click)="openLeaveTypeManagement()" [disabled]="
+                    isLoading ||
+                    processingRequestId !== null ||
+                    isSavingLeaveType ||
+                    deletingLeaveTypeId !== null
+                ">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 6h16"></path>
+                <path d="M4 12h16"></path>
+                <path d="M4 18h16"></path>
+            </svg>
+
+            Danh mục loại nghỉ
+        </button>
+        }
+
+        @if (canExportLeave) {
         <button class="secondary-button" type="button" (click)="exportReport()" [disabled]="
-                            isLoading ||
-                            processingRequestId !== null
-                        ">
+                    isLoading ||
+                    processingRequestId !== null
+                ">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3v12"></path>
@@ -62,6 +82,194 @@
     </div>
 </section>
 
+@if (leaveTypeManagementOpen) {
+<section class="leave-table-card" style="margin-bottom: 20px;">
+    <div style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px;
+        border-bottom: 1px solid var(--color-border);
+    ">
+        <div>
+            <h2 style="margin: 0 0 4px; font-size: 17px;">
+                Danh mục loại nghỉ phép
+            </h2>
+
+            <p style="margin: 0; color: var(--color-text-secondary); font-size: 12px;">
+                Theo dõi các loại nghỉ phép đang sử dụng trong hệ thống.
+            </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            @if (canManageLeaveTypes) {
+            <button class="primary-button" type="button" (click)="openCreateLeaveType()" [disabled]="
+                        isSavingLeaveType ||
+                        deletingLeaveTypeId !== null
+                    ">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5v14"></path>
+                    <path d="M5 12h14"></path>
+                </svg>
+
+                Thêm loại nghỉ
+            </button>
+            }
+
+            <button class="secondary-button" type="button" (click)="closeLeaveTypeManagement()" [disabled]="
+                        isSavingLeaveType ||
+                        deletingLeaveTypeId !== null
+                    ">
+                Đóng
+            </button>
+        </div>
+    </div>
+
+    @if (leaveTypeFormOpen && canManageLeaveTypes) {
+    <section class="leave-filter-card" style="
+        margin: 16px;
+        grid-template-columns: minmax(220px, 1fr) minmax(280px, 2fr) auto;
+    ">
+        <label class="leave-search-filter">
+            <span>Tên loại nghỉ phép</span>
+
+            <div>
+                <input type="text" [(ngModel)]="leaveTypeForm.tenLoaiNP" maxlength="100"
+                    placeholder="Ví dụ: Nghỉ phép năm" [disabled]="isSavingLeaveType" />
+            </div>
+
+            @if (leaveTypeNameInvalid) {
+            <small style="color: var(--color-danger);">
+                Tên loại nghỉ phải hợp lệ, tối đa 100 ký tự và không được trùng.
+            </small>
+            }
+        </label>
+
+        <label class="leave-search-filter">
+            <span>Mô tả</span>
+
+            <div>
+                <input type="text" [(ngModel)]="leaveTypeForm.moTa" maxlength="255"
+                    placeholder="Mô tả ngắn về loại nghỉ phép" [disabled]="isSavingLeaveType" />
+            </div>
+
+            @if (leaveTypeDescriptionInvalid) {
+            <small style="color: var(--color-danger);">
+                Mô tả không được vượt quá 255 ký tự.
+            </small>
+            }
+        </label>
+
+        <div style="display: flex; align-items: end; gap: 8px;">
+            <button class="primary-button" type="button" (click)="saveLeaveType()" [disabled]="
+                        isSavingLeaveType ||
+                        leaveTypeNameInvalid ||
+                        leaveTypeDescriptionInvalid
+                    ">
+                @if (isSavingLeaveType) {
+                Đang lưu...
+                } @else if (editingLeaveTypeId !== null) {
+                Lưu thay đổi
+                } @else {
+                Thêm loại nghỉ
+                }
+            </button>
+
+            <button class="secondary-button" type="button" (click)="cancelLeaveTypeForm()"
+                [disabled]="isSavingLeaveType">
+                Hủy
+            </button>
+        </div>
+    </section>
+    }
+
+    <div class="leave-table-wrapper">
+        <table class="leave-table" style="min-width: 760px;">
+            <thead>
+                <tr>
+                    <th style="width: 110px;">Mã loại</th>
+                    <th style="width: 220px;">Tên loại nghỉ</th>
+                    <th>Mô tả</th>
+                    <th style="width: 120px;">Thao tác</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @for (leaveType of managedLeaveTypes; track leaveType.maLoaiNP) {
+                <tr>
+                    <td>
+                        <strong>
+                            NP-{{ leaveType.maLoaiNP.toString().padStart(3, '0') }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        <strong>{{ leaveType.tenLoaiNP }}</strong>
+                    </td>
+
+                    <td>
+                        <span class="leave-reason" [title]="leaveType.moTa || ''">
+                            {{ leaveType.moTa || 'Chưa có mô tả' }}
+                        </span>
+                    </td>
+
+                    <td>
+                        @if (canManageLeaveTypes) {
+                        <div class="table-actions">
+                            <button class="table-action-button table-action-button--view" type="button"
+                                (click)="openEditLeaveType(leaveType)"
+                                [disabled]="isSavingLeaveType || deletingLeaveTypeId !== null"
+                                aria-label="Sửa loại nghỉ phép" title="Sửa">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+
+                            <button class="table-action-button table-action-button--delete" type="button"
+                                (click)="deleteLeaveType(leaveType)"
+                                [disabled]="isSavingLeaveType || deletingLeaveTypeId !== null"
+                                aria-label="Xóa loại nghỉ phép" title="Xóa">
+                                @if (isDeletingLeaveType(leaveType)) {
+                                <span class="table-action-spinner" aria-hidden="true"></span>
+                                } @else {
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="M10 11v5"></path>
+                                    <path d="M14 11v5"></path>
+                                </svg>
+                                }
+                            </button>
+                        </div>
+                        } @else {
+                        <span style="color: var(--color-text-secondary); font-size: 12px;">
+                            Chỉ xem
+                        </span>
+                        }
+                    </td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="4" class="leave-empty-cell">
+                        <div class="empty-state">
+                            <strong>Chưa có loại nghỉ phép</strong>
+                            <p>Danh mục loại nghỉ phép hiện đang trống.</p>
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+}
+
 @if (isLoading) {
 <section class="leave-loading" aria-live="polite">
     <span class="leave-loading__spinner" aria-hidden="true"></span>
@@ -72,14 +280,7 @@
         </strong>
 
         <p>
-            @if (isEmployeeView) {
-            Đang lấy các đơn nghỉ phép
-            và loại nghỉ của bạn.
-            } @else {
-            Đang lấy đơn nghỉ phép,
-            nhân viên, phòng ban
-            và loại nghỉ phép.
-            }
+            Vui lòng chờ trong giây lát.
         </p>
     </div>
 </section>
@@ -87,16 +288,21 @@
 
 @if (errorMessage) {
 <section class="leave-error" role="alert">
-    <span>{{ errorMessage }}</span>
-    <button type="button" (click)="loadLeaveData()" [disabled]="isLoading">Thử lại</button>
+    <span>
+        {{ errorMessage }}
+    </span>
+
+    <button type="button" (click)="loadLeaveData()" [disabled]="isLoading">
+        Thử lại
+    </button>
 </section>
 }
 
 <section class="leave-stats">
     <article class="
-                        stat-card
-                        stat-card--pending
-                    ">
+            stat-card
+            stat-card--pending
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -119,14 +325,13 @@
             <strong>
                 {{ stats.choDuyet }}
             </strong>
-
         </div>
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--days
-                    ">
+            stat-card
+            stat-card--days
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -136,7 +341,6 @@
                 <rect width="18" height="18" x="3" y="4" rx="2"></rect>
 
                 <path d="M3 10h18"></path>
-
                 <path d="m9 16 2 2 4-4"></path>
             </svg>
         </span>
@@ -149,21 +353,19 @@
             <strong>
                 {{ stats.tongNgayNghi }}
             </strong>
-
         </div>
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--rate
-                    ">
+            stat-card
+            stat-card--rate
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="9"></circle>
 
                 <path d="M16 8 8 16"></path>
-
                 <path d="M9 9h.01"></path>
                 <path d="M15 15h.01"></path>
             </svg>
@@ -184,18 +386,21 @@
                 | number:'1.0-1'
                 }}%
             </strong>
-
         </div>
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--active
-                    ">
+            stat-card
+            stat-card--active
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <path d="
+                        M16 21v-2
+                        a4 4 0 0 0-4-4H6
+                        a4 4 0 0 0-4 4v2
+                    "></path>
 
                 <circle cx="9" cy="7" r="4"></circle>
 
@@ -207,18 +412,15 @@
         <div>
             <span>
                 @if (isEmployeeView) {
-                Đang nghỉ hiện tại
+                Trạng thái nghỉ hiện tại
                 } @else {
                 Nhân viên đang nghỉ
                 }
             </span>
 
             <strong>
-                {{
-                stats.nhanVienDangNghi
-                }}
+                {{ stats.nhanVienDangNghi }}
             </strong>
-
         </div>
     </article>
 </section>
@@ -237,26 +439,33 @@
                 <path d="m21 21-4.3-4.3"></path>
             </svg>
 
-            <input type="search" [(ngModel)]="
-                                globalSearchTerm
-                            " (input)="applyFilters()"
-                [placeholder]="isEmployeeView ? 'Mã đơn, lý do...' : 'Tên nhân viên, mã đơn, lý do...'"
-                [disabled]="isLoading" />
+            <input type="search" [(ngModel)]="globalSearchTerm" (input)="applyFilters()" [placeholder]="
+                    isEmployeeView
+                        ? 'Mã đơn, lý do...'
+                        : 'Tên nhân viên, mã đơn, lý do...'
+                " [disabled]="isLoading" />
         </div>
     </label>
 
-    @if (!isEmployeeView) {
+    @if (
+    !isEmployeeView &&
+    canViewDepartments
+    ) {
     <label class="leave-filter">
         <span>
             Phòng ban
         </span>
 
-        <select [(ngModel)]="
-                            selectedDepartment
-                        " (change)="applyFilters()" [disabled]="isLoading">
+        <select [(ngModel)]="selectedDepartment" (change)="applyFilters()" [disabled]="isLoading">
+            @if (isManagerView) {
+            <option value="">
+                Phòng ban của tôi
+            </option>
+            } @else {
             <option value="">
                 Tất cả phòng ban
             </option>
+            }
 
             @for (
             department of departments;
@@ -275,9 +484,7 @@
             Loại nghỉ
         </span>
 
-        <select [(ngModel)]="
-                            selectedLeaveType
-                        " (change)="applyFilters()" [disabled]="isLoading">
+        <select [(ngModel)]="selectedLeaveType" (change)="applyFilters()" [disabled]="isLoading">
             <option value="">
                 Tất cả loại nghỉ
             </option>
@@ -298,28 +505,20 @@
             Trạng thái
         </span>
 
-        <select [(ngModel)]="
-                            selectedStatus
-                        " (change)="applyFilters()" [disabled]="isLoading">
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" [disabled]="isLoading">
             <option value="">
                 Tất cả trạng thái
             </option>
 
-            <option [value]="
-                                leaveStatus.CHO_DUYET
-                            ">
+            <option [value]="leaveStatus.CHO_DUYET">
                 Chờ duyệt
             </option>
 
-            <option [value]="
-                                leaveStatus.DA_DUYET
-                            ">
+            <option [value]="leaveStatus.DA_DUYET">
                 Đã duyệt
             </option>
 
-            <option [value]="
-                                leaveStatus.TU_CHOI
-                            ">
+            <option [value]="leaveStatus.TU_CHOI">
                 Từ chối
             </option>
         </select>
@@ -328,7 +527,11 @@
     <button class="reset-filter-button" type="button" (click)="resetFilters()" [disabled]="isLoading">
         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+            <path d="
+                    M3 12
+                    a9 9 0 1 0 3-6.7
+                    L3 8
+                "></path>
 
             <path d="M3 3v5h5"></path>
         </svg>
@@ -342,20 +545,42 @@
         <table class="leave-table">
             <thead>
                 <tr>
-                    <th>Mã đơn</th>
-                    <th>Nhân viên</th>
-                    <th>Loại nghỉ</th>
-                    <th>Thời gian</th>
-                    <th>Số ngày</th>
-                    <th>Lý do</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>
+                        Mã đơn
+                    </th>
+
+                    <th>
+                        Nhân viên
+                    </th>
+
+                    <th>
+                        Loại nghỉ
+                    </th>
+
+                    <th>
+                        Thời gian
+                    </th>
+
+                    <th>
+                        Số ngày
+                    </th>
+
+                    <th>
+                        Lý do
+                    </th>
+
+                    <th>
+                        Trạng thái
+                    </th>
+
+                    <th>
+                        Thao tác
+                    </th>
                 </tr>
             </thead>
 
             <tbody>
                 @if (isLoading) {
-
                 <tr>
                     <td colspan="8" class="leave-empty-cell">
                         <div class="empty-state">
@@ -371,24 +596,21 @@
                         </div>
                     </td>
                 </tr>
-
                 } @else {
-
                 @for (
                 request of pagedLeaveRequests;
                 track request.maNP
                 ) {
-
                 <tr>
                     <td>
                         <button class="leave-code" type="button" (click)="
-                                            viewLeaveRequest(
-                                                request
-                                            )
-                                        " [disabled]="
-                                            processingRequestId !==
-                                            null
-                                        ">
+                                        viewLeaveRequest(
+                                            request
+                                        )
+                                    " [disabled]="
+                                        processingRequestId !==
+                                        null
+                                    ">
                             {{
                             formatLeaveCode(
                             request.maNP
@@ -416,12 +638,14 @@
                                     Mã NV:
                                     {{ request.maNV }}
 
+                                    @if (
+                                    request.tenPB
+                                    ) {
                                     ·
-
                                     {{
-                                    request.tenPB ||
-                                    'Chưa phân phòng'
+                                    request.tenPB
                                     }}
+                                    }
                                 </span>
                             </div>
                         </div>
@@ -468,9 +692,9 @@
 
                     <td>
                         <span class="leave-reason" [title]="
-                                            request.lyDo ||
-                                            ''
-                                        ">
+                                        request.lyDo ||
+                                        ''
+                                    ">
                             {{
                             request.lyDo ||
                             'Không có lý do'
@@ -480,11 +704,11 @@
 
                     <td>
                         <span class="status-badge" [ngClass]="
-                                            'status-badge--' +
-                                            getStatusClass(
-                                                request.trangThai
-                                            )
-                                        ">
+                                        'status-badge--' +
+                                        getStatusClass(
+                                            request.trangThai
+                                        )
+                                    ">
                             {{
                             request.trangThai
                             }}
@@ -494,21 +718,35 @@
                     <td>
                         <div class="table-actions">
                             <button class="
-                                                table-action-button
-                                                table-action-button--view
-                                            " type="button" (click)="
-                                                viewLeaveRequest(
-                                                    request
-                                                )
-                                            " [disabled]="
-                                                processingRequestId !==
-                                                null
-                                            " aria-label="Xem chi tiết đơn" title="Xem chi tiết">
+                                            table-action-button
+                                            table-action-button--view
+                                        " type="button" (click)="
+                                            viewLeaveRequest(
+                                                request
+                                            )
+                                        " [disabled]="
+                                            processingRequestId !==
+                                            null
+                                        " aria-label="Xem chi tiết đơn" title="Xem chi tiết">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path
-                                        d="M2.06 12.35a1 1 0 0 1 0-.7C3.72 7.6 7.66 5 12 5c4.34 0 8.28 2.6 9.94 6.65a1 1 0 0 1 0 .7C20.28 16.4 16.34 19 12 19c-4.34 0-8.28-2.6-9.94-6.65">
-                                    </path>
+                                    <path d="
+                                                    M2.06 12.35
+                                                    a1 1 0 0 1 0-.7
+                                                    C3.72 7.6
+                                                    7.66 5
+                                                    12 5
+                                                    c4.34 0
+                                                    8.28 2.6
+                                                    9.94 6.65
+                                                    a1 1 0 0 1 0 .7
+                                                    C20.28 16.4
+                                                    16.34 19
+                                                    12 19
+                                                    c-4.34 0
+                                                    -8.28-2.6
+                                                    -9.94-6.65
+                                                "></path>
 
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
@@ -519,74 +757,88 @@
                             request
                             )
                             ) {
-
                             <span class="table-action-spinner" aria-hidden="true" title="Đang xử lý"></span>
-
                             } @else {
-
                             @if (
                             canProcess(
                             request
                             )
                             ) {
-
                             <button class="
-                                                table-action-button
-                                                table-action-button--approve
-                                            " type="button" (click)="
-                                                approveLeaveRequest(
-                                                    request
-                                                )
-                                            " [disabled]="
-                                                processingRequestId !==
-                                                null
-                                            " aria-label="Duyệt đơn" title="Duyệt đơn">
+                                                    table-action-button
+                                                    table-action-button--approve
+                                                " type="button" (click)="
+                                                    approveLeaveRequest(
+                                                        request
+                                                    )
+                                                " [disabled]="
+                                                    processingRequestId !==
+                                                    null
+                                                " aria-label="Duyệt đơn" title="Duyệt đơn">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="m5 12 4 4L19 6"></path>
+                                    <path d="
+                                                            m5 12
+                                                            4 4
+                                                            L19 6
+                                                        "></path>
                                 </svg>
                             </button>
 
                             <button class="
-                                                table-action-button
-                                                table-action-button--reject
-                                            " type="button" (click)="
-                                                rejectLeaveRequest(
-                                                    request
-                                                )
-                                            " [disabled]="
-                                                processingRequestId !==
-                                                null
-                                            " aria-label="Từ chối đơn" title="Từ chối đơn">
+                                                    table-action-button
+                                                    table-action-button--reject
+                                                " type="button" (click)="
+                                                    rejectLeaveRequest(
+                                                        request
+                                                    )
+                                                " [disabled]="
+                                                    processingRequestId !==
+                                                    null
+                                                " aria-label="Từ chối đơn" title="Từ chối đơn">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M18 6 6 18"></path>
+                                    <path d="
+                                                            M18 6
+                                                            6 18
+                                                        "></path>
 
-                                    <path d="m6 6 12 12"></path>
+                                    <path d="
+                                                            m6 6
+                                                            12 12
+                                                        "></path>
                                 </svg>
                             </button>
-
                             }
 
-                            @if (canDeleteRequest(request)) {
+                            @if (
+                            canDeleteRequest(
+                            request
+                            )
+                            ) {
                             <button class="
-                                                table-action-button
-                                                table-action-button--delete
-                                            " type="button" (click)="
-                                                deleteLeaveRequest(
-                                                    request
-                                                )
-                                            " [disabled]="
-                                                processingRequestId !==
-                                                null
-                                            " aria-label="Xóa đơn" title="Xóa đơn">
+                                                    table-action-button
+                                                    table-action-button--delete
+                                                " type="button" (click)="
+                                                    deleteLeaveRequest(
+                                                        request
+                                                    )
+                                                " [disabled]="
+                                                    processingRequestId !==
+                                                    null
+                                                " aria-label="Xóa đơn" title="Xóa đơn">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M3 6h18"></path>
 
                                     <path d="M8 6V4h8v2"></path>
 
-                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="
+                                                            M19 6
+                                                            l-1 14
+                                                            H6
+                                                            L5 6
+                                                        "></path>
 
                                     <path d="M10 11v5"></path>
 
@@ -594,14 +846,11 @@
                                 </svg>
                             </button>
                             }
-
                             }
                         </div>
                     </td>
                 </tr>
-
                 } @empty {
-
                 <tr>
                     <td colspan="8" class="leave-empty-cell">
                         <div class="empty-state">
@@ -609,13 +858,11 @@
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M8 2v4"></path>
-
                                     <path d="M16 2v4"></path>
 
                                     <rect width="18" height="18" x="3" y="4" rx="2"></rect>
 
                                     <path d="M3 10h18"></path>
-
                                     <path d="M8 15h8"></path>
                                 </svg>
                             </span>
@@ -625,21 +872,28 @@
                             </strong>
 
                             <p>
+                                @if (isEmployeeView) {
+                                Bạn chưa có đơn nghỉ phép
+                                phù hợp với bộ lọc hiện tại.
+                                } @else {
                                 Không có đơn phù hợp
                                 với bộ lọc hiện tại.
+                                }
                             </p>
 
-                            <button class="primary-button" type="button" (click)="
-                                                openCreateRequest()
+                            @if (canCreateLeave) {
+                            <button class="primary-button" type="button" (click)="openCreateRequest()" [disabled]="
+                                                isLoading ||
+                                                processingRequestId !==
+                                                null
                                             ">
                                 Tạo đơn nghỉ phép
                             </button>
+                            }
                         </div>
                     </td>
                 </tr>
-
                 }
-
                 }
             </tbody>
         </table>
@@ -660,14 +914,14 @@
 
         <nav class="pagination" aria-label="Phân trang">
             <button class="pagination__button" type="button" (click)="
-                                goToPage(
-                                    currentPage - 1
-                                )
-                            " [disabled]="
-                                currentPage === 1 ||
-                                isLoading ||
-                                processingRequestId !== null
-                            " aria-label="Trang trước">
+                    goToPage(
+                        currentPage - 1
+                    )
+                " [disabled]="
+                    currentPage === 1 ||
+                    isLoading ||
+                    processingRequestId !== null
+                " aria-label="Trang trước">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m15 18-6-6 6-6"></path>
@@ -679,25 +933,24 @@
             track page
             ) {
             <button class="pagination__button" [class.pagination__button--active]="
-                                currentPage === page
-                            " type="button" (click)="goToPage(page)" [disabled]="
-                                isLoading ||
-                                processingRequestId !== null
-                            ">
+                        currentPage === page
+                    " type="button" (click)="goToPage(page)" [disabled]="
+                        isLoading ||
+                        processingRequestId !== null
+                    ">
                 {{ page }}
             </button>
             }
 
             <button class="pagination__button" type="button" (click)="
-                                goToPage(
-                                    currentPage + 1
-                                )
-                            " [disabled]="
-                                currentPage ===
-                                    totalPages ||
-                                isLoading ||
-                                processingRequestId !== null
-                            " aria-label="Trang sau">
+                    goToPage(
+                        currentPage + 1
+                    )
+                " [disabled]="
+                    currentPage === totalPages ||
+                    isLoading ||
+                    processingRequestId !== null
+                " aria-label="Trang sau">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m9 18 6-6-6-6"></path>
@@ -716,15 +969,22 @@
                 </h2>
 
                 <p>
+                    @if (isEmployeeView) {
+                    Số liệu nghỉ phép cá nhân
+                    trong kỳ hiện tại
+                    } @else if (isManagerView) {
+                    Số liệu nghỉ phép của phòng ban
+                    trong kỳ hiện tại
+                    } @else {
                     Số liệu nghỉ phép
                     theo kỳ hiện tại
+                    }
                 </p>
             </div>
 
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 3v18h18"></path>
-
                 <path d="m7 16 4-4 3 3 5-6"></path>
             </svg>
         </div>
@@ -781,7 +1041,15 @@
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 11 12 14 22 4"></path>
 
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                <path d="
+                        M21 12v7
+                        a2 2 0 0 1-2 2
+                        H5
+                        a2 2 0 0 1-2-2
+                        V5
+                        a2 2 0 0 1 2-2
+                        h11
+                    "></path>
             </svg>
         </div>
 
@@ -793,7 +1061,8 @@
 
             <span>
                 <i>2</i>
-                Người có quyền xem xét đơn
+                Trưởng phòng hoặc người có quyền
+                xem xét đơn
             </span>
 
             <span>
@@ -803,6 +1072,7 @@
         </div>
     </article>
 </section>
+
 @if (toastMessage) {
 <div class="page-toast" role="status">
     {{ toastMessage }}

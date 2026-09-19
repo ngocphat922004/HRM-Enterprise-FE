@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, switchMap, throwError } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
@@ -146,27 +146,60 @@ export class NhanVienService {
         maNV: number,
         payload: UpdateNhanVienRequest,
     ): Observable<NhanVien> {
+        if (
+            !Number.isInteger(maNV) ||
+            maNV <= 0
+        ) {
+            return throwError(
+                () =>
+                    new Error(
+                        'Mã nhân viên không hợp lệ.',
+                    ),
+            );
+        }
+
+        if (payload.maNV !== maNV) {
+            return throwError(
+                () =>
+                    new Error(
+                        'Mã nhân viên trong URL và dữ liệu cập nhật không khớp.',
+                    ),
+            );
+        }
+
+        /*
+         * Swagger khai báo PUT /api/nhan-viens/{id}
+         * chỉ trả 200 OK, không có response body.
+         *
+         * Không tự dựng nhân viên giả từ payload.
+         * Sau khi cập nhật thành công, đọc lại danh sách
+         * nhân viên thật từ backend và lấy đúng bản ghi
+         * theo maNV.
+         */
         return this.http
-            .put<
-                ApiResponse<NhanVien | null> |
-                NhanVien |
-                null
-            >(
+            .put<unknown>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.nhanVienById(maNV)}`,
                 payload,
             )
             .pipe(
-                map((response) => {
+                switchMap(
+                    () =>
+                        this.getAll(),
+                ),
+                map((employees) => {
                     const employee =
-                        this.unwrapItem(response);
+                        employees.find(
+                            (item) =>
+                                item.maNV === maNV,
+                        );
 
-                    return (
-                        employee ??
-                        this.buildUpdatedEmployee(
-                            maNV,
-                            payload,
-                        )
-                    );
+                    if (!employee) {
+                        throw new Error(
+                            'Backend đã phản hồi cập nhật nhân viên thành công nhưng chưa tìm thấy dữ liệu nhân viên vừa cập nhật.',
+                        );
+                    }
+
+                    return employee;
                 }),
             );
     }
@@ -321,27 +354,4 @@ export class NhanVienService {
         );
     }
 
-    private buildUpdatedEmployee(
-        maNV: number,
-        payload: UpdateNhanVienRequest,
-    ): NhanVien {
-        return {
-            maNV,
-            hoTen: payload.hoTen,
-            gioiTinh: payload.gioiTinh,
-            ngaySinh: payload.ngaySinh,
-            cccd: payload.cccd,
-            diaChi: payload.diaChi,
-            sdt: payload.sdt,
-            email: payload.email,
-            ngayVaoLam:
-                payload.ngayVaoLam,
-            hinhAnh: payload.hinhAnh,
-            maPB: payload.maPB,
-            maCV: payload.maCV,
-            maTD: payload.maTD,
-            trangThai:
-                payload.trangThai,
-        };
-    }
 }

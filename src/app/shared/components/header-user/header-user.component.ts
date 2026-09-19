@@ -1,4 +1,12 @@
-import { DOCUMENT, CommonModule } from '@angular/common';
+import {
+    CommonModule,
+    DOCUMENT,
+} from '@angular/common';
+
+import {
+    HttpErrorResponse,
+} from '@angular/common/http';
+
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
@@ -10,141 +18,311 @@ import {
     OnInit,
     Output,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+
+import {
+    FormsModule,
+} from '@angular/forms';
+
+import {
+    Router,
+    RouterLink,
+} from '@angular/router';
+
 import {
     catchError,
     finalize,
-    forkJoin,
     of,
 } from 'rxjs';
 
-import { environment } from '../../../../environments/environment';
-import { MA_QUYEN } from '../../../core/constants/role.constants';
-import { StorageService } from '../../../core/services/storage.service';
-import { Quyen } from '../../../features/accounts/models/quyen.model';
-import { QuyenService } from '../../../features/accounts/services/quyen.service';
-import { NhanVien } from '../../../features/employees/models/nhan-vien.model';
-import { NhanVienService } from '../../../features/employees/services/nhan-vien.service';
-import { AiChatComponent } from '../ai-chat/ai-chat.component';
+import {
+    environment,
+} from '../../../../environments/environment';
+
+import {
+    canManageEmployees,
+    canManageSettings,
+    canUseAi,
+    canViewEmployeeDirectory,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+
+import {
+    ThongBao,
+} from '../../../core/models/notification.model';
+
+import {
+    NotificationService,
+} from '../../../core/services/notification.service';
+
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
+    NhanVien,
+} from '../../../features/employees/models/nhan-vien.model';
+
+import {
+    NhanVienService,
+} from '../../../features/employees/services/nhan-vien.service';
+
+import {
+    AiChatComponent,
+} from '../ai-chat/ai-chat.component';
 
 @Component({
-    selector: 'app-header-user',
-    standalone: true,
+    selector:
+        'app-header-user',
+
+    standalone:
+        true,
+
     imports: [
         CommonModule,
         FormsModule,
         RouterLink,
         AiChatComponent,
     ],
-    templateUrl: './header-user.component.html',
-    styleUrl: './header-user.component.scss',
+
+    templateUrl:
+        './header-user.component.html',
+
+    styleUrl:
+        './header-user.component.scss',
+
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
 export class HeaderUserComponent
     implements OnInit {
+
     @Output()
     readonly sidebarToggle =
         new EventEmitter<void>();
 
-    searchTerm = '';
-    isMenuOpen = false;
-    isAiChatOpen = false;
-    isNotificationOpen = false;
-    isDarkMode = false;
-    isLoading = true;
-    loadError = '';
+    searchTerm =
+        '';
 
-    employee: NhanVien | null = null;
-    role: Quyen | null = null;
+    isMenuOpen =
+        false;
 
-    employeeId: number | null = null;
-    currentRoleId = 0;
+    isAiChatOpen =
+        false;
 
-    displayName = '';
-    roleName = '';
-    username = '';
-    avatarUrl = '';
-    initials = 'TK';
+    isNotificationOpen =
+        false;
 
-    get canSearchEmployees(): boolean {
-        return [
-            MA_QUYEN.QUAN_TRI_VIEN,
-            MA_QUYEN.NHAN_VIEN_NHAN_SU,
-            MA_QUYEN.TRUONG_PHONG,
-        ].includes(
-            this.currentRoleId as
-            | 1
-            | 2
-            | 4,
+    isDarkMode =
+        false;
+
+    isLoading =
+        true;
+
+    loadError =
+        '';
+
+    isNotificationLoading =
+        false;
+
+    notificationError =
+        '';
+
+    notifications:
+        ThongBao[] =
+        [];
+
+    employee:
+        NhanVien | null =
+        null;
+
+    employeeId:
+        number | null =
+        null;
+
+    currentRoleId =
+        0;
+
+    displayName =
+        '';
+
+    roleName =
+        '';
+
+    username =
+        '';
+
+    avatarUrl =
+        '';
+
+    initials =
+        'TK';
+
+    private notificationsLoaded =
+        false;
+
+    /*
+     * =========================================
+     * PERMISSION
+     * =========================================
+     */
+
+    get canSearchEmployees():
+        boolean {
+
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
         );
     }
 
-    get canAddEmployee(): boolean {
-        return [
-            MA_QUYEN.QUAN_TRI_VIEN,
-            MA_QUYEN.NHAN_VIEN_NHAN_SU,
-        ].includes(
-            this.currentRoleId as
-            | 1
-            | 2,
+    get canAddEmployee():
+        boolean {
+
+        return canManageEmployees(
+            this.getCurrentRole(),
         );
     }
 
-    get canOpenSettings(): boolean {
+    get canOpenSettings():
+        boolean {
+
+        return canManageSettings(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canOpenAi():
+        boolean {
+
+        return canUseAi(
+            this.getCurrentRole(),
+        );
+    }
+
+    /*
+     * Notification là API /me,
+     * dùng cho mọi tài khoản đã đăng nhập hợp lệ.
+     */
+    get canOpenNotifications():
+        boolean {
+
         return (
-            this.currentRoleId ===
-            MA_QUYEN.QUAN_TRI_VIEN
+            this.getCurrentRole() !==
+            null
+        );
+    }
+
+    get unreadNotificationCount():
+        number {
+
+        return this.notifications
+            .filter(
+                notification =>
+                    !notification.daDoc,
+            )
+            .length;
+    }
+
+    get hasUnreadNotifications():
+        boolean {
+
+        return (
+            this.unreadNotificationCount >
+            0
         );
     }
 
     constructor(
-        private readonly router: Router,
+        private readonly router:
+            Router,
+
+        private readonly notificationService:
+            NotificationService,
+
         private readonly storageService:
             StorageService,
+
         private readonly nhanVienService:
             NhanVienService,
-        private readonly quyenService:
-            QuyenService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
+
         private readonly elementRef:
             ElementRef<HTMLElement>,
+
         @Inject(DOCUMENT)
-        private readonly document: Document,
+        private readonly document:
+            Document,
     ) { }
 
-    ngOnInit(): void {
+    ngOnInit():
+        void {
+
         this.restoreTheme();
+
         this.loadCurrentUser();
     }
 
-    openSidebar(): void {
-        this.sidebarToggle.emit();
+    /*
+     * =========================================
+     * SIDEBAR
+     * =========================================
+     */
+
+    openSidebar():
+        void {
+
+        this.sidebarToggle
+            .emit();
     }
 
-    submitSearch(): void {
-        if (!this.canSearchEmployees) {
+    /*
+     * =========================================
+     * SEARCH
+     * =========================================
+     */
+
+    submitSearch():
+        void {
+
+        if (
+            !this.canSearchEmployees
+        ) {
             return;
         }
 
         const search =
-            this.searchTerm.trim();
+            this.searchTerm
+                .trim();
 
-        void this.router.navigate(
-            ['/employees'],
-            {
-                queryParams: search
-                    ? { search }
-                    : {},
-            },
-        );
+        void this.router
+            .navigate(
+                [
+                    '/employees',
+                ],
+                {
+                    queryParams:
+                        search
+                            ? {
+                                search,
+                            }
+                            : {},
+                },
+            );
     }
 
+    /*
+     * =========================================
+     * PROFILE MENU
+     * =========================================
+     */
+
     toggleMenu(
-        event: Event,
+        event:
+            Event,
     ): void {
+
         event.stopPropagation();
 
         this.isMenuOpen =
@@ -152,38 +330,343 @@ export class HeaderUserComponent
 
         this.isNotificationOpen =
             false;
+
+        this.isAiChatOpen =
+            false;
     }
 
+    /*
+     * =========================================
+     * AI
+     * =========================================
+     */
+
     toggleAiChat(
-        event: Event,
+        event:
+            Event,
     ): void {
+
         event.stopPropagation();
+
+        if (
+            !this.canOpenAi
+        ) {
+            this.isAiChatOpen =
+                false;
+
+            return;
+        }
 
         this.isAiChatOpen =
             !this.isAiChatOpen;
 
-        this.isMenuOpen = false;
+        this.isMenuOpen =
+            false;
+
         this.isNotificationOpen =
             false;
     }
 
+    /*
+     * =========================================
+     * NOTIFICATIONS
+     * =========================================
+     */
+
     toggleNotifications(
-        event: Event,
+        event:
+            Event,
     ): void {
+
         event.stopPropagation();
+
+        if (
+            !this.canOpenNotifications
+        ) {
+            this.isNotificationOpen =
+                false;
+
+            return;
+        }
 
         this.isNotificationOpen =
             !this.isNotificationOpen;
 
-        this.isMenuOpen = false;
+        this.isMenuOpen =
+            false;
+
+        this.isAiChatOpen =
+            false;
+
+        if (
+            this.isNotificationOpen &&
+            !this.notificationsLoaded &&
+            !this.isNotificationLoading
+        ) {
+            this.loadNotifications();
+        }
     }
 
-    toggleDarkMode(): void {
+    retryNotifications():
+        void {
+
+        if (
+            !this.canOpenNotifications ||
+            this.isNotificationLoading
+        ) {
+            return;
+        }
+
+        this.notificationsLoaded =
+            false;
+
+        this.loadNotifications();
+    }
+
+    openNotification(
+        notification:
+            ThongBao,
+    ): void {
+
+        if (
+            !this.canOpenNotifications
+        ) {
+            return;
+        }
+
+        if (
+            notification.daDoc
+        ) {
+            return;
+        }
+
+        if (
+            !Number.isInteger(
+                notification.maThongBao,
+            ) ||
+            notification.maThongBao <=
+            0
+        ) {
+            return;
+        }
+
+        const notificationId =
+            notification.maThongBao;
+
+        this.notificationService
+            .markAsRead(
+                notificationId,
+            )
+            .subscribe({
+                next: () => {
+
+                    this.notifications =
+                        this.notifications
+                            .map(
+                                item =>
+                                    item.maThongBao ===
+                                        notificationId
+                                        ? {
+                                            ...item,
+                                            daDoc: true,
+                                        }
+                                        : item,
+                            );
+
+                    this.notificationError =
+                        '';
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    console.error(
+                        'MARK NOTIFICATION AS READ ERROR:',
+                        error,
+                    );
+
+                    this.notificationError =
+                        this.getNotificationErrorMessage(
+                            error,
+                            'Không thể đánh dấu thông báo đã đọc.',
+                        );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+            });
+    }
+
+    private loadNotifications():
+        void {
+
+        if (
+            !this.canOpenNotifications ||
+            this.isNotificationLoading
+        ) {
+            return;
+        }
+
+        this.isNotificationLoading =
+            true;
+
+        this.notificationError =
+            '';
+
+        this.notificationService
+            .getMine()
+            .pipe(
+                finalize(
+                    () => {
+
+                        this.isNotificationLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: (
+                    notifications:
+                        ThongBao[],
+                ) => {
+
+                    this.notifications =
+                        notifications;
+
+                    this.notificationsLoaded =
+                        true;
+
+                    this.notificationError =
+                        '';
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+
+                    console.error(
+                        'LOAD NOTIFICATIONS ERROR:',
+                        error,
+                    );
+
+                    this.notificationsLoaded =
+                        false;
+
+                    this.notificationError =
+                        this.getNotificationErrorMessage(
+                            error,
+                            'Không thể tải danh sách thông báo.',
+                        );
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+            });
+    }
+
+    private isRecord(
+        value:
+            unknown,
+    ): value is
+        Record<
+            string,
+            unknown
+        > {
+
+        return (
+            value !==
+            null &&
+            typeof value ===
+            'object' &&
+            !Array.isArray(
+                value,
+            )
+        );
+    }
+
+    private getNotificationErrorMessage(
+        error:
+            HttpErrorResponse,
+
+        fallback:
+            string,
+    ): string {
+
+        const backendMessage =
+            this.isRecord(
+                error.error,
+            ) &&
+                typeof error.error[
+                'message'
+                ] ===
+                'string'
+                ? error.error[
+                    'message'
+                ].trim()
+                : '';
+
+        if (
+            backendMessage
+        ) {
+            return backendMessage;
+        }
+
+        switch (
+        error.status
+        ) {
+            case 0:
+                return (
+                    'Không thể kết nối đến hệ thống thông báo.'
+                );
+
+            case 401:
+                return (
+                    'Phiên đăng nhập đã hết hạn.'
+                );
+
+            case 403:
+                return (
+                    'Bạn không có quyền xem thông báo.'
+                );
+
+            case 404:
+                return (
+                    'Không tìm thấy thông báo.'
+                );
+
+            default:
+                return fallback;
+        }
+    }
+
+    /*
+     * =========================================
+     * THEME
+     * =========================================
+     */
+
+    toggleDarkMode():
+        void {
+
         this.isDarkMode =
             !this.isDarkMode;
 
-        this.document.documentElement
-            .classList.toggle(
+        this.document
+            .documentElement
+            .classList
+            .toggle(
                 'dark-theme',
                 this.isDarkMode,
             );
@@ -192,74 +675,137 @@ export class HeaderUserComponent
             typeof window !==
             'undefined'
         ) {
-            localStorage.setItem(
-                'hrm_theme',
-                this.isDarkMode
-                    ? 'dark'
-                    : 'light',
-            );
+            localStorage
+                .setItem(
+                    'hrm_theme',
+                    this.isDarkMode
+                        ? 'dark'
+                        : 'light',
+                );
         }
     }
 
-    goToProfile(): void {
-        this.closePopups();
+    /*
+     * =========================================
+     * PROFILE
+     * =========================================
+     */
 
-        if (this.employeeId) {
-            void this.router.navigate([
-                '/employees',
-                this.employeeId,
-            ]);
+    goToProfile():
+        void {
+
+        const employeeId =
+            this.employeeId ??
+            this.storageService
+                .getCurrentEmployeeId();
+
+        if (
+            employeeId !==
+            null &&
+            Number.isInteger(
+                employeeId,
+            ) &&
+            employeeId >
+            0
+        ) {
+            this.closePopups();
+
+            void this.router
+                .navigate([
+                    '/employees',
+                    employeeId,
+                ]);
 
             return;
         }
 
         /*
-         * Nếu không xác định được MaNV,
-         * không cố mở /employees vì có thể
-         * khiến role Employee bị redirect vòng.
+         * Không chuyển người dùng sang danh sách nhân viên
+         * hoặc Dashboard khi tài khoản chưa xác định được
+         * maNV. Đây là luồng "Hồ sơ cá nhân", nên cần báo
+         * đúng nguyên nhân thay vì điều hướng sang một màn
+         * hình khác không tương ứng.
          */
-        void this.router.navigate([
-            '/dashboard',
-        ]);
-    }
+        this.loadError =
+            'Tài khoản hiện tại chưa được liên kết với hồ sơ nhân viên hợp lệ.';
 
-    goToSettings(): void {
-        this.closePopups();
-
-        if (!this.canOpenSettings) {
-            return;
-        }
-
-        void this.router.navigate([
-            '/settings',
-        ]);
-    }
-
-    logout(): void {
-        this.closePopups();
-
-        this.storageService
-            .clearAuthSession();
-
-        void this.router.navigate([
-            '/login',
-        ]);
-    }
-
-    handleImageError(): void {
-        this.avatarUrl = '';
+        this.isMenuOpen =
+            true;
 
         this.changeDetectorRef
             .markForCheck();
     }
 
+    goToSettings():
+        void {
+
+        this.closePopups();
+
+        if (
+            !this.canOpenSettings
+        ) {
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/settings',
+            ]);
+    }
+
+    /*
+     * =========================================
+     * LOGOUT
+     * =========================================
+     */
+
+    logout():
+        void {
+
+        this.closePopups();
+
+        this.storageService
+            .clearAuthSession();
+
+        void this.router
+            .navigate([
+                '/login',
+            ]);
+    }
+
+    /*
+     * =========================================
+     * AVATAR
+     * =========================================
+     */
+
+    handleImageError():
+        void {
+
+        this.avatarUrl =
+            '';
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    /*
+     * =========================================
+     * CLOSE POPUPS
+     * =========================================
+     */
+
     @HostListener(
         'document:click',
-        ['$event'],
+        [
+            '$event',
+        ],
     )
     onDocumentClick(
-        event: MouseEvent,
+        event:
+            MouseEvent,
     ): void {
+
         const target =
             event.target;
 
@@ -267,7 +813,9 @@ export class HeaderUserComponent
             target instanceof Node &&
             !this.elementRef
                 .nativeElement
-                .contains(target)
+                .contains(
+                    target,
+                )
         ) {
             this.closePopups();
         }
@@ -276,36 +824,53 @@ export class HeaderUserComponent
     @HostListener(
         'document:keydown.escape',
     )
-    closePopups(): void {
-        this.isMenuOpen = false;
+    closePopups():
+        void {
+
+        this.isMenuOpen =
+            false;
+
         this.isNotificationOpen =
             false;
-        this.isAiChatOpen = false;
+
+        this.isAiChatOpen =
+            false;
     }
 
-    private loadCurrentUser(): void {
+    /*
+     * =========================================
+     * CURRENT USER
+     * =========================================
+     */
+
+    private loadCurrentUser():
+        void {
+
         const currentUser =
             this.storageService
                 .getCurrentUser();
 
+        if (
+            !currentUser
+        ) {
+            this.isLoading =
+                false;
+
+            this.loadError =
+                'Không tìm thấy phiên đăng nhập.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
         this.username =
             currentUser
-                ?.tenDangNhap
-                ?.trim() || '';
+                .tenDangNhap
+                ?.trim() ||
+            '';
 
-        /*
-         * Không đọc trực tiếp:
-         * currentUser.maQuyen
-         *
-         * StorageService đã chịu trách nhiệm
-         * normalize quyền.
-         *
-         * Ví dụ production:
-         * maQuyen = 0
-         * tenQuyen = "Quản trị viên"
-         *
-         * sẽ được resolve thành role ID = 1.
-         */
         this.currentRoleId =
             this.storageService
                 .getCurrentRoleId() ??
@@ -313,14 +878,12 @@ export class HeaderUserComponent
 
         this.roleName =
             currentUser
-                ?.tenQuyen
-                ?.trim() || '';
+                .tenQuyen
+                ?.trim() ||
+            this.getFallbackRoleName(
+                this.currentRoleId,
+            );
 
-        /*
-         * Tương tự role ID, lấy employee ID
-         * qua StorageService để toàn app
-         * dùng chung một cách đọc session.
-         */
         this.employeeId =
             this.storageService
                 .getCurrentEmployeeId();
@@ -333,65 +896,64 @@ export class HeaderUserComponent
                 this.displayName,
             );
 
-        const employee$ =
-            this.nhanVienService
-                .getMe()
-                .pipe(
-                    catchError(
-                        () => of(null),
-                    ),
-                );
+        this.isLoading =
+            true;
+
+        this.loadError =
+            '';
 
         /*
-         * Dùng currentRoleId đã normalize,
-         * không quay lại đọc
-         * currentUser.maQuyen.
+         * Tải notification bằng API /me
+         * sau khi đã xác định được user/role.
          */
-        const role$ =
-            this.currentRoleId > 0
-                ? this.quyenService
-                    .getById(
-                        this.currentRoleId,
-                    )
-                    .pipe(
-                        catchError(
-                            () =>
-                                of(
-                                    null,
-                                ),
-                        ),
-                    )
-                : of(null);
+        if (
+            this.canOpenNotifications
+        ) {
+            this.loadNotifications();
+        }
 
-        forkJoin({
-            employee: employee$,
-            role: role$,
-        })
+        this.nhanVienService
+            .getMe()
             .pipe(
-                finalize(() => {
-                    this.isLoading =
-                        false;
+                catchError(
+                    error => {
 
-                    this.changeDetectorRef
-                        .markForCheck();
-                }),
+                        console.error(
+                            'HEADER - GET CURRENT EMPLOYEE ERROR:',
+                            error,
+                        );
+
+                        return of(
+                            null,
+                        );
+                    },
+                ),
+
+                finalize(
+                    () => {
+
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
             )
             .subscribe({
-                next: ({
+                next: (
                     employee,
-                    role,
-                }) => {
+                ) => {
+
                     this.employee =
                         employee;
-
-                    this.role =
-                        role;
 
                     if (
                         employee &&
                         Number(
                             employee.maNV,
-                        ) > 0
+                        ) >
+                        0
                     ) {
                         this.employeeId =
                             Number(
@@ -403,13 +965,8 @@ export class HeaderUserComponent
                         employee
                             ?.hoTen
                             ?.trim() ||
-                        this.username;
-
-                    this.roleName =
-                        role
-                            ?.tenQuyen
-                            ?.trim() ||
-                        this.roleName;
+                        this.username ||
+                        'Tài khoản';
 
                     this.avatarUrl =
                         this.normalizeImageUrl(
@@ -423,40 +980,120 @@ export class HeaderUserComponent
                             this.displayName,
                         );
 
-                    if (
-                        !employee &&
-                        !currentUser
-                    ) {
-                        this.loadError =
-                            'Không thể tải thông tin người dùng hiện tại.';
-                    } else {
-                        this.loadError =
-                            '';
-                    }
+                    this.loadError =
+                        '';
+
+                    this.changeDetectorRef
+                        .markForCheck();
                 },
             });
     }
 
-    private normalizeImageUrl(
-        value: string | null,
+    /*
+     * =========================================
+     * ROLE
+     * =========================================
+     */
+
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+        return resolveUserRole(
+            currentUser,
+        );
+    }
+
+    /*
+     * =========================================
+     * ROLE LABEL
+     * =========================================
+     */
+
+    private getFallbackRoleName(
+        roleId:
+            number,
     ): string {
-        if (!value) {
+
+        switch (
+        roleId
+        ) {
+            case 1:
+                return (
+                    'Quản trị viên'
+                );
+
+            case 2:
+                return (
+                    'Nhân viên nhân sự'
+                );
+
+            case 3:
+                return (
+                    'Kế toán'
+                );
+
+            case 4:
+                return (
+                    'Trưởng phòng'
+                );
+
+            case 5:
+                return (
+                    'Ban giám đốc'
+                );
+
+            case 6:
+                return (
+                    'Nhân viên'
+                );
+
+            default:
+                return '';
+        }
+    }
+
+    /*
+     * =========================================
+     * URL
+     * =========================================
+     */
+
+    private get apiBaseUrl():
+        string {
+
+        return environment
+            .apiBaseUrl
+            .replace(
+                /\/$/,
+                '',
+            );
+    }
+
+    private normalizeImageUrl(
+        value:
+            string | null,
+    ): string {
+
+        if (
+            !value
+        ) {
             return '';
         }
 
         if (
-            /^(https?:|data:|blob:)/i.test(
-                value,
-            )
+            /^(https?:|data:|blob:)/i
+                .test(
+                    value,
+                )
         ) {
             return value;
         }
 
         return (
-            environment.apiBaseUrl.replace(
-                /\/$/,
-                '',
-            ) +
+            this.apiBaseUrl +
             '/' +
             value.replace(
                 /^\//,
@@ -465,36 +1102,71 @@ export class HeaderUserComponent
         );
     }
 
+    /*
+     * =========================================
+     * INITIALS
+     * =========================================
+     */
+
     private createInitials(
-        value: string,
+        value:
+            string,
     ): string {
+
         const words =
             value
                 .trim()
-                .split(/\s+/)
-                .filter(Boolean);
+                .split(
+                    /\s+/,
+                )
+                .filter(
+                    Boolean,
+                );
 
-        if (words.length === 0) {
+        if (
+            words.length ===
+            0
+        ) {
             return 'TK';
         }
 
-        if (words.length === 1) {
+        if (
+            words.length ===
+            1
+        ) {
             return words[0]
-                .slice(0, 2)
+                .slice(
+                    0,
+                    2,
+                )
                 .toUpperCase();
         }
 
         return words
-            .slice(-2)
-            .map(
-                (word) =>
-                    word.charAt(0),
+            .slice(
+                -2,
             )
-            .join('')
+            .map(
+                word =>
+                    word.charAt(
+                        0,
+                    ),
+            )
+            .join(
+                '',
+            )
             .toUpperCase();
     }
 
-    private restoreTheme(): void {
+    /*
+     * =========================================
+     * RESTORE THEME
+     * =========================================
+     */
+
+    private restoreTheme():
+        void {
+
         if (
             typeof window ===
             'undefined'
@@ -503,13 +1175,16 @@ export class HeaderUserComponent
         }
 
         this.isDarkMode =
-            localStorage.getItem(
-                'hrm_theme',
-            ) === 'dark';
+            localStorage
+                .getItem(
+                    'hrm_theme',
+                ) ===
+            'dark';
 
         this.document
             .documentElement
-            .classList.toggle(
+            .classList
+            .toggle(
                 'dark-theme',
                 this.isDarkMode,
             );

@@ -13,37 +13,46 @@
         </nav>
 
         <h1>
-            {{
-            isEmployeeView
-            ? 'Bảng lương của tôi'
-            : 'Danh sách bảng lương'
-            }}
+            Danh sách bảng lương
         </h1>
 
         <p>
-            {{
-            isEmployeeView
-            ? 'Theo dõi thu nhập và các khoản lương của bạn theo từng tháng.'
-            : 'Quản lý và theo dõi thu nhập của nhân viên theo từng tháng.'
-            }}
+            Quản lý và theo dõi thu nhập
+            của nhân viên theo từng tháng.
         </p>
     </div>
 
-    @if (canManagePayroll) {
-    <button class="export-button" type="button" (click)="exportReport()" [disabled]="
-                        isLoading ||
-                        deletingPayrollId !== null
-                    ">
-        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3v12"></path>
-            <path d="m7 10 5 5 5-5"></path>
-            <path d="M5 21h14"></path>
-        </svg>
+    <div class="payroll-heading-actions">
+        @if (canCreatePayroll) {
+        <button class="export-button" type="button" (click)="createPayroll()" [disabled]="
+                isLoading ||
+                deletingPayrollId !== null
+            ">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="M5 12h14"></path>
+            </svg>
 
-        Xuất Excel
-    </button>
-    }
+            Tạo bảng lương
+        </button>
+        }
+
+        <button class="export-button" type="button" (click)="exportReport()" [disabled]="
+                isLoading ||
+                deletingPayrollId !== null ||
+                filteredPayrollRecords.length === 0
+            ">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+            </svg>
+
+            Xuất Excel
+        </button>
+    </div>
 </section>
 
 @if (errorMessage) {
@@ -53,6 +62,7 @@
         <circle cx="12" cy="12" r="10"></circle>
 
         <path d="M12 8v4"></path>
+
         <path d="M12 16h.01"></path>
     </svg>
 
@@ -72,11 +82,8 @@
         </strong>
 
         <p>
-            {{
-            isEmployeeView
-            ? 'Đang lấy dữ liệu bảng lương cá nhân.'
-            : 'Đang lấy bảng lương, nhân viên và phòng ban.'
-            }}
+            Đang lấy dữ liệu bảng lương
+            phù hợp với quyền của tài khoản.
         </p>
     </div>
 </section>
@@ -84,9 +91,9 @@
 
 <section class="payroll-stats">
     <article class="
-                        stat-card
-                        stat-card--payroll
-                    ">
+            stat-card
+            stat-card--payroll
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -95,6 +102,7 @@
                 <circle cx="12" cy="12" r="2"></circle>
 
                 <path d="M6 9h.01"></path>
+
                 <path d="M18 15h.01"></path>
             </svg>
         </span>
@@ -119,51 +127,48 @@
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--employees
-                    ">
+            stat-card
+            stat-card--employees
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <path d="
+                        M16 21v-2
+                        a4 4 0 0 0-4-4
+                        H6
+                        a4 4 0 0 0-4 4
+                        v2
+                    "></path>
 
                 <circle cx="9" cy="7" r="4"></circle>
 
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="
+                        M22 21v-2
+                        a4 4 0 0 0-3-3.87
+                    "></path>
             </svg>
         </span>
 
         <div>
             <span>
-                {{
-                isEmployeeView
-                ? 'Số kỳ lương'
-                : 'Tổng nhân viên'
-                }}
+                Tổng nhân viên
             </span>
 
             <strong>
-                {{
-                isEmployeeView
-                ? filteredPayrollRecords.length
-                : stats.tongNhanVien
-                }}
+                {{ stats.tongNhanVien }}
             </strong>
 
             <p>
-                {{
-                isEmployeeView
-                ? 'Kỳ lương phù hợp bộ lọc'
-                : 'Có dữ liệu bảng lương'
-                }}
+                Có dữ liệu bảng lương
             </p>
         </div>
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--income
-                    ">
+            stat-card
+            stat-card--income
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -197,9 +202,9 @@
     </article>
 
     <article class="
-                        stat-card
-                        stat-card--deduction
-                    ">
+            stat-card
+            stat-card--deduction
+        ">
         <span class="stat-card__icon">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -230,7 +235,6 @@
 </section>
 
 <section class="payroll-filter-card" aria-label="Bộ lọc bảng lương">
-    @if (!isEmployeeView) {
     <label class="payroll-search-filter">
         <span>
             Tìm kiếm
@@ -244,14 +248,16 @@
                 <path d="m21 21-4.3-4.3"></path>
             </svg>
 
-            <input type="search" [(ngModel)]="globalSearchTerm" (input)="applyFilters()"
-                placeholder="Tên nhân viên, mã NV, mã bảng lương..." [disabled]="isLoading" />
+            <input type="search" [(ngModel)]="globalSearchTerm" (input)="applyFilters()" placeholder="
+                    Tên nhân viên, mã NV, mã bảng lương...
+                " [disabled]="isLoading" />
         </div>
     </label>
-    }
 
     <label class="payroll-filter">
-        <span>Tháng</span>
+        <span>
+            Tháng
+        </span>
 
         <select [(ngModel)]="selectedMonth" (change)="applyFilters()" [disabled]="isLoading">
             <option [ngValue]="null">
@@ -270,7 +276,9 @@
     </label>
 
     <label class="payroll-filter">
-        <span>Năm</span>
+        <span>
+            Năm
+        </span>
 
         <select [(ngModel)]="selectedYear" (change)="applyFilters()" [disabled]="isLoading">
             <option [ngValue]="null">
@@ -314,7 +322,11 @@
     <button class="reset-filter-button" type="button" (click)="resetFilters()" [disabled]="isLoading">
         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+            <path d="
+                    M3 12
+                    a9 9 0 1 0 3-6.7
+                    L3 8
+                "></path>
 
             <path d="M3 3v5h5"></path>
         </svg>
@@ -364,11 +376,9 @@
                         Thực lĩnh
                     </th>
 
-                    @if (canManagePayroll) {
                     <th>
                         Thao tác
                     </th>
-                    }
                 </tr>
             </thead>
 
@@ -376,7 +386,7 @@
                 @if (isLoading) {
 
                 <tr>
-                    <td [attr.colspan]="canManagePayroll ? 10 : 9" class="payroll-empty-cell">
+                    <td colspan="10" class="payroll-empty-cell">
                         <div class="empty-state">
                             <span class="payroll-loading__spinner" aria-hidden="true"></span>
 
@@ -386,7 +396,8 @@
                             </strong>
 
                             <p>
-                                Vui lòng chờ trong giây lát.
+                                Vui lòng chờ
+                                trong giây lát.
                             </p>
                         </div>
                     </td>
@@ -401,25 +412,20 @@
 
                 <tr>
                     <td>
-                        @if (canManagePayroll) {
-                        <button class="payroll-code" type="button" (click)="viewPayroll(record)" [disabled]="
-                                            deletingPayrollId !== null
-                                        ">
+                        <button class="payroll-code" type="button" (click)="
+                                viewPayroll(
+                                    record
+                                )
+                            " [disabled]="
+                                deletingPayrollId !==
+                                null
+                            ">
                             {{
                             formatPayrollCode(
                             record.maLuong
                             )
                             }}
                         </button>
-                        } @else {
-                        <strong>
-                            {{
-                            formatPayrollCode(
-                            record.maLuong
-                            )
-                            }}
-                        </strong>
-                        }
                     </td>
 
                     <td>
@@ -525,136 +531,204 @@
                         </strong>
                     </td>
 
-                    @if (canManagePayroll) {
                     <td>
                         <div class="table-actions">
-
                             @if (
                             isDeleting(record)
                             ) {
 
-                            <span class="payroll-action-spinner" aria-label="Đang xóa"></span>
+                            <span class="
+                                    payroll-action-spinner
+                                " aria-label="Đang xóa"></span>
 
                             } @else {
 
                             <button class="
-                                                table-action-button
-                                                table-action-button--view
-                                            " type="button" (click)="
-                                                viewPayroll(
-                                                    record
-                                                )
-                                            " [disabled]="
-                                                deletingPayrollId !==
-                                                null
-                                            " aria-label="Xem bảng lương" title="Xem chi tiết">
+                                    table-action-button
+                                    table-action-button--view
+                                " type="button" (click)="
+                                    viewPayroll(
+                                        record
+                                    )
+                                " [disabled]="
+                                    deletingPayrollId !==
+                                    null
+                                " aria-label="
+                                    Xem bảng lương
+                                " title="
+                                    Xem chi tiết
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path
-                                        d="M2.06 12.35a1 1 0 0 1 0-.7C3.72 7.6 7.66 5 12 5c4.34 0 8.28 2.6 9.94 6.65a1 1 0 0 1 0 .7C20.28 16.4 16.34 19 12 19c-4.34 0-8.28-2.6-9.94-6.65">
-                                    </path>
+                                    <path d="
+                                            M2.06 12.35
+                                            a1 1 0 0 1 0-.7
+                                            C3.72 7.6
+                                            7.66 5
+                                            12 5
+                                            c4.34 0
+                                            8.28 2.6
+                                            9.94 6.65
+                                            a1 1 0 0 1 0 .7
+                                            C20.28 16.4
+                                            16.34 19
+                                            12 19
+                                            c-4.34 0
+                                            -8.28-2.6
+                                            -9.94-6.65
+                                        "></path>
 
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </button>
 
+                            @if (
+                            canManageAllowances
+                            ) {
                             <button class="
-                                                table-action-button
-                                                table-action-button--edit
-                                            " type="button" (click)="
-                                                manageAllowances(
-                                                    record
-                                                )
-                                            " [disabled]="
-                                                deletingPayrollId !==
-                                                null
-                                            " aria-label="Quản lý phụ cấp" title="Quản lý phụ cấp">
+                                    table-action-button
+                                    table-action-button--edit
+                                " type="button" (click)="
+                                    manageAllowances(
+                                        record
+                                    )
+                                " [disabled]="
+                                    deletingPayrollId !==
+                                    null
+                                " aria-label="
+                                    Quản lý phụ cấp
+                                " title="
+                                    Quản lý phụ cấp
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path
-                                        d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7">
-                                    </path>
+                                    <path d="
+                                            M20 7V6
+                                            a2 2 0 0 0-2-2
+                                            H5
+                                            a3 3 0 0 0 0 6
+                                            h15
+                                            v8
+                                            a2 2 0 0 1-2 2
+                                            H5
+                                            a3 3 0 0 1-3-3
+                                            V7
+                                        "></path>
+
                                     <path d="M16 14h2"></path>
                                 </svg>
                             </button>
+                            }
 
+                            @if (canEditPayroll) {
                             <button class="
-                                                table-action-button
-                                                table-action-button--edit
-                                            " type="button" (click)="
-                                                editPayroll(
-                                                    record
-                                                )
-                                            " [disabled]="
-                                                deletingPayrollId !==
-                                                null
-                                            " aria-label="Chỉnh sửa bảng lương" title="Chỉnh sửa">
+                                    table-action-button
+                                    table-action-button--edit
+                                " type="button" (click)="
+                                    editPayroll(
+                                        record
+                                    )
+                                " [disabled]="
+                                    deletingPayrollId !==
+                                    null
+                                " aria-label="
+                                    Chỉnh sửa bảng lương
+                                " title="Chỉnh sửa">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M12 20h9"></path>
 
-                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                    <path d="
+                                            M16.5 3.5
+                                            a2.12 2.12 0 0 1 3 3
+                                            L7 19
+                                            l-4 1
+                                            1-4Z
+                                        "></path>
                                 </svg>
                             </button>
+                            }
 
                             <button class="
-                                                table-action-button
-                                                table-action-button--print
-                                            " type="button" (click)="
-                                                printPayroll(
-                                                    record
-                                                )
-                                            " [disabled]="
-                                                deletingPayrollId !==
-                                                null
-                                            " aria-label="In phiếu lương" title="In phiếu lương">
+                                    table-action-button
+                                    table-action-button--print
+                                " type="button" (click)="
+                                    printPayroll(
+                                        record
+                                    )
+                                " [disabled]="
+                                    deletingPayrollId !==
+                                    null
+                                " aria-label="
+                                    In phiếu lương
+                                " title="
+                                    In phiếu lương
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M6 9V2h12v7"></path>
 
-                                    <path
-                                        d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
-                                    </path>
+                                    <path d="
+                                            M6 18H4
+                                            a2 2 0 0 1-2-2
+                                            v-5
+                                            a2 2 0 0 1 2-2
+                                            h16
+                                            a2 2 0 0 1 2 2
+                                            v5
+                                            a2 2 0 0 1-2 2
+                                            h-2
+                                        "></path>
 
                                     <rect width="12" height="8" x="6" y="14"></rect>
                                 </svg>
                             </button>
 
+                            @if (canDeletePayroll) {
                             <button class="
-                                                table-action-button
-                                                table-action-button--delete
-                                            " type="button" (click)="
-                                                deletePayroll(
-                                                    record
-                                                )
-                                            " [disabled]="
-                                                deletingPayrollId !==
-                                                null
-                                            " aria-label="Xóa bảng lương" title="Xóa bảng lương">
+                                    table-action-button
+                                    table-action-button--delete
+                                " type="button" (click)="
+                                    deletePayroll(
+                                        record
+                                    )
+                                " [disabled]="
+                                    deletingPayrollId !==
+                                    null
+                                " aria-label="
+                                    Xóa bảng lương
+                                " title="
+                                    Xóa bảng lương
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M3 6h18"></path>
 
                                     <path d="M8 6V4h8v2"></path>
 
-                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="
+                                            M19 6
+                                            l-1 14
+                                            H6
+                                            L5 6
+                                        "></path>
 
                                     <path d="M10 11v5"></path>
 
                                     <path d="M14 11v5"></path>
                                 </svg>
                             </button>
+                            }
 
                             }
                         </div>
                     </td>
-                    }
                 </tr>
 
                 } @empty {
 
                 <tr>
-                    <td [attr.colspan]="canManagePayroll ? 10 : 9" class="payroll-empty-cell">
+                    <td colspan="10" class="payroll-empty-cell">
                         <div class="empty-state">
                             <span class="empty-state__icon">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -676,7 +750,7 @@
                                 hiện tại.
                             </p>
 
-                            @if (canManagePayroll) {
+                            @if (canCreatePayroll) {
                             <button type="button" (click)="createPayroll()">
                                 Tạo bảng lương
                             </button>
@@ -707,14 +781,14 @@
 
         <nav class="pagination" aria-label="Phân trang">
             <button class="pagination__button" type="button" (click)="
-                                goToPage(
-                                    currentPage - 1
-                                )
-                            " [disabled]="
-                                currentPage === 1 ||
-                                isLoading ||
-                                deletingPayrollId !== null
-                            " aria-label="Trang trước">
+                    goToPage(
+                        currentPage - 1
+                    )
+                " [disabled]="
+                    currentPage === 1 ||
+                    isLoading ||
+                    deletingPayrollId !== null
+                " aria-label="Trang trước">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m15 18-6-6 6-6"></path>
@@ -726,24 +800,24 @@
             track page
             ) {
             <button class="pagination__button" [class.pagination__button--active]="
-                                currentPage === page
-                            " type="button" (click)="goToPage(page)" [disabled]="
-                                isLoading ||
-                                deletingPayrollId !== null
-                            ">
+                    currentPage === page
+                " type="button" (click)="goToPage(page)" [disabled]="
+                    isLoading ||
+                    deletingPayrollId !== null
+                ">
                 {{ page }}
             </button>
             }
 
             <button class="pagination__button" type="button" (click)="
-                                goToPage(
-                                    currentPage + 1
-                                )
-                            " [disabled]="
-                                currentPage === totalPages ||
-                                isLoading ||
-                                deletingPayrollId !== null
-                            " aria-label="Trang sau">
+                    goToPage(
+                        currentPage + 1
+                    )
+                " [disabled]="
+                    currentPage === totalPages ||
+                    isLoading ||
+                    deletingPayrollId !== null
+                " aria-label="Trang sau">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m9 18 6-6-6-6"></path>
@@ -783,7 +857,15 @@
         <span>
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 19.5V4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5Z"></path>
+                <path d="
+                        M4 19.5
+                        V4.5
+                        A2.5 2.5 0 0 1 6.5 2
+                        H20
+                        v20
+                        H6.5
+                        A2.5 2.5 0 0 1 4 19.5Z
+                    "></path>
 
                 <path d="M8 7h8"></path>
 

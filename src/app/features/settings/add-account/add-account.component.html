@@ -20,7 +20,7 @@
             <p>
                 Tạo thông tin đăng nhập
                 và cấp quyền sử dụng hệ thống
-                cho nhân viên.
+                cho nhân viên được phép xem.
             </p>
         </div>
 
@@ -60,8 +60,11 @@ loadError &&
         </p>
 
         @if (
+        canCreateAccounts &&
+        (
         employees.length === 0 ||
         roles.length === 0
+        )
         ) {
         <button type="button" (click)="retry()" [disabled]="
                                     isLoadingData ||
@@ -90,15 +93,15 @@ loadError &&
             </h2>
 
             <p>
-                Đang lấy nhân viên,
-                phòng ban, quyền và
-                tài khoản hiện có.
+                Đang lấy các dữ liệu
+                cần thiết mà tài khoản
+                được phép xem.
             </p>
         </div>
     </header>
 </section>
 
-} @else {
+} @else if (canUseAccountForm) {
 <form class="add-account-layout" (ngSubmit)="saveAccount()" novalidate>
     <div class="add-account-main">
         <section class="form-card">
@@ -161,10 +164,14 @@ loadError &&
                             employee.maNV
                             }}
                             ·
+                            @if (canViewDepartments) {
                             {{
                             employee.tenPB ||
                             'Chưa phân phòng'
                             }}
+                            } @else {
+                            Không hiển thị phòng ban
+                            }
                         </option>
                         }
                     </select>
@@ -173,8 +180,8 @@ loadError &&
                     employees.length === 0
                     ) {
                     <small class="field-hint">
-                        Hệ thống hiện chưa có
-                        nhân viên để tạo tài khoản.
+                        Không có nhân viên khả dụng
+                        để tạo tài khoản.
                     </small>
 
                     } @else if (
@@ -221,12 +228,14 @@ loadError &&
                             selectedEmployee.maNV
                             }}
 
+                            @if (canViewDepartments) {
                             ·
 
                             {{
                             selectedEmployee.tenPB ||
                             'Chưa phân phòng'
                             }}
+                            }
 
                             ·
 
@@ -291,6 +300,7 @@ loadError &&
                                         " [disabled]="isSaving" placeholder="Ví dụ: nguyenvana" />
 
                     @if (
+                    canViewAccounts &&
                     usernameDuplicate
                     ) {
                     <small class="field-error">
@@ -312,6 +322,10 @@ loadError &&
                     <small class="field-hint">
                         Không sử dụng khoảng trắng
                         hoặc ký tự đặc biệt khác.
+                        @if (!canViewAccounts) {
+                        Trùng tên đăng nhập sẽ được
+                        Backend kiểm tra khi tạo.
+                        }
                     </small>
                     }
                 </label>
@@ -560,6 +574,7 @@ loadError &&
             </button>
 
             <button class="submit-button" type="submit" [disabled]="
+                                    !canUseAccountForm ||
                                     isSaving ||
                                     isLoadingData ||
                                     availableEmployees.length === 0 ||
@@ -702,6 +717,36 @@ loadError &&
 
     </aside>
 </form>
+} @else {
+<section class="form-note" role="alert">
+    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 8v4"></path>
+        <path d="M12 16h.01"></path>
+    </svg>
+
+    <div>
+        <strong>
+            Không thể mở biểu mẫu tạo tài khoản
+        </strong>
+
+        <p>
+            @if (!canCreateAccounts) {
+            Bạn không có quyền tạo tài khoản.
+            } @else if (!canViewEmployees && !canViewRoles) {
+            Bạn cần quyền xem nhân viên và quyền
+            để chọn dữ liệu cho tài khoản mới.
+            } @else if (!canViewEmployees) {
+            Bạn cần quyền xem nhân viên
+            để chọn nhân viên liên kết.
+            } @else if (!canViewRoles) {
+            Bạn cần quyền xem quyền
+            để chọn quyền cho tài khoản.
+            }
+        </p>
+    </div>
+</section>
 }
 
 @if (toastMessage) {

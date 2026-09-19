@@ -39,6 +39,9 @@ export class NhanVienPhuCapService {
     }
 
     getById(maNV: number, maPC: number): Observable<NhanVienPhuCap> {
+        this.assertValidId(maNV, 'Mã nhân viên');
+        this.assertValidId(maPC, 'Mã phụ cấp');
+
         return this.http
             .get<ApiResponse<NhanVienPhuCap> | NhanVienPhuCap>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.nhanVienPhuCapById(maNV, maPC)}`,
@@ -57,6 +60,9 @@ export class NhanVienPhuCapService {
     }
 
     create(payload: CreateNhanVienPhuCapRequest): Observable<NhanVienPhuCap> {
+        this.assertValidId(payload.maNV, 'Mã nhân viên');
+        this.assertValidId(payload.maPC, 'Mã phụ cấp');
+
         const request: CreateNhanVienPhuCapRequest = {
             maNV: payload.maNV,
             maPC: payload.maPC,
@@ -79,6 +85,9 @@ export class NhanVienPhuCapService {
         maPC: number,
         payload: UpdateNhanVienPhuCapRequest,
     ): Observable<NhanVienPhuCap> {
+        this.assertValidId(maNV, 'Mã nhân viên');
+        this.assertValidId(maPC, 'Mã phụ cấp');
+
         const request: UpdateNhanVienPhuCapRequest = {
             ngayApDung: payload.ngayApDung,
             trangThai: payload.trangThai,
@@ -98,6 +107,9 @@ export class NhanVienPhuCapService {
     }
 
     delete(maNV: number, maPC: number): Observable<void> {
+        this.assertValidId(maNV, 'Mã nhân viên');
+        this.assertValidId(maPC, 'Mã phụ cấp');
+
         return this.http
             .delete<ApiResponse<unknown> | unknown>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.nhanVienPhuCapById(maNV, maPC)}`,
@@ -108,6 +120,12 @@ export class NhanVienPhuCapService {
                     return void 0;
                 }),
             );
+    }
+
+    private assertValidId(value: number, fieldName: string): void {
+        if (!Number.isInteger(value) || value <= 0) {
+            throw new Error(`${fieldName} không hợp lệ.`);
+        }
     }
 
     private unwrapList<T>(response: ApiResponse<T[]> | T[]): T[] {

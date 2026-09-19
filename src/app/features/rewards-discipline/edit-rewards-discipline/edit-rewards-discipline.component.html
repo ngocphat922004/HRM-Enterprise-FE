@@ -1,12 +1,21 @@
 <section class="edit-rewards-discipline-heading">
     <nav class="breadcrumb" aria-label="Điều hướng">
+        @if (canViewDecisions) {
         <a routerLink="/rewards-discipline">
             Khen thưởng, kỷ luật
         </a>
+        } @else {
+        <span>
+            Khen thưởng, kỷ luật
+        </span>
+        }
 
         <span>/</span>
 
-        @if (decisionId !== null) {
+        @if (
+        canViewDecisions &&
+        decisionId !== null
+        ) {
         <a [routerLink]="[
                                 '/rewards-discipline',
                                 decisionId
@@ -85,8 +94,8 @@ decision
     </h2>
 
     <p>
-        Đang lấy thông tin quyết định,
-        nhân viên và phòng ban.
+        Đang kiểm tra quyền thao tác
+        và tải dữ liệu được phép sử dụng.
     </p>
 </section>
 
@@ -124,7 +133,8 @@ loadError &&
         </button>
 
         @if (
-        decisionId !== null
+        decisionId !== null &&
+        canUseDecisionForm
         ) {
         <button class="primary-button" type="button" (click)="retry()">
             Thử lại
@@ -164,7 +174,7 @@ loadError &&
     </div>
 </section>
 
-} @else {
+} @else if (canUseDecisionForm) {
 
 <form class="edit-rewards-discipline-layout" (ngSubmit)="saveDecision()" novalidate>
     <div class="edit-rewards-discipline-main">
@@ -208,7 +218,10 @@ loadError &&
                                             form.maNV
                                         " [class.form-control--invalid]="
                                             employeeInvalid
-                                        " [disabled]="isSaving">
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canUseDecisionForm
+                                        ">
                         <option [ngValue]="null">
                             Chọn nhân viên
                         </option>
@@ -227,11 +240,13 @@ loadError &&
                             {{
                             employee.maNV
                             }}
+                            @if (canViewDepartments) {
                             ·
                             {{
                             employee.tenPB ||
                             'Chưa phân phòng'
                             }}
+                            }
                         </option>
                         }
                     </select>
@@ -285,6 +300,7 @@ loadError &&
                             .maNV
                             }}
 
+                            @if (canViewDepartments) {
                             ·
 
                             {{
@@ -292,7 +308,9 @@ loadError &&
                             .tenPB ||
                             'Chưa phân phòng'
                             }}
+                            }
 
+                            @if (canViewPositions) {
                             ·
 
                             {{
@@ -300,6 +318,7 @@ loadError &&
                             .tenCV ||
                             'Chưa có chức vụ'
                             }}
+                            }
                         </span>
 
                         <small>
@@ -354,7 +373,10 @@ loadError &&
                                             form.loai
                                         " [class.form-control--invalid]="
                                             typeInvalid
-                                        " [disabled]="isSaving">
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canUseDecisionForm
+                                        ">
                         <option value="">
                             Chọn loại quyết định
                         </option>
@@ -386,7 +408,10 @@ loadError &&
                                             form.ngayQuyetDinh
                                         " [class.form-control--invalid]="
                                             decisionDateInvalid
-                                        " [disabled]="isSaving" />
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canUseDecisionForm
+                                        " />
 
                     @if (
                     decisionDateInvalid
@@ -413,7 +438,10 @@ loadError &&
                                                 normalizeAmount()
                                             " [class.form-control--invalid]="
                                                 amountInvalid
-                                            " [disabled]="isSaving" placeholder="Nhập số tiền" />
+                                            " [disabled]="
+                                                isSaving ||
+                                                !canUseDecisionForm
+                                            " placeholder="Nhập số tiền" />
 
                         <span>
                             đ
@@ -444,23 +472,25 @@ loadError &&
                         Lý do
                     </span>
 
-                    <textarea name="lyDo" rows="5" maxlength="1000" [(ngModel)]="
+                    <textarea name="lyDo" rows="5" maxlength="255" [(ngModel)]="
                                             form.lyDo
                                         " [class.form-control--invalid]="
                                             reasonInvalid
-                                        " [disabled]="isSaving"
-                        placeholder="Nhập nội dung hoặc lý do của quyết định"></textarea>
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canUseDecisionForm
+                                        " placeholder="Nhập nội dung hoặc lý do của quyết định"></textarea>
 
                     <small class="field-hint">
                         {{
                         form.lyDo.length
-                        }}/1000 ký tự
+                        }}/255 ký tự
                     </small>
 
                     @if (reasonInvalid) {
                     <small class="field-error">
                         Lý do tối đa
-                        1000 ký tự.
+                        255 ký tự.
                     </small>
                     } @else {
                     <small class="field-hint">
@@ -505,6 +535,7 @@ loadError &&
             </button>
 
             <button class="submit-button" type="submit" [disabled]="
+                                    !canUseDecisionForm ||
                                     isSaving ||
                                     isLoading
                                 ">
@@ -689,7 +720,11 @@ loadError &&
                     <strong class="
                                             source-status--connected
                                         ">
-                        API
+                        {{
+                        canViewEmployees
+                        ? 'API'
+                        : 'Không gọi'
+                        }}
                     </strong>
                 </li>
 
@@ -701,7 +736,11 @@ loadError &&
                     <strong class="
                                             source-status--connected
                                         ">
-                        API
+                        {{
+                        canViewDepartments
+                        ? 'API'
+                        : 'Không gọi'
+                        }}
                     </strong>
                 </li>
 
@@ -720,6 +759,38 @@ loadError &&
         </section>
     </aside>
 </form>
+} @else {
+<section class="
+                        page-state-card
+                        page-state-card--error
+                    " role="alert">
+    <span class="page-state-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v4"></path>
+            <path d="M12 16h.01"></path>
+        </svg>
+    </span>
+
+    <h2>
+        Không thể chỉnh sửa quyết định
+    </h2>
+
+    <p>
+        @if (!canEditDecisions) {
+        Bạn không có quyền chỉnh sửa khen thưởng, kỷ luật.
+        } @else if (!canViewDecisions) {
+        Bạn cần quyền xem khen thưởng, kỷ luật để tải dữ liệu cần chỉnh sửa.
+        } @else if (!canViewEmployees) {
+        Bạn cần quyền xem nhân viên để chọn nhân viên áp dụng quyết định.
+        }
+    </p>
+
+    <button class="secondary-button" type="button" (click)="cancel()">
+        Quay lại
+    </button>
+</section>
 }
 
 @if (toastMessage) {

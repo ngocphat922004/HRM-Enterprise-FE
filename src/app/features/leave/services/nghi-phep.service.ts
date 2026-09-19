@@ -4,11 +4,14 @@ import { Observable, map, of, switchMap } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
-import { LoaiNghiPhep as LoaiNghiPhepModel } from '../models/loai-nghi-phep.model';
+import {
+    CreateLoaiNghiPhepRequest,
+    LoaiNghiPhep as LoaiNghiPhepModel,
+    UpdateLoaiNghiPhepRequest,
+} from '../models/loai-nghi-phep.model';
 import {
     CreateNghiPhepRequest,
     NghiPhep as NghiPhepModel,
-    UpdateNghiPhepRequest,
 } from '../models/nghi-phep.model';
 
 export type LoaiNghiPhep = LoaiNghiPhepModel;
@@ -88,34 +91,6 @@ export class NghiPhepService {
             );
     }
 
-    update(maNP: number, payload: UpdateNghiPhepRequest): Observable<NghiPhepModel> {
-        return this.http
-            .put<ApiResponse<NghiPhepApiItem | null> | NghiPhepApiItem | null>(
-                `${environment.apiBaseUrl}${API_ENDPOINTS.nghiPhepById(maNP)}`,
-                payload,
-            )
-            .pipe(
-                map((response) => {
-                    const item = this.unwrapItem(response);
-
-                    if (item) {
-                        return this.normalizeLeaveRequest(item);
-                    }
-
-                    return {
-                        maNP,
-                        maNV: payload.maNV,
-                        maLoaiNP: payload.maLoaiNP,
-                        tuNgay: payload.tuNgay,
-                        denNgay: payload.denNgay,
-                        lyDo: payload.lyDo,
-                        trangThai: payload.trangThai,
-                        nguoiDuyet: payload.nguoiDuyet,
-                    };
-                }),
-            );
-    }
-
     delete(maNP: number): Observable<void> {
         return this.http
             .delete<ApiResponse<unknown> | unknown>(
@@ -169,6 +144,67 @@ export class NghiPhepService {
                     }
 
                     return item;
+                }),
+            );
+    }
+
+    createLeaveType(
+        payload: CreateLoaiNghiPhepRequest,
+    ): Observable<LoaiNghiPhepModel> {
+        return this.http
+            .post<ApiResponse<LoaiNghiPhepModel> | LoaiNghiPhepModel>(
+                this.leaveTypeApiUrl,
+                payload,
+            )
+            .pipe(
+                map((response) => {
+                    const item = this.unwrapItem(response);
+
+                    if (!item) {
+                        throw new Error('Không nhận được loại nghỉ phép vừa tạo.');
+                    }
+
+                    return item;
+                }),
+            );
+    }
+
+    updateLeaveType(
+        maLoaiNP: number,
+        payload: UpdateLoaiNghiPhepRequest,
+    ): Observable<LoaiNghiPhepModel> {
+        const request: LoaiNghiPhepModel = {
+            maLoaiNP,
+            tenLoaiNP: payload.tenLoaiNP,
+            moTa: payload.moTa,
+        };
+
+        return this.http
+            .put<
+                ApiResponse<LoaiNghiPhepModel | null> |
+                LoaiNghiPhepModel |
+                null
+            >(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiNghiPhepById(maLoaiNP)}`,
+                request,
+            )
+            .pipe(
+                map((response) => {
+                    const item = this.unwrapItem(response);
+                    return item ?? request;
+                }),
+            );
+    }
+
+    deleteLeaveType(maLoaiNP: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiNghiPhepById(maLoaiNP)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
                 }),
             );
     }

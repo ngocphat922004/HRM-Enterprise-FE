@@ -3,15 +3,27 @@
         <section class="detail-heading">
             <div>
                 <p class="breadcrumb">
+                    @if (canViewEmployees) {
                     <a routerLink="/employees">
                         Nhân sự
                     </a>
+                    } @else {
+                    <span>
+                        Nhân sự
+                    </span>
+                    }
 
                     <span>/</span>
 
+                    @if (canViewPosition) {
                     <a routerLink="/positions">
                         Chức vụ
                     </a>
+                    } @else {
+                    <span>
+                        Chức vụ
+                    </span>
+                    }
 
                     <span>/</span>
 
@@ -59,6 +71,7 @@
             </div>
 
             <div class="detail-heading__actions">
+                @if (canViewPosition) {
                 <a class="back-button" routerLink="/positions">
                     <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -67,7 +80,9 @@
 
                     Quay lại
                 </a>
+                }
 
+                @if (canEditPosition) {
                 <button class="edit-button" type="button" (click)="editPosition()" [disabled]="
                         isLoading ||
                         isDeleting ||
@@ -83,14 +98,20 @@
 
                     Chỉnh sửa
                 </button>
+                }
 
+                @if (canDeletePosition) {
                 <button class="back-button" type="button" (click)="deletePosition()" [disabled]="
                         isLoading ||
                         isDeleting ||
                         positionId <= 0 ||
-                        position.employeeCount > 0 ||
+                        (
+                            canViewEmployees &&
+                            position.employeeCount > 0
+                        ) ||
                         !!errorMessage
                     " [title]="
+                        canViewEmployees &&
                         position.employeeCount > 0
                             ? 'Không thể xóa vì đang có nhân viên sử dụng chức vụ này'
                             : 'Xóa chức vụ'
@@ -110,6 +131,7 @@
                     Xóa
                     }
                 </button>
+                }
             </div>
         </section>
 
@@ -132,7 +154,7 @@
                 </strong>
 
                 <p>
-                    Hệ thống đang lấy thông tin chức vụ và danh sách nhân viên từ Backend.
+                    Hệ thống đang tải thông tin chức vụ và các dữ liệu liên quan được phép xem.
                 </p>
             </div>
         </section>
@@ -158,18 +180,21 @@
                     {{ errorMessage }}
                 </p>
 
-                @if (positionId > 0) {
+                @if (
+                positionId > 0 &&
+                canViewPosition
+                ) {
                 <button class="edit-button" type="button" (click)="retry()" [disabled]="isLoading">
                     Thử lại
                 </button>
-                } @else {
+                } @else if (canViewPosition) {
                 <a class="back-button" routerLink="/positions">
                     Về danh sách chức vụ
                 </a>
                 }
             </div>
         </section>
-        } @else {
+        } @else if (canViewPosition) {
         <div class="detail-grid">
             <div class="detail-main-column">
                 <section class="detail-card">
@@ -255,12 +280,35 @@
                         </div>
 
                         <span class="employee-count">
+                            @if (canViewEmployees) {
                             {{ position.employeeCount }}
                             nhân viên
+                            } @else {
+                            Không có quyền xem
+                            }
                         </span>
                     </header>
 
-                    @if (
+                    @if (!canViewEmployees) {
+                    <div class="empty-employees">
+                        <span aria-hidden="true">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 8v4"></path>
+                                <path d="M12 16h.01"></path>
+                            </svg>
+                        </span>
+
+                        <strong>
+                            Bạn không có quyền xem danh sách nhân viên
+                        </strong>
+
+                        <p>
+                            Hệ thống không gọi API nhân viên cho trang này.
+                        </p>
+                    </div>
+                    } @else if (
                     employees.length > 0
                     ) {
                     <div class="employee-table-wrapper">
@@ -395,12 +443,20 @@
                     </small>
 
                     <strong>
-                        {{ position.employeeCount }}
+                        {{
+                        canViewEmployees
+                        ? position.employeeCount
+                        : '—'
+                        }}
                     </strong>
 
                     <p>
-                        Tính trực tiếp từ NhanVien.MaCV =
+                        @if (canViewEmployees) {
+                        Tính từ dữ liệu nhân viên có MaCV =
                         {{ position.maCV }}
+                        } @else {
+                        Không tải dữ liệu nhân viên do thiếu quyền xem
+                        }
                     </p>
                 </section>
 
@@ -431,11 +487,15 @@
                         </li>
 
                         <li>
+                            @if (canViewEmployees) {
                             Danh sách nhân viên được xác định theo MaCV.
+                            } @else {
+                            Danh sách nhân viên không được tải vì tài khoản thiếu quyền NHAN_VIEN.xem.
+                            }
                         </li>
 
                         <li>
-                            Chức vụ đang có nhân viên sẽ không được xóa từ giao diện.
+                            Backend vẫn là nguồn kiểm tra cuối cùng khi thực hiện xóa chức vụ.
                         </li>
                     </ul>
                 </section>
@@ -456,7 +516,16 @@
                         </h2>
                     </header>
 
-                    @if (
+                    @if (!canDeletePosition) {
+                    <p>
+                        Bạn không có quyền xóa chức vụ.
+                    </p>
+                    } @else if (!canViewEmployees) {
+                    <p>
+                        Frontend không được phép tải danh sách nhân viên nên không xác định chức vụ có đang được sử dụng
+                        hay không. Backend sẽ kiểm tra điều kiện khi thực hiện xóa.
+                    </p>
+                    } @else if (
                     position.employeeCount > 0
                     ) {
                     <p>
@@ -468,12 +537,25 @@
                     </p>
                     } @else {
                     <p>
-                        Chức vụ hiện không có nhân viên sử dụng và có thể xóa khỏi hệ thống.
+                        Chưa tìm thấy nhân viên sử dụng chức vụ này trong dữ liệu đã tải. Backend vẫn kiểm tra lại khi
+                        xóa.
                     </p>
                     }
                 </section>
             </aside>
         </div>
+        } @else {
+        <section class="detail-card" role="alert">
+            <div class="empty-employees">
+                <strong>
+                    Không thể hiển thị chức vụ
+                </strong>
+
+                <p>
+                    Bạn không có quyền xem dữ liệu chức vụ.
+                </p>
+            </div>
+        </section>
         }
     </main>
 

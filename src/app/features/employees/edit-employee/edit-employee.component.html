@@ -1,8 +1,8 @@
 <section class="page-heading">
     <div>
-        @if (canManageEmployeeRecord) {
-        <p><a routerLink="/employees">Nhân viên</a><span>/</span>Chỉnh sửa</p>
-        <h1>Chỉnh sửa hồ sơ nhân viên</h1>
+        @if (canViewEmployees || canEditEmployees) {
+        <p><a routerLink="/employees">Nhân viên</a><span>/</span>{{ canEditEmployees ? 'Chỉnh sửa' : 'Chi tiết' }}</p>
+        <h1>{{ canEditEmployees ? 'Chỉnh sửa hồ sơ nhân viên' : 'Hồ sơ nhân viên' }}</h1>
         } @else {
         <p><a routerLink="/payroll">Bảng lương</a><span>/</span>Phụ cấp</p>
         <h1>Quản lý phụ cấp nhân viên</h1>
@@ -15,7 +15,7 @@
             Hủy
         </button>
 
-        @if (canManageEmployeeRecord && activeTab !== 'allowances') {
+        @if (canEditEmployees && activeTab !== 'allowances') {
         <button type="button" class="primary-button" (click)="saveChanges()"
             [disabled]="isLoading || isSaving || isDeleting || isSuspending || isAllowanceBusy || !employee.fullName.trim()">
             @if (isSaving) {
@@ -64,7 +64,7 @@
         <p>{{ employee.employeeCode }} <span>•</span> {{ positionName }} <span>•</span> {{ departmentName }}</p>
     </div>
 
-    @if (canManageEmployeeRecord) {
+    @if (canViewEmployees) {
     <div class="employee-contact-actions">
         <button type="button" (click)="sendEmail()" title="Gửi email" aria-label="Gửi email">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -100,7 +100,7 @@
     }
 </nav>
 
-@if (activeTab === 'personal' && canManageEmployeeRecord) {
+@if (activeTab === 'personal' && (canViewEmployees || canEditEmployees)) {
 <section class="content-grid">
     <div class="left-column">
         <article class="form-card">
@@ -108,15 +108,15 @@
             <div class="form-grid">
                 <label>
                     <span>Họ và tên <strong>*</strong></span>
-                    <input type="text" maxlength="100" [(ngModel)]="employee.fullName" />
+                    <input type="text" maxlength="100" [(ngModel)]="employee.fullName" [disabled]="!canEditEmployees" />
                 </label>
                 <label>
                     <span>Ngày sinh <strong>*</strong></span>
-                    <input type="date" [(ngModel)]="employee.dateOfBirth" />
+                    <input type="date" [(ngModel)]="employee.dateOfBirth" [disabled]="!canEditEmployees" />
                 </label>
                 <label>
                     <span>Giới tính <strong>*</strong></span>
-                    <select [(ngModel)]="employee.gender">
+                    <select [(ngModel)]="employee.gender" [disabled]="!canEditEmployees">
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                         <option value="Khác">Khác</option>
@@ -124,23 +124,28 @@
                 </label>
                 <label>
                     <span>CCCD</span>
-                    <input type="text" maxlength="20" [(ngModel)]="employee.identityNumber" />
+                    <input type="text" maxlength="20" [(ngModel)]="employee.identityNumber"
+                        [disabled]="!canEditEmployees" />
                 </label>
                 <label>
                     <span>Email</span>
-                    <input type="email" maxlength="100" [(ngModel)]="employee.personalEmail" />
+                    <input type="email" maxlength="100" [(ngModel)]="employee.personalEmail"
+                        [disabled]="!canEditEmployees" />
                 </label>
                 <label>
                     <span>Số điện thoại</span>
-                    <input type="tel" maxlength="15" [(ngModel)]="employee.phoneNumber" />
+                    <input type="tel" maxlength="15" [(ngModel)]="employee.phoneNumber"
+                        [disabled]="!canEditEmployees" />
                 </label>
                 <label class="form-field--full">
                     <span>Địa chỉ <strong>*</strong></span>
-                    <input type="text" maxlength="255" [(ngModel)]="employee.permanentAddress" />
+                    <input type="text" maxlength="255" [(ngModel)]="employee.permanentAddress"
+                        [disabled]="!canEditEmployees" />
                 </label>
                 <label class="form-field--full">
                     <span>Đường dẫn ảnh đại diện</span>
-                    <input type="text" maxlength="255" [(ngModel)]="employee.avatarPreview" />
+                    <input type="text" maxlength="255" [(ngModel)]="employee.avatarPreview"
+                        [disabled]="!canEditEmployees" />
                 </label>
             </div>
         </article>
@@ -157,7 +162,7 @@
         </article>
     </aside>
 </section>
-} @else if (activeTab === 'work' && canManageEmployeeRecord) {
+} @else if (activeTab === 'work' && (canViewEmployees || canEditEmployees)) {
 <section class="content-grid">
     <div class="left-column">
         <article class="form-card">
@@ -169,11 +174,11 @@
                 </label>
                 <label>
                     <span>Ngày vào làm <strong>*</strong></span>
-                    <input type="date" [(ngModel)]="employee.joinDate" />
+                    <input type="date" [(ngModel)]="employee.joinDate" [disabled]="!canEditEmployees" />
                 </label>
                 <label>
                     <span>Phòng ban</span>
-                    <select [(ngModel)]="employee.maPB">
+                    <select [(ngModel)]="employee.maPB" [disabled]="!canEditEmployees || !canViewDepartments">
                         <option [ngValue]="null">Chọn phòng ban</option>
                         @for (department of departments; track department.maPB) {
                         <option [ngValue]="department.maPB">{{ department.tenPB }}</option>
@@ -182,7 +187,7 @@
                 </label>
                 <label>
                     <span>Chức vụ</span>
-                    <select [(ngModel)]="employee.maCV">
+                    <select [(ngModel)]="employee.maCV" [disabled]="!canEditEmployees || !canViewPositions">
                         <option [ngValue]="null">Chọn chức vụ</option>
                         @for (position of positions; track position.maCV) {
                         <option [ngValue]="position.maCV">{{ position.tenCV }}</option>
@@ -191,7 +196,7 @@
                 </label>
                 <label>
                     <span>Trình độ</span>
-                    <select [(ngModel)]="employee.maTD">
+                    <select [(ngModel)]="employee.maTD" [disabled]="!canEditEmployees || !canViewQualifications">
                         <option [ngValue]="null">Chọn trình độ</option>
                         @for (qualification of qualifications; track qualification.maTD) {
                         <option [ngValue]="qualification.maTD">{{ qualification.tenTD }}</option>
@@ -214,9 +219,10 @@
         </article>
     </aside>
 </section>
-} @else if (activeTab === 'allowances' && canManageAllowances) {
+} @else if (activeTab === 'allowances' && canViewAllowances) {
 <section class="content-grid allowance-content-grid">
     <div class="left-column">
+        @if (canCreateAllowances || canEditAllowances) {
         <article class="form-card allowance-form-card">
             <div class="card-heading-row">
                 <div>
@@ -230,7 +236,7 @@
                 <label>
                     <span>Phụ cấp <strong>*</strong></span>
                     <select [(ngModel)]="allowanceForm.maPC"
-                        [disabled]="editingAllowanceId !== null || isAllowanceBusy">
+                        [disabled]="editingAllowanceId !== null || !canSelectAllowanceType">
                         <option [ngValue]="null">Chọn phụ cấp</option>
                         @for (allowance of availableAllowanceTypes; track allowance.maPC) {
                         <option [ngValue]="allowance.maPC">{{ allowance.tenPC }} - {{ allowance.soTien | number: '1.0-0'
@@ -241,19 +247,45 @@
 
                 <label>
                     <span>Ngày áp dụng <strong>*</strong></span>
-                    <input type="date" [(ngModel)]="allowanceForm.ngayApDung" [disabled]="isAllowanceBusy" />
+                    <input type="date" [(ngModel)]="allowanceForm.ngayApDung"
+                        [disabled]="isAllowanceBusy || allowanceLoadFailed || (editingAllowanceId === null ? !canCreateAllowances || hasNoAllowanceTypes || hasAssignedAllAllowanceTypes : !canEditAllowances)" />
                 </label>
 
                 @if (editingAllowanceId !== null) {
                 <label>
                     <span>Trạng thái <strong>*</strong></span>
-                    <select [(ngModel)]="allowanceForm.trangThai" [disabled]="isAllowanceBusy">
+                    <select [(ngModel)]="allowanceForm.trangThai"
+                        [disabled]="isAllowanceBusy || allowanceLoadFailed || !canEditAllowances">
                         <option [ngValue]="allowanceStatus.DANG_AP_DUNG">Đang áp dụng</option>
                         <option [ngValue]="allowanceStatus.NGUNG_AP_DUNG">Ngừng áp dụng</option>
                     </select>
                 </label>
                 }
             </div>
+
+            @if (isLoadingAllowances) {
+            <div class="allowance-message">Đang tải danh sách phụ cấp...</div>
+            } @else if (allowanceLoadFailed) {
+            <div class="allowance-message allowance-message--error" role="alert">
+                <span>{{ allowanceErrorMessage || 'Không thể tải danh sách phụ cấp.' }}</span>
+                <button type="button" class="secondary-button" (click)="retryAllowanceData()"
+                    [disabled]="isAllowanceBusy">
+                    Thử lại
+                </button>
+            </div>
+            } @else if (hasNoAllowanceTypes) {
+            <div class="allowance-message">
+                Hiện chưa có loại phụ cấp nào để gán.
+            </div>
+            } @else if (hasAssignedAllAllowanceTypes) {
+            <div class="allowance-message">
+                Nhân viên đã được gán tất cả các loại phụ cấp hiện có.
+            </div>
+            } @else if (allowanceErrorMessage) {
+            <div class="allowance-message allowance-message--error" role="alert">
+                {{ allowanceErrorMessage }}
+            </div>
+            }
 
             <div class="allowance-form-actions">
                 @if (editingAllowanceId !== null) {
@@ -262,7 +294,11 @@
                     Hủy chỉnh sửa
                 </button>
                 }
-                <button type="button" class="primary-button" (click)="saveAllowance()" [disabled]="isAllowanceBusy">
+                @if (
+                (editingAllowanceId === null && canCreateAllowances) ||
+                (editingAllowanceId !== null && canEditAllowances)
+                ) {
+                <button type="button" class="primary-button" (click)="saveAllowance()" [disabled]="!canSaveAllowance">
                     @if (isSavingAllowance) {
                     <span class="spinner" aria-hidden="true"></span>
                     Đang lưu...
@@ -270,7 +306,130 @@
                     {{ editingAllowanceId === null ? 'Gán phụ cấp' : 'Lưu phụ cấp' }}
                     }
                 </button>
+                }
             </div>
+        </article>
+        }
+
+        <article class="allowance-table-card">
+            <div class="allowance-table-card__header">
+                <div>
+                    <h2>Danh mục phụ cấp</h2>
+                    <p>{{ allowanceTypes.length }} loại phụ cấp trong hệ thống</p>
+                </div>
+
+                @if (canManageAllowanceTypes) {
+                <button type="button" class="secondary-button" (click)="startCreateAllowanceType()"
+                    [disabled]="isAllowanceBusy">
+                    Thêm mới
+                </button>
+                }
+            </div>
+
+            @if (canManageAllowanceTypes) {
+            <div class="form-grid allowance-form-grid">
+                <label>
+                    <span>Tên phụ cấp <strong>*</strong></span>
+                    <input type="text" [(ngModel)]="allowanceTypeForm.tenPC" maxlength="100"
+                        placeholder="Ví dụ: Phụ cấp ăn trưa"
+                        [disabled]="isAllowanceTypeBusy || isLoadingAllowances || allowanceLoadFailed" />
+                </label>
+
+                <label>
+                    <span>Số tiền <strong>*</strong></span>
+                    <input type="number" [(ngModel)]="allowanceTypeForm.soTien" min="0" step="1000" placeholder="0"
+                        [disabled]="isAllowanceTypeBusy || isLoadingAllowances || allowanceLoadFailed" />
+                </label>
+
+                <label class="full-width">
+                    <span>Mô tả</span>
+                    <textarea [(ngModel)]="allowanceTypeForm.moTa" maxlength="255" rows="3"
+                        placeholder="Mô tả ngắn về khoản phụ cấp"
+                        [disabled]="isAllowanceTypeBusy || isLoadingAllowances || allowanceLoadFailed"></textarea>
+                </label>
+            </div>
+
+            @if (allowanceTypeErrorMessage) {
+            <div class="allowance-message allowance-message--error" role="alert">
+                {{ allowanceTypeErrorMessage }}
+            </div>
+            }
+
+            <div class="allowance-form-actions">
+                @if (editingAllowanceTypeId !== null) {
+                <button type="button" class="secondary-button" (click)="cancelAllowanceTypeEdit()"
+                    [disabled]="isAllowanceTypeBusy">
+                    Hủy chỉnh sửa
+                </button>
+                }
+
+                <button type="button" class="primary-button" (click)="saveAllowanceType()"
+                    [disabled]="!canSaveAllowanceType">
+                    @if (isSavingAllowanceType) {
+                    <span class="spinner" aria-hidden="true"></span>
+                    Đang lưu...
+                    } @else {
+                    {{ editingAllowanceTypeId === null ? 'Thêm phụ cấp' : 'Lưu thay đổi' }}
+                    }
+                </button>
+            </div>
+            }
+
+            @if (isLoadingAllowances) {
+            <div class="allowance-message">Đang tải danh mục phụ cấp...</div>
+            } @else if (allowanceLoadFailed) {
+            <div class="allowance-message allowance-message--error" role="alert">
+                <span>{{ allowanceErrorMessage || 'Không thể tải danh mục phụ cấp.' }}</span>
+                <button type="button" class="secondary-button" (click)="retryAllowanceData()"
+                    [disabled]="isAllowanceBusy">
+                    Thử lại
+                </button>
+            </div>
+            } @else if (allowanceTypes.length === 0) {
+            <div class="allowance-message">
+                Chưa có danh mục phụ cấp nào.
+            </div>
+            } @else {
+            <div class="allowance-table-wrapper">
+                <table class="allowance-table">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Tên phụ cấp</th>
+                            <th>Số tiền</th>
+                            <th>Mô tả</th>
+                            @if (canManageAllowanceTypes) {
+                            <th class="allowance-action-column">Thao tác</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (allowance of allowanceTypes; track allowance.maPC) {
+                        <tr>
+                            <td>PC-{{ allowance.maPC }}</td>
+                            <td><strong>{{ allowance.tenPC }}</strong></td>
+                            <td>{{ allowance.soTien | number: '1.0-0' }} ₫</td>
+                            <td>{{ allowance.moTa || 'Chưa có mô tả' }}</td>
+                            @if (canManageAllowanceTypes) {
+                            <td class="allowance-action-column">
+                                <div class="allowance-row-actions">
+                                    <button type="button" (click)="editAllowanceType(allowance)"
+                                        [disabled]="isAllowanceBusy">
+                                        Sửa
+                                    </button>
+                                    <button type="button" class="allowance-delete-action"
+                                        (click)="deleteAllowanceType(allowance)" [disabled]="isAllowanceBusy">
+                                        {{ deletingAllowanceTypeId === allowance.maPC ? 'Đang xóa...' : 'Xóa' }}
+                                    </button>
+                                </div>
+                            </td>
+                            }
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            }
         </article>
 
         <article class="allowance-table-card">
@@ -281,10 +440,16 @@
                 </div>
             </div>
 
-            @if (allowanceErrorMessage) {
-            <div class="allowance-message allowance-message--error">{{ allowanceErrorMessage }}</div>
-            } @else if (isLoadingAllowances) {
+            @if (isLoadingAllowances) {
             <div class="allowance-message">Đang tải phụ cấp...</div>
+            } @else if (allowanceLoadFailed) {
+            <div class="allowance-message allowance-message--error" role="alert">
+                <span>{{ allowanceErrorMessage || 'Không thể tải phụ cấp của nhân viên.' }}</span>
+                <button type="button" class="secondary-button" (click)="retryAllowanceData()"
+                    [disabled]="isAllowanceBusy">
+                    Thử lại
+                </button>
+            </div>
             } @else if (employeeAllowances.length === 0) {
             <div class="allowance-message">Nhân viên chưa có phụ cấp.</div>
             } @else {
@@ -296,7 +461,9 @@
                             <th>Số tiền</th>
                             <th>Ngày áp dụng</th>
                             <th>Trạng thái</th>
+                            @if (canEditAllowances || canDeleteAllowances) {
                             <th class="allowance-action-column">Thao tác</th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
@@ -316,18 +483,24 @@
                                     {{ allowance.trangThai }}
                                 </span>
                             </td>
+                            @if (canEditAllowances || canDeleteAllowances) {
                             <td class="allowance-action-column">
                                 <div class="allowance-row-actions">
+                                    @if (canEditAllowances) {
                                     <button type="button" (click)="editAllowance(allowance)"
                                         [disabled]="isAllowanceBusy">
                                         Sửa
                                     </button>
+                                    }
+                                    @if (canDeleteAllowances) {
                                     <button type="button" class="allowance-delete-action"
                                         (click)="deleteAllowance(allowance)" [disabled]="isAllowanceBusy">
                                         {{ deletingAllowanceId === allowance.maPC ? 'Đang xóa...' : 'Xóa' }}
                                     </button>
+                                    }
                                 </div>
                             </td>
+                            }
                         </tr>
                         }
                     </tbody>
@@ -356,16 +529,21 @@
 }
 
 <footer class="employee-footer">
-    @if (canManageEmployeeRecord) {
+    @if (canDeleteEmployees || canEditEmployees) {
     <div>
+        @if (canDeleteEmployees) {
         <button class="delete-button" type="button" (click)="deleteEmployee()"
             [disabled]="isLoading || isSaving || isDeleting || isSuspending || isAllowanceBusy">
             {{ isDeleting ? 'Đang xóa...' : 'Xóa nhân viên' }}
         </button>
+        }
+
+        @if (canEditEmployees) {
         <button class="suspend-button" type="button" (click)="suspendEmployee()"
             [disabled]="isLoading || isSaving || isDeleting || isSuspending || isAllowanceBusy || employee.status !== 'working'">
             {{ isSuspending ? 'Đang cập nhật...' : employee.status === 'on-leave' ? 'Đang tạm nghỉ' : 'Tạm nghỉ' }}
         </button>
+        }
     </div>
     }
     <small>Mã hồ sơ: {{ employee.employeeCode }}</small>

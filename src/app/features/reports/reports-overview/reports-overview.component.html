@@ -15,6 +15,7 @@
         </p>
     </div>
 
+    @if (canViewReports) {
     <div class="reports-heading__actions">
         <button class="secondary-action-button" type="button" (click)="printReport()" [disabled]="
                             isLoading ||
@@ -47,6 +48,7 @@
             Xuất Excel
         </button>
     </div>
+    }
 </section>
 
 <section class="report-filter-card">
@@ -111,6 +113,7 @@
             </select>
         </label>
 
+        @if (canViewEmployees && canViewDepartments) {
         <label class="filter-field">
             <span>
                 Phòng ban
@@ -131,6 +134,7 @@
                 }
             </select>
         </label>
+        }
 
         <div class="filter-actions">
             <button class="filter-reset-button" type="button" (click)="resetFilters()" [disabled]="isLoading">
@@ -156,7 +160,11 @@
         <i aria-hidden="true"></i>
 
         <span>
+            @if (canViewEmployees && canViewDepartments) {
             {{ selectedDepartmentName }}
+            } @else {
+            Phạm vi dữ liệu được phép
+            }
         </span>
 
     </div>
@@ -171,9 +179,8 @@
     </h2>
 
     <p>
-        Đang lấy dữ liệu nhân viên,
-        phòng ban, chấm công, nghỉ phép,
-        bảng lương và quyết định.
+        Đang lấy các nguồn dữ liệu
+        mà tài khoản của bạn được phép xem.
     </p>
 </section>
 
@@ -231,10 +238,14 @@
             </span>
 
             <strong>
+                @if (canViewEmployees) {
                 {{
                 stats.tongNhanVien
                 | number
                 }}
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -259,10 +270,14 @@
             </span>
 
             <strong>
+                @if (canViewDepartments) {
                 {{
                 stats.tongPhongBan
                 | number
                 }}
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -287,10 +302,14 @@
             </span>
 
             <strong>
+                @if (canViewAttendance && canViewEmployees) {
                 {{
                 attendanceRate
                 | number: '1.0-1'
                 }}%
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -319,10 +338,14 @@
             </span>
 
             <strong>
+                @if (canViewLeave && canViewEmployees) {
                 {{
                 stats.donNghiChoDuyet
                 | number
                 }}
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -351,11 +374,15 @@
             </span>
 
             <strong>
+                @if (canViewPayroll && canViewEmployees) {
                 {{
                 stats.tongQuyLuong
                 | number: '1.0-0'
                 }}
                 đ
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -380,11 +407,15 @@
             </span>
 
             <strong>
+                @if (canViewRewardsDiscipline && canViewEmployees) {
                 {{
                 decisionSummary
                 .tongKhenThuong
                 | number
                 }}
+                } @else {
+                —
+                }
             </strong>
 
         </div>
@@ -439,6 +470,7 @@
             </span>
         </header>
 
+        @if (canViewPayroll && canViewEmployees) {
         <div class="payroll-summary-list">
             <div>
                 <span>
@@ -518,6 +550,13 @@
                 đ
             </strong>
         </div>
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu quỹ lương
+            </strong>
+        </div>
+        }
     </article>
 
     <article class="
@@ -546,6 +585,7 @@
             </span>
         </header>
 
+        @if (canViewAttendance && canViewEmployees) {
         <div class="attendance-rate">
             <div class="attendance-rate__value">
                 <strong>
@@ -566,6 +606,13 @@
                                     "></span>
             </div>
         </div>
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu chấm công
+            </strong>
+        </div>
+        }
 
     </article>
 
@@ -597,6 +644,7 @@
             </span>
         </header>
 
+        @if (canViewRewardsDiscipline && canViewEmployees) {
         <div class="decision-summary-grid">
             <div class="
                                     decision-summary-item
@@ -650,6 +698,13 @@
                 </small>
             </div>
         </div>
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu khen thưởng, kỷ luật
+            </strong>
+        </div>
+        }
     </article>
 </section>
 
@@ -681,6 +736,10 @@
             </span>
         </header>
 
+        @if (
+        canViewEmployees &&
+        (canViewPayroll || canViewAttendance || canViewLeave)
+        ) {
         @if (
         monthlyPoints.length > 0
         ) {
@@ -732,6 +791,13 @@
             </span>
         </div>
         }
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu nguồn cho biểu đồ này
+            </strong>
+        </div>
+        }
     </article>
 
     <article class="
@@ -763,6 +829,7 @@
             </span>
         </header>
 
+        @if (canViewEmployees && canViewDepartments) {
         @if (
         departmentRows.length > 0
         ) {
@@ -816,9 +883,17 @@
             </span>
         </div>
         }
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu nhân sự theo phòng ban
+            </strong>
+        </div>
+        }
     </article>
 </section>
 
+@if (canViewEmployees && canViewDepartments) {
 <section class="department-report-card">
     <header class="department-report-card__header">
         <div>
@@ -854,6 +929,7 @@
                         Đang làm việc
                     </th>
 
+                    @if (canViewPayroll) {
                     <th>
                         Tổng ngày công
                     </th>
@@ -861,6 +937,7 @@
                     <th>
                         Tổng thực lĩnh
                     </th>
+                    }
                 </tr>
             </thead>
 
@@ -903,6 +980,7 @@
                         }}
                     </td>
 
+                    @if (canViewPayroll) {
                     <td>
                         {{
                         department
@@ -919,11 +997,12 @@
                         }}
                         đ
                     </td>
+                    }
                 </tr>
 
                 } @empty {
                 <tr>
-                    <td colspan="5">
+                    <td [attr.colspan]="canViewPayroll ? 5 : 3">
                         <div class="table-empty-state">
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -950,6 +1029,7 @@
         </table>
     </div>
 </section>
+}
 }
 
 @if (toastMessage) {

@@ -21,11 +21,21 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     TAI_KHOAN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
+
+import {
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     QuyenService,
@@ -102,6 +112,10 @@ export class AccountDetailComponent
     toastMessage =
         '';
 
+    private currentRole:
+        RoleKey | null =
+        null;
+
     private toastTimer:
         ReturnType<
             typeof setTimeout
@@ -127,6 +141,9 @@ export class AccountDetailComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -134,7 +151,13 @@ export class AccountDetailComponent
     ngOnInit():
         void {
 
-        this.readRouteId();
+        this.currentRole =
+            resolveUserRole(
+                this.storageService
+                    .getCurrentUser(),
+            );
+
+        this.loadPermissions();
     }
 
     ngOnDestroy():
@@ -148,6 +171,51 @@ export class AccountDetailComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get canViewAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canEditAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canDeleteAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewRoles():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    private get isAdmin():
+        boolean {
+
+        return (
+            this.currentRole ===
+            'admin'
+        );
     }
 
     get accountCode():
@@ -225,6 +293,7 @@ export class AccountDetailComponent
         void {
 
         if (
+            !this.canEditAccounts ||
             this.accountId ===
             null ||
 
@@ -251,6 +320,7 @@ export class AccountDetailComponent
         void {
 
         if (
+            !this.canViewEmployees ||
             !this.account ||
             this.isLoading ||
             this.isDeleting
@@ -270,6 +340,7 @@ export class AccountDetailComponent
         void {
 
         if (
+            !this.canDeleteAccounts ||
             !this.account ||
             this.accountId === null ||
             this.isLoading ||
@@ -322,6 +393,7 @@ export class AccountDetailComponent
         void {
 
         if (
+            !this.canViewAccounts ||
             this.accountId ===
             null ||
 
@@ -387,6 +459,30 @@ export class AccountDetailComponent
             .toUpperCase();
     }
 
+    private loadPermissions():
+        void {
+
+        if (
+            !this.isAdmin
+        ) {
+            this.accountId =
+                null;
+
+            this.account =
+                null;
+
+            this.errorMessage =
+                'Chỉ Quản trị viên được phép xem chi tiết tài khoản.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.readRouteId();
+    }
+
     private readRouteId():
         void {
 
@@ -438,6 +534,7 @@ export class AccountDetailComponent
         void {
 
         if (
+            !this.canViewAccounts ||
             this.accountId ===
             null
         ) {
@@ -460,16 +557,25 @@ export class AccountDetailComponent
                     ),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                (
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
             roles:
-                this.quyenService
-                    .getAll(),
+                this.canViewRoles
+                    ? this.quyenService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -566,46 +672,81 @@ export class AccountDetailComponent
                             account.maQuyen,
 
                         tenQuyen:
-                            role
-                                ?.tenQuyen ??
-                            account
-                                .tenQuyen ??
-                            `Quyền #${account.maQuyen}`,
+                            this.canViewRoles
+                                ? (
+                                    role
+                                        ?.tenQuyen ??
+                                    account
+                                        .tenQuyen ??
+                                    `Quyền #${account.maQuyen}`
+                                )
+                                : (
+                                    account
+                                        .tenQuyen ??
+                                    `Quyền #${account.maQuyen}`
+                                ),
 
                         trangThai:
                             account.trangThai,
 
                         hoTen:
-                            employee
-                                ?.hoTen ??
-                            `Nhân viên #${account.maNV}`,
+                            this.canViewEmployees
+                                ? (
+                                    employee
+                                        ?.hoTen ??
+                                    `Nhân viên #${account.maNV}`
+                                )
+                                : `NV-${String(account.maNV).padStart(4, '0')}`,
 
                         email:
-                            employeeExtra
-                                ?.email ??
-                            null,
+                            this.canViewEmployees
+                                ? (
+                                    employeeExtra
+                                        ?.email ??
+                                    null
+                                )
+                                : null,
 
                         sdt:
-                            employeeExtra
-                                ?.sdt ??
-                            null,
+                            this.canViewEmployees
+                                ? (
+                                    employeeExtra
+                                        ?.sdt ??
+                                    null
+                                )
+                                : null,
 
                         hinhAnh:
-                            employeeExtra
-                                ?.hinhAnh ??
-                            null,
+                            this.canViewEmployees
+                                ? (
+                                    employeeExtra
+                                        ?.hinhAnh ??
+                                    null
+                                )
+                                : null,
 
                         tenPB:
-                            department
-                                ?.tenPB ??
-                            employeeExtra
-                                ?.tenPB ??
-                            null,
+                            (
+                                this.canViewEmployees &&
+                                this.canViewDepartments
+                            )
+                                ? (
+                                    department
+                                        ?.tenPB ??
+                                    employeeExtra
+                                        ?.tenPB ??
+                                    null
+                                )
+                                : null,
 
                         tenCV:
-                            employeeExtra
-                                ?.tenCV ??
-                            null,
+                            this.canViewEmployees
+                                ? (
+                                    employeeExtra
+                                        ?.tenCV ??
+                                    null
+                                )
+                                : null,
                     };
 
                     this.account =
@@ -619,6 +760,9 @@ export class AccountDetailComponent
                     error:
                         HttpErrorResponse,
                 ) => {
+                    this.account =
+                        null;
+
                     this.errorMessage =
                         this.getApiErrorMessage(
                             error,

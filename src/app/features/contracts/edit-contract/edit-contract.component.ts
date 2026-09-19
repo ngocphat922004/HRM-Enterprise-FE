@@ -15,11 +15,24 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     HOP_DONG_TRANG_THAI,
 } from '../../../core/constants/status.constants';
+
+import {
+    canManageContracts,
+    canViewContracts as canViewContractsForRole,
+    canViewEmployeeDirectory,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     NhanVienService,
@@ -109,11 +122,111 @@ export class EditContractComponent
         private readonly nhanVienService:
             NhanVienService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
+        this.loadPermissions();
+    }
+    get canViewContracts(): boolean {
+        return canViewContractsForRole(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canEditContract(): boolean {
+        return canManageContracts(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canUseContractForm(): boolean {
+        return (
+            this.canViewContracts &&
+            this.canEditContract
+        );
+    }
+
+    retryLoad(): void {
+        if (
+            this.isLoading ||
+            this.isSaving
+        ) {
+            return;
+        }
+
+        this.loadPermissions();
+    }
+
+    private loadPermissions(): void {
+        this.errorMessage =
+            '';
+
+        if (
+            !this.canEditContract
+        ) {
+            this.resetFormData();
+
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền chỉnh sửa hợp đồng.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            !this.canViewContracts
+        ) {
+            this.resetFormData();
+
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn cần quyền xem hợp đồng để tải dữ liệu cần chỉnh sửa.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            !this.canViewEmployees
+        ) {
+            this.resetFormData();
+
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền xem danh sách nhân viên để chỉnh sửa hợp đồng.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.readRouteId();
+    }
+
+    private readRouteId(): void {
         const rawId =
             this.route.snapshot
                 .paramMap
@@ -128,8 +241,16 @@ export class EditContractComponent
             ) ||
             contractId <= 0
         ) {
+            this.form.maHD =
+                0;
+
+            this.resetFormData();
+
             this.errorMessage =
                 'Mã hợp đồng không hợp lệ.';
+
+            this.changeDetectorRef
+                .markForCheck();
 
             return;
         }
@@ -139,8 +260,10 @@ export class EditContractComponent
 
         this.loadContractData();
     }
+
     loadContractData(): void {
         if (
+            !this.canUseContractForm ||
             this.form.maHD <=
             0
         ) {
@@ -158,8 +281,10 @@ export class EditContractComponent
                     ),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
             contractTypes:
                 this.hopDongService
@@ -242,21 +367,6 @@ export class EditContractComponent
 
                     this.updateSelectedNames();
 
-                    console.log(
-                        'CONTRACT DETAIL:',
-                        contract,
-                    );
-
-                    console.log(
-                        'EMPLOYEE OPTIONS:',
-                        this.employees,
-                    );
-
-                    console.log(
-                        'CONTRACT TYPE OPTIONS:',
-                        this.contractTypes,
-                    );
-
                     this.changeDetectorRef
                         .markForCheck();
                 },
@@ -265,11 +375,6 @@ export class EditContractComponent
                     error:
                         HttpErrorResponse,
                 ) => {
-
-                    console.error(
-                        'LOAD EDIT CONTRACT ERROR:',
-                        error,
-                    );
 
                     if (
                         error.status ===
@@ -392,6 +497,7 @@ export class EditContractComponent
         boolean {
 
         return (
+            !this.canUseContractForm ||
             this.isEmployeeInvalid ||
             this
                 .isContractTypeInvalid ||
@@ -417,17 +523,48 @@ export class EditContractComponent
     }
 
     cancel(): void {
+        if (
+            this.isSaving
+        ) {
+            return;
+        }
+
+        if (
+            this.canViewContracts &&
+            this.form.maHD > 0
+        ) {
+            void this.router
+                .navigate([
+                    '/contracts',
+                    this.form.maHD,
+                ]);
+
+            return;
+        }
+
+        if (
+            this.canViewContracts
+        ) {
+            void this.router
+                .navigate([
+                    '/contracts',
+                ]);
+
+            return;
+        }
+
         void this.router
             .navigate([
-                '/contracts',
-                this.form.maHD,
+                '/dashboard',
             ]);
     }
     saveChanges(): void {
         this.submitted = true;
 
         if (
+            !this.canUseContractForm ||
             this.isFormInvalid ||
+            this.isLoading ||
             this.isSaving
         ) {
             this.changeDetectorRef
@@ -475,11 +612,6 @@ export class EditContractComponent
                     .trangThai,
         };
 
-        console.log(
-            'UPDATE CONTRACT PAYLOAD:',
-            payload,
-        );
-
         this.isSaving = true;
 
         this.hopDongService
@@ -500,11 +632,6 @@ export class EditContractComponent
                 next: (
                     contract,
                 ) => {
-
-                    console.log(
-                        'UPDATE CONTRACT SUCCESS:',
-                        contract,
-                    );
 
                     this.form = {
                         maHD:
@@ -543,11 +670,22 @@ export class EditContractComponent
 
                     window.setTimeout(
                         () => {
+                            if (
+                                this.canViewContracts
+                            ) {
+                                void this.router
+                                    .navigate([
+                                        '/contracts',
+                                        this.form
+                                            .maHD,
+                                    ]);
+
+                                return;
+                            }
+
                             void this.router
                                 .navigate([
-                                    '/contracts',
-                                    this.form
-                                        .maHD,
+                                    '/dashboard',
                                 ]);
                         },
                         700,
@@ -558,11 +696,6 @@ export class EditContractComponent
                     error:
                         HttpErrorResponse,
                 ) => {
-
-                    console.error(
-                        'UPDATE CONTRACT ERROR:',
-                        error,
-                    );
 
                     if (
                         error.status ===
@@ -660,8 +793,14 @@ export class EditContractComponent
                 );
 
         this.selectedEmployeeName =
-            employee?.hoTen ??
-            '';
+            this.canViewEmployees
+                ? employee?.hoTen ?? ''
+                : (
+                    this.form.maNV !==
+                        null
+                        ? `Nhân viên #${this.form.maNV}`
+                        : ''
+                );
 
         const contractType =
             this.contractTypes
@@ -678,6 +817,57 @@ export class EditContractComponent
             contractType
                 ?.tenLoaiHD ??
             '';
+    }
+
+    private resetFormData(): void {
+        const currentContractId =
+            this.form.maHD;
+
+        this.employees = [];
+
+        this.contractTypes = [];
+
+        this.form = {
+            maHD:
+                currentContractId,
+
+            maNV:
+                null,
+
+            maLoaiHD:
+                null,
+
+            ngayBatDau:
+                '',
+
+            ngayKetThuc:
+                '',
+
+            luongCoBan:
+                null,
+
+            trangThai:
+                HOP_DONG_TRANG_THAI
+                    .CON_HIEU_LUC,
+        };
+
+        this.selectedEmployeeName =
+            '';
+
+        this.selectedContractTypeName =
+            '';
+
+        this.submitted =
+            false;
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private getApiErrorMessage(

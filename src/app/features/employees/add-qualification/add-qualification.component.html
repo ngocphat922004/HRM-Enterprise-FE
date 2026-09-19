@@ -3,14 +3,24 @@
         <section class="qualification-form-heading">
             <div>
                 <p class="breadcrumb">
-                    <a routerLink="/employees">Nhân sự</a>
+                    <span>Nhân sự</span>
                     <span>/</span>
+                    @if (canViewQualification) {
                     <a routerLink="/qualifications">Trình độ</a>
+                    } @else {
+                    <span>Trình độ</span>
+                    }
                     <span>/</span>
                     Thêm mới
                 </p>
 
                 <h1>Thêm trình độ mới</h1>
+
+                @if (!isLoading && !canCreateQualification) {
+                <p class="qualification-form-heading__description">
+                    Tài khoản hiện tại không có quyền thêm trình độ.
+                </p>
+                }
 
                 <p class="qualification-form-heading__description">
                     Tạo trình độ mới để sử dụng trong hồ sơ nhân viên.
@@ -22,7 +32,12 @@
                     Hủy bỏ
                 </button>
 
-                <button class="save-button" type="submit" form="add-qualification-form" [disabled]="isSaving">
+                <button class="save-button" type="submit" form="add-qualification-form" [disabled]="
+                    !canUseQualificationForm ||
+                    isLoading ||
+                    isSaving ||
+                    !!errorMessage
+                ">
                     @if (isSaving) {
                     <span class="spinner" aria-hidden="true"></span>
                     Đang lưu...
@@ -39,6 +54,42 @@
             </div>
         </section>
 
+        @if (isLoading) {
+        <section class="qualification-form-card">
+            <div class="empty-state">
+                <span class="spinner spinner--primary" aria-hidden="true"></span>
+                <strong>Đang kiểm tra quyền tạo trình độ...</strong>
+            </div>
+        </section>
+        } @else if (
+        errorMessage &&
+        !canUseQualificationForm
+        ) {
+        <section class="qualification-form-card">
+            <div class="empty-state" role="alert">
+                <svg class="lucide-icon empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 8v4"></path>
+                    <path d="M12 16h.01"></path>
+                </svg>
+
+                <strong>Không thể tạo trình độ</strong>
+                <p>{{ errorMessage }}</p>
+
+                <div class="heading-actions">
+                    <button class="cancel-button" type="button" (click)="cancel()">
+                        Quay lại
+                    </button>
+
+                    <button class="save-button" type="button" (click)="retryPermissions()"
+                        [disabled]="isLoading || isSaving">
+                        Thử lại quyền
+                    </button>
+                </div>
+            </div>
+        </section>
+        } @else if (canUseQualificationForm) {
         <div class="qualification-form-layout">
             <form id="add-qualification-form" class="qualification-form-card" (ngSubmit)="save()" novalidate>
                 <section class="form-section">
@@ -73,7 +124,10 @@
                             </span>
 
                             <input type="text" [(ngModel)]="form.tenTD" name="tenTD" [class.input-invalid]="nameInvalid"
-                                maxlength="100" placeholder="Ví dụ: Đại học" autocomplete="off" />
+                                maxlength="100" placeholder="Ví dụ: Đại học" autocomplete="off" [disabled]="
+                                    !canUseQualificationForm ||
+                                    isSaving
+                                " />
 
                             @if (nameInvalid) {
                             <p class="field-error">Vui lòng nhập tên trình độ.</p>
@@ -84,6 +138,15 @@
                     </div>
                 </section>
             </form>
+
+            @if (errorMessage) {
+            <section class="qualification-form-card" role="alert">
+                <div class="empty-state">
+                    <strong>Không thể lưu trình độ</strong>
+                    <p>{{ errorMessage }}</p>
+                </div>
+            </section>
+            }
 
             <aside class="qualification-guide-card">
                 <header class="qualification-guide-card__heading">
@@ -105,6 +168,17 @@
                 </ul>
             </aside>
         </div>
+        } @else {
+        <section class="qualification-form-card">
+            <div class="empty-state" role="alert">
+                <strong>Không thể tạo trình độ</strong>
+                <p>Bạn không có quyền thêm trình độ.</p>
+                <button class="cancel-button" type="button" (click)="cancel()">
+                    Quay lại
+                </button>
+            </div>
+        </section>
+        }
     </main>
 
     @if (toastMessage) {

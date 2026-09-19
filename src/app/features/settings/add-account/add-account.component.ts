@@ -24,12 +24,22 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     TAI_KHOAN_TRANG_THAI,
     TaiKhoanTrangThai,
 } from '../../../core/constants/status.constants';
+
+import {
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     CreateTaiKhoanRequest,
@@ -161,6 +171,10 @@ export class AddAccountComponent
         null =
         null;
 
+    private currentRole:
+        RoleKey | null =
+        null;
+
     private toastTimer:
         ReturnType<
             typeof setTimeout
@@ -183,6 +197,9 @@ export class AddAccountComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -190,7 +207,13 @@ export class AddAccountComponent
     ngOnInit():
         void {
 
-        this.loadFormData();
+        this.currentRole =
+            resolveUserRole(
+                this.storageService
+                    .getCurrentUser(),
+            );
+
+        this.loadPermissions();
     }
 
     ngOnDestroy():
@@ -204,6 +227,51 @@ export class AddAccountComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get canCreateAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewRoles():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canUseAccountForm():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    private get isAdmin():
+        boolean {
+
+        return (
+            this.currentRole ===
+            'admin'
+        );
     }
 
     get availableEmployees():
@@ -390,6 +458,7 @@ export class AddAccountComponent
         void {
 
         if (
+            !this.canCreateAccounts ||
             this.isLoadingData ||
             this.isSaving
         ) {
@@ -426,6 +495,7 @@ export class AddAccountComponent
             '';
 
         if (
+            !this.canUseAccountForm ||
             this.isSaving ||
             this.isLoadingData
         ) {
@@ -533,7 +603,8 @@ export class AddAccountComponent
                         () => {
 
                             if (
-                                createdId
+                                createdId &&
+                                this.canViewAccounts
                             ) {
 
                                 void this.router
@@ -625,8 +696,42 @@ export class AddAccountComponent
             .toUpperCase();
     }
 
+    private loadPermissions():
+        void {
+
+        if (
+            !this.isAdmin
+        ) {
+            this.employees =
+                [];
+
+            this.roles =
+                [];
+
+            this.existingUsernames =
+                new Set();
+
+            this.loadError =
+                'Chỉ Quản trị viên được phép tạo tài khoản.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.loadFormData();
+    }
+
     private loadFormData():
         void {
+
+        if (
+            !this.canCreateAccounts ||
+            this.isLoadingData
+        ) {
+            return;
+        }
 
         this.isLoadingData =
             true;
@@ -637,20 +742,31 @@ export class AddAccountComponent
         forkJoin({
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                (
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
             roles:
-                this.quyenService
-                    .getAll(),
+                this.canViewRoles
+                    ? this.quyenService
+                        .getAll()
+                    : of([]),
 
             accounts:
-                this.taiKhoanService
-                    .getAll(),
+                this.canViewAccounts
+                    ? this.taiKhoanService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -819,6 +935,30 @@ export class AddAccountComponent
                             null;
                     }
 
+                    if (
+                        !this.canViewEmployees &&
+                        !this.canViewRoles
+                    ) {
+                        this.loadError =
+                            'Bạn cần quyền xem nhân viên và quyền để tạo tài khoản.';
+
+                    } else if (
+                        !this.canViewEmployees
+                    ) {
+                        this.loadError =
+                            'Bạn cần quyền xem nhân viên để chọn nhân viên cho tài khoản.';
+
+                    } else if (
+                        !this.canViewRoles
+                    ) {
+                        this.loadError =
+                            'Bạn cần quyền xem quyền để chọn quyền cho tài khoản.';
+
+                    } else {
+                        this.loadError =
+                            '';
+                    }
+
                     this.changeDetectorRef
                         .markForCheck();
                 },
@@ -859,6 +999,8 @@ export class AddAccountComponent
                 .trim();
 
         return (
+            this.canUseAccountForm &&
+
             username.length >=
             4 &&
 

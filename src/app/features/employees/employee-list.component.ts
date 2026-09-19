@@ -16,8 +16,12 @@ import {
 import { finalize, forkJoin, of } from 'rxjs';
 
 import {
-    MA_QUYEN,
-} from '../../core/constants/role.constants';
+    canManageEmployees as canManageEmployeeRecords,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../core/guards/role.guard';
 import {
     NHAN_VIEN_TRANG_THAI,
 } from '../../core/constants/status.constants';
@@ -71,7 +75,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     loadError = '';
     isLoading = false;
 
-    currentRoleId = 0;
+    currentRole: RoleKey | null = null;
     managerDepartmentId: number | null = null;
 
     employees: Employee[] = [];
@@ -96,8 +100,9 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit(): void {
-        this.currentRoleId =
-            this.storageService.getCurrentRoleId() ?? 0;
+        this.currentRole = resolveUserRole(
+            this.storageService.getCurrentUser(),
+        );
 
         this.route.queryParamMap.subscribe((params) => {
             this.searchTerm = (params.get('search') ?? '').trim();
@@ -112,6 +117,15 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
             this.changeDetectorRef.markForCheck();
         });
 
+        if (!this.canViewEmployees) {
+            this.loadError =
+                'Bạn không có quyền xem danh sách nhân viên.';
+            this.employees = [];
+            this.departments = [];
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.loadEmployees();
     }
 
@@ -122,7 +136,10 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     loadEmployees(): void {
-        if (this.isLoading) {
+        if (
+            this.isLoading ||
+            !this.canViewEmployees
+        ) {
             return;
         }
 
@@ -131,7 +148,9 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
 
         forkJoin({
             employees: this.nhanVienService.getAll(),
-            departments: this.phongBanService.getAll(),
+            departments: this.canViewDepartments
+                ? this.phongBanService.getAll()
+                : of([]),
             currentEmployee: this.isManagerView
                 ? this.nhanVienService.getMe()
                 : of(null),
@@ -170,12 +189,20 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
                             first.name.localeCompare(second.name, 'vi'),
                         );
 
-                    this.employees = employees.map((item) =>
+                    const mappedEmployees = employees.map((item) =>
                         this.mapNhanVienToEmployee(
                             item,
                             departmentNames,
                         ),
                     );
+
+                    this.employees = this.isManagerView
+                        ? mappedEmployees.filter(
+                            (employee) =>
+                                this.managerDepartmentId !== null &&
+                                employee.departmentId === this.managerDepartmentId,
+                        )
+                        : mappedEmployees;
 
                     if (this.isManagerView) {
                         this.selectedDepartmentId =
@@ -212,13 +239,44 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     get isManagerView(): boolean {
-        return this.currentRoleId === MA_QUYEN.TRUONG_PHONG;
+        return this.currentRole === 'manager';
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.currentRole,
+        );
+    }
+
+    get canCreateEmployees(): boolean {
+        return canManageEmployeeRecords(
+            this.currentRole,
+        );
+    }
+
+    get canEditEmployees(): boolean {
+        return canManageEmployeeRecords(
+            this.currentRole,
+        );
+    }
+
+    get canDeleteEmployees(): boolean {
+        return canManageEmployeeRecords(
+            this.currentRole,
+        );
+    }
+
+    get canViewDepartments(): boolean {
+        return canViewOrganization(
+            this.currentRole,
+        );
     }
 
     get canManageEmployees(): boolean {
         return (
-            this.currentRoleId === MA_QUYEN.QUAN_TRI_VIEN ||
-            this.currentRoleId === MA_QUYEN.NHAN_VIEN_NHAN_SU
+            this.canCreateEmployees ||
+            this.canEditEmployees ||
+            this.canDeleteEmployees
         );
     }
 
@@ -377,6 +435,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
 
     get canConfirmImport(): boolean {
         return (
+            this.canCreateEmployees &&
             this.selectedImportFile !== null &&
             this.importPreviewRows.length > 0 &&
             this.importInvalidCount === 0 &&
@@ -458,7 +517,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     editEmployee(employee: Employee): void {
-        if (!this.canManageEmployees) {
+        if (!this.canEditEmployees) {
             return;
         }
 
@@ -472,7 +531,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     deleteEmployee(employee: Employee): void {
-        if (!this.canManageEmployees) {
+        if (!this.canDeleteEmployees) {
             return;
         }
 
@@ -531,6 +590,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
         fileInput: HTMLInputElement,
     ): void {
         if (
+            !this.canCreateEmployees ||
             this.isPreviewingImport ||
             this.isImporting
         ) {
@@ -541,6 +601,10 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     onImportFileSelected(event: Event): void {
+        if (!this.canCreateEmployees) {
+            return;
+        }
+
         const input =
             event.target as HTMLInputElement;
         const file = input.files?.[0] ?? null;
@@ -559,6 +623,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
 
     previewSelectedImportFile(): void {
         if (
+            !this.canCreateEmployees ||
             !this.selectedImportFile ||
             this.isPreviewingImport ||
             this.isImporting
@@ -658,6 +723,7 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
         fileInput: HTMLInputElement,
     ): void {
         if (
+            !this.canCreateEmployees ||
             this.isPreviewingImport ||
             this.isImporting
         ) {
@@ -668,6 +734,9 @@ export class EmployeeListComponent implements OnInit, OnDestroy {
     }
 
     exportExcel(): void {
+        if (!this.canViewEmployees) {
+            return;
+        }
         const data = this.filteredEmployees.map(
             (employee) => ({
                 employeeCode: employee.employeeCode,

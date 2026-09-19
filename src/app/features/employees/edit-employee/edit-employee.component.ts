@@ -3,20 +3,23 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
-import { MA_QUYEN } from '../../../core/constants/role.constants';
+import { finalize, forkJoin, of } from 'rxjs';
+import {
+    RoleKey,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+import { StorageService } from '../../../core/services/storage.service';
 import {
     NHAN_VIEN_PHU_CAP_TRANG_THAI,
     NHAN_VIEN_TRANG_THAI,
     NhanVienTrangThai,
 } from '../../../core/constants/status.constants';
-import { StorageService } from '../../../core/services/storage.service';
 import { PhongBan } from '../../departments/models/phong-ban.model';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
 import { NhanVienPhuCap } from '../../payroll/models/nhan-vien-phu-cap.model';
 import { PhuCap } from '../../payroll/models/phu-cap.model';
 import { NhanVienPhuCapService } from '../../payroll/services/nhan-vien-phu-cap.service';
-import { PhuCapService } from '../../payroll/services/phu-cap.service';
+import { PhuCapPayload, PhuCapService } from '../../payroll/services/phu-cap.service';
 import { ChucVu } from '../models/chuc-vu.model';
 import { NhanVienChiTiet, UpdateNhanVienRequest } from '../models/nhan-vien.model';
 import { TrinhDo } from '../models/trinh-do.model';
@@ -31,6 +34,12 @@ import {
     EmployeeEditTab,
 } from './edit-employee.model';
 
+interface AllowanceTypeForm {
+    tenPC: string;
+    soTien: number | null;
+    moTa: string;
+}
+
 @Component({
     selector: 'app-edit-employee',
     standalone: true,
@@ -42,16 +51,19 @@ import {
 export class EditEmployeeComponent implements OnInit, OnDestroy {
     activeTab: EmployeeEditTab = 'personal';
     employeeId = 0;
-    currentRoleId = 0;
     isLoading = false;
     isSaving = false;
     isDeleting = false;
     isSuspending = false;
     isLoadingAllowances = false;
+    allowanceLoadFailed = false;
     isSavingAllowance = false;
     deletingAllowanceId: number | null = null;
+    isSavingAllowanceType = false;
+    deletingAllowanceTypeId: number | null = null;
     errorMessage = '';
     allowanceErrorMessage = '';
+    allowanceTypeErrorMessage = '';
     toastMessage = '';
 
     departments: PhongBan[] = [];
@@ -59,6 +71,8 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     qualifications: TrinhDo[] = [];
     allowanceTypes: PhuCap[] = [];
     employeeAllowances: EditEmployeeAllowanceItem[] = [];
+    allowanceTypeForm: AllowanceTypeForm = this.createEmptyAllowanceTypeForm();
+    editingAllowanceTypeId: number | null = null;
 
     readonly tabs: EditEmployeeTab[] = [
         { id: 'personal', label: 'Thông tin cá nhân' },
@@ -67,35 +81,124 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     ];
 
     get visibleTabs(): EditEmployeeTab[] {
-        if (this.currentRoleId === MA_QUYEN.QUAN_TRI_VIEN) {
-            return this.tabs;
-        }
+        return this.tabs.filter((tab) => {
+            if (tab.id === 'allowances') {
+                return this.canViewAllowances;
+            }
 
-        if (this.currentRoleId === MA_QUYEN.NHAN_VIEN_NHAN_SU) {
-            return this.tabs.filter(
-                (tab) => tab.id === 'personal' || tab.id === 'work',
+            return (
+                this.canViewEmployees ||
+                this.canEditEmployees
             );
-        }
-
-        if (this.currentRoleId === MA_QUYEN.KE_TOAN) {
-            return this.tabs.filter((tab) => tab.id === 'allowances');
-        }
-
-        return [];
+        });
     }
 
-    get canManageEmployeeRecord(): boolean {
-        return (
-            this.currentRoleId === MA_QUYEN.QUAN_TRI_VIEN ||
-            this.currentRoleId === MA_QUYEN.NHAN_VIEN_NHAN_SU
+    get canViewEmployees(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
         );
+    }
+
+    get canEditEmployees(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+        );
+    }
+
+    get canDeleteEmployees(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+        );
+    }
+
+    get canViewDepartments(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
+        );
+    }
+
+    get canViewPositions(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
+        );
+    }
+
+    get canViewQualifications(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
+        );
+    }
+
+    get canViewAllowances(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+            'manager',
+            'director',
+        );
+    }
+
+    get canCreateAllowances(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+        );
+    }
+
+    get canEditAllowances(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+        );
+    }
+
+    get canDeleteAllowances(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+        );
+    }
+
+    get canManageAllowanceTypes(): boolean {
+        return this.isRole(
+            'admin',
+            'hr',
+            'accountant',
+        );
+    }
+
+    /*
+     * Getter tương thích với HTML hiện tại.
+     * File HTML tiếp theo sẽ tách các nút theo từng quyền.
+     */
+    get canManageEmployeeRecord(): boolean {
+        return this.canEditEmployees;
     }
 
     get canManageAllowances(): boolean {
-        return (
-            this.currentRoleId === MA_QUYEN.QUAN_TRI_VIEN ||
-            this.currentRoleId === MA_QUYEN.KE_TOAN
-        );
+        return this.canViewAllowances;
     }
 
     readonly allowanceStatus = NHAN_VIEN_PHU_CAP_TRANG_THAI;
@@ -121,30 +224,22 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit(): void {
-        this.currentRoleId =
-            this.storageService.getCurrentRoleId() ?? 0;
+        const id = Number(
+            this.route.snapshot.paramMap.get('id'),
+        );
 
-        const requestedTab = this.route.snapshot.queryParamMap.get('tab');
-
-        if (this.currentRoleId === MA_QUYEN.KE_TOAN) {
-            this.activeTab = 'allowances';
-        } else if (this.isEditTab(requestedTab)) {
-            this.activeTab = requestedTab;
-        }
-
-        const id = Number(this.route.snapshot.paramMap.get('id'));
-        if (!Number.isInteger(id) || id <= 0) {
-            this.errorMessage = 'Mã nhân viên không hợp lệ.';
+        if (
+            !Number.isInteger(id) ||
+            id <= 0
+        ) {
+            this.errorMessage =
+                'Mã nhân viên không hợp lệ.';
             this.changeDetectorRef.markForCheck();
             return;
         }
 
         this.employeeId = id;
-        this.loadEmployee();
-
-        if (this.canManageAllowances) {
-            this.loadAllowanceData();
-        }
+        this.initializeAccess();
     }
 
     ngOnDestroy(): void {
@@ -198,7 +293,106 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     }
 
     get isAllowanceBusy(): boolean {
-        return this.isLoadingAllowances || this.isSavingAllowance || this.deletingAllowanceId !== null;
+        return (
+            this.isLoadingAllowances ||
+            this.isSavingAllowance ||
+            this.deletingAllowanceId !== null ||
+            this.isAllowanceTypeBusy
+        );
+    }
+
+    get isAllowanceTypeBusy(): boolean {
+        return (
+            this.isSavingAllowanceType ||
+            this.deletingAllowanceTypeId !== null
+        );
+    }
+
+    get canSaveAllowanceType(): boolean {
+        if (
+            !this.canManageAllowanceTypes ||
+            this.isAllowanceTypeBusy ||
+            this.isLoadingAllowances ||
+            this.allowanceLoadFailed
+        ) {
+            return false;
+        }
+
+        const name = this.allowanceTypeForm.tenPC.trim();
+        const description = this.allowanceTypeForm.moTa.trim();
+        const amount = Number(this.allowanceTypeForm.soTien);
+
+        if (
+            !name ||
+            name.length > 100 ||
+            description.length > 255 ||
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+            return false;
+        }
+
+        const normalizedName = name.toLocaleLowerCase('vi');
+
+        return !this.allowanceTypes.some(
+            (allowance) =>
+                allowance.maPC !== this.editingAllowanceTypeId &&
+                allowance.tenPC.trim().toLocaleLowerCase('vi') === normalizedName,
+        );
+    }
+
+    get hasNoAllowanceTypes(): boolean {
+        return (
+            !this.isLoadingAllowances &&
+            !this.allowanceLoadFailed &&
+            this.allowanceTypes.length === 0
+        );
+    }
+
+    get hasAssignedAllAllowanceTypes(): boolean {
+        return (
+            !this.isLoadingAllowances &&
+            !this.allowanceLoadFailed &&
+            this.editingAllowanceId === null &&
+            this.allowanceTypes.length > 0 &&
+            this.availableAllowanceTypes.length === 0
+        );
+    }
+
+    get canSelectAllowanceType(): boolean {
+        return (
+            this.canCreateAllowances &&
+            !this.isAllowanceBusy &&
+            !this.allowanceLoadFailed &&
+            this.editingAllowanceId === null &&
+            this.availableAllowanceTypes.length > 0
+        );
+    }
+
+    get canSaveAllowance(): boolean {
+        const maPC = this.allowanceForm.maPC;
+        const isEditing = this.editingAllowanceId !== null;
+
+        if (
+            this.isAllowanceBusy ||
+            this.allowanceLoadFailed ||
+            !this.allowanceForm.ngayApDung ||
+            maPC === null
+        ) {
+            return false;
+        }
+
+        if (
+            isEditing
+                ? !this.canEditAllowances
+                : !this.canCreateAllowances
+        ) {
+            return false;
+        }
+
+        return this.availableAllowanceTypes.some(
+            (allowance) => allowance.maPC === maPC,
+        );
     }
 
     changeTab(tabId: EmployeeEditTab): void {
@@ -220,16 +414,27 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             return;
         }
 
-        if (this.currentRoleId === MA_QUYEN.KE_TOAN) {
-            void this.router.navigate(['/payroll']);
+        if (
+            this.canViewEmployees &&
+            this.employeeId > 0
+        ) {
+            void this.router.navigate([
+                '/employees',
+                this.employeeId,
+            ]);
             return;
         }
 
-        void this.router.navigate(
-            this.employeeId > 0
-                ? ['/employees', this.employeeId]
-                : ['/employees'],
-        );
+        if (this.canViewAllowances) {
+            void this.router.navigate([
+                '/payroll',
+            ]);
+            return;
+        }
+
+        void this.router.navigate([
+            '/dashboard',
+        ]);
     }
 
     retry(): void {
@@ -237,9 +442,14 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.loadEmployee();
+        if (
+            this.canViewEmployees ||
+            this.canEditEmployees
+        ) {
+            this.loadEmployee();
+        }
 
-        if (this.canManageAllowances) {
+        if (this.canViewAllowances) {
             this.loadAllowanceData();
         }
     }
@@ -251,7 +461,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             this.isDeleting ||
             this.isSuspending ||
             this.isAllowanceBusy ||
-            !this.canManageEmployeeRecord ||
+            !this.canEditEmployees ||
             !this.originalEmployee
         ) {
             return;
@@ -262,6 +472,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
         }
 
         const payload: UpdateNhanVienRequest = {
+            maNV: this.employeeId,
             hoTen: this.employee.fullName.trim(),
             gioiTinh: this.employee.gender.trim(),
             ngaySinh: this.employee.dateOfBirth,
@@ -308,8 +519,18 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     }
 
     saveAllowance(): void {
+        const editingAllowanceId =
+            this.editingAllowanceId;
+
+        const isEditing =
+            editingAllowanceId !== null;
+
         if (
-            !this.canManageAllowances ||
+            (
+                isEditing
+                    ? !this.canEditAllowances
+                    : !this.canCreateAllowances
+            ) ||
             this.isAllowanceBusy ||
             this.employeeId <= 0
         ) {
@@ -322,6 +543,26 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             return;
         }
 
+        if (
+            !Number.isInteger(maPC) ||
+            maPC <= 0 ||
+            !this.availableAllowanceTypes.some(
+                (allowance) => allowance.maPC === maPC,
+            )
+        ) {
+            this.showToast(
+                'Phụ cấp đã chọn không hợp lệ hoặc không còn khả dụng. Vui lòng tải lại dữ liệu.',
+            );
+            return;
+        }
+
+        if (this.allowanceLoadFailed) {
+            this.showToast(
+                'Danh sách phụ cấp chưa tải thành công. Vui lòng thử lại trước khi lưu.',
+            );
+            return;
+        }
+
         if (!this.allowanceForm.ngayApDung) {
             this.showToast('Vui lòng chọn ngày áp dụng.');
             return;
@@ -330,7 +571,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
         this.isSavingAllowance = true;
         this.allowanceErrorMessage = '';
 
-        const request$ = this.editingAllowanceId === null
+        const request$ = !isEditing
             ? this.nhanVienPhuCapService.create({
                 maNV: this.employeeId,
                 maPC,
@@ -339,7 +580,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             })
             : this.nhanVienPhuCapService.update(
                 this.employeeId,
-                this.editingAllowanceId,
+                editingAllowanceId,
                 {
                     ngayApDung: this.allowanceForm.ngayApDung,
                     trangThai: this.allowanceForm.trangThai,
@@ -355,7 +596,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             )
             .subscribe({
                 next: () => {
-                    const wasEditing = this.editingAllowanceId !== null;
+                    const wasEditing = isEditing;
                     this.resetAllowanceForm();
                     this.showToast(wasEditing ? 'Đã cập nhật phụ cấp.' : 'Đã gán phụ cấp cho nhân viên.');
                     this.loadAllowanceData();
@@ -372,8 +613,20 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             });
     }
 
+    retryAllowanceData(): void {
+        if (
+            this.isAllowanceBusy ||
+            !this.canViewAllowances ||
+            this.employeeId <= 0
+        ) {
+            return;
+        }
+
+        this.loadAllowanceData();
+    }
+
     editAllowance(item: EditEmployeeAllowanceItem): void {
-        if (!this.canManageAllowances || this.isAllowanceBusy) {
+        if (!this.canEditAllowances || this.isAllowanceBusy) {
             return;
         }
 
@@ -386,7 +639,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     }
 
     cancelAllowanceEdit(): void {
-        if (!this.canManageAllowances || this.isSavingAllowance) {
+        if (this.isSavingAllowance) {
             return;
         }
 
@@ -395,7 +648,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
 
     deleteAllowance(item: EditEmployeeAllowanceItem): void {
         if (
-            !this.canManageAllowances ||
+            !this.canDeleteAllowances ||
             this.isAllowanceBusy ||
             this.employeeId <= 0
         ) {
@@ -437,6 +690,219 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             });
     }
 
+    startCreateAllowanceType(): void {
+        if (
+            !this.canManageAllowanceTypes ||
+            this.isAllowanceBusy
+        ) {
+            return;
+        }
+
+        this.allowanceTypeErrorMessage = '';
+        this.editingAllowanceTypeId = null;
+        this.allowanceTypeForm = this.createEmptyAllowanceTypeForm();
+    }
+
+    editAllowanceType(allowance: PhuCap): void {
+        if (
+            !this.canManageAllowanceTypes ||
+            this.isAllowanceBusy
+        ) {
+            return;
+        }
+
+        this.allowanceTypeErrorMessage = '';
+        this.editingAllowanceTypeId = allowance.maPC;
+        this.allowanceTypeForm = {
+            tenPC: allowance.tenPC,
+            soTien: Number(allowance.soTien ?? 0),
+            moTa: allowance.moTa ?? '',
+        };
+    }
+
+    cancelAllowanceTypeEdit(): void {
+        if (this.isAllowanceTypeBusy) {
+            return;
+        }
+
+        this.resetAllowanceTypeForm();
+    }
+
+    saveAllowanceType(): void {
+        if (
+            !this.canManageAllowanceTypes ||
+            this.isAllowanceTypeBusy ||
+            this.isLoadingAllowances ||
+            this.allowanceLoadFailed
+        ) {
+            return;
+        }
+
+        const name = this.allowanceTypeForm.tenPC.trim();
+        const description = this.allowanceTypeForm.moTa.trim();
+        const amount = Number(this.allowanceTypeForm.soTien);
+
+        if (!name) {
+            this.allowanceTypeErrorMessage = 'Vui lòng nhập tên phụ cấp.';
+            this.showToast(this.allowanceTypeErrorMessage);
+            return;
+        }
+
+        if (name.length > 100) {
+            this.allowanceTypeErrorMessage = 'Tên phụ cấp không được vượt quá 100 ký tự.';
+            this.showToast(this.allowanceTypeErrorMessage);
+            return;
+        }
+
+        if (description.length > 255) {
+            this.allowanceTypeErrorMessage = 'Mô tả phụ cấp không được vượt quá 255 ký tự.';
+            this.showToast(this.allowanceTypeErrorMessage);
+            return;
+        }
+
+        if (!Number.isFinite(amount) || amount < 0) {
+            this.allowanceTypeErrorMessage = 'Số tiền phụ cấp phải là số không âm.';
+            this.showToast(this.allowanceTypeErrorMessage);
+            return;
+        }
+
+        const normalizedName = name.toLocaleLowerCase('vi');
+        const duplicate = this.allowanceTypes.some(
+            (allowance) =>
+                allowance.maPC !== this.editingAllowanceTypeId &&
+                allowance.tenPC.trim().toLocaleLowerCase('vi') === normalizedName,
+        );
+
+        if (duplicate) {
+            this.allowanceTypeErrorMessage = 'Tên phụ cấp đã tồn tại.';
+            this.showToast(this.allowanceTypeErrorMessage);
+            return;
+        }
+
+        const payload: PhuCapPayload = {
+            tenPC: name,
+            soTien: amount,
+            moTa: description || null,
+        };
+
+        const editingId = this.editingAllowanceTypeId;
+        const isEditing = editingId !== null;
+
+        this.isSavingAllowanceType = true;
+        this.allowanceTypeErrorMessage = '';
+
+        const request$ = isEditing
+            ? this.phuCapService.update(editingId, payload)
+            : this.phuCapService.create(payload);
+
+        request$
+            .pipe(
+                finalize(() => {
+                    this.isSavingAllowanceType = false;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (savedAllowance) => {
+                    if (isEditing) {
+                        this.allowanceTypes = this.allowanceTypes.map((allowance) =>
+                            allowance.maPC === savedAllowance.maPC
+                                ? savedAllowance
+                                : allowance,
+                        );
+
+                        this.employeeAllowances = this.employeeAllowances.map((allowance) =>
+                            allowance.maPC === savedAllowance.maPC
+                                ? {
+                                    ...allowance,
+                                    tenPC: savedAllowance.tenPC,
+                                    soTien: Number(savedAllowance.soTien ?? 0),
+                                    moTa: savedAllowance.moTa ?? null,
+                                }
+                                : allowance,
+                        );
+                    } else {
+                        this.allowanceTypes = [
+                            ...this.allowanceTypes,
+                            savedAllowance,
+                        ];
+                    }
+
+                    this.sortAllowanceTypes();
+                    this.resetAllowanceTypeForm();
+                    this.showToast(
+                        isEditing
+                            ? 'Đã cập nhật danh mục phụ cấp.'
+                            : 'Đã thêm danh mục phụ cấp.',
+                    );
+                },
+                error: (error: unknown) => {
+                    this.allowanceTypeErrorMessage = this.getErrorMessage(
+                        error,
+                        isEditing
+                            ? 'Không thể cập nhật danh mục phụ cấp.'
+                            : 'Không thể thêm danh mục phụ cấp.',
+                    );
+                    this.showToast(this.allowanceTypeErrorMessage);
+                },
+            });
+    }
+
+    deleteAllowanceType(allowance: PhuCap): void {
+        if (
+            !this.canManageAllowanceTypes ||
+            this.isAllowanceBusy ||
+            allowance.maPC <= 0
+        ) {
+            return;
+        }
+
+        const confirmed =
+            typeof window === 'undefined'
+                ? true
+                : window.confirm(`Xóa danh mục phụ cấp "${allowance.tenPC}"?`);
+
+        if (!confirmed) {
+            return;
+        }
+
+        this.deletingAllowanceTypeId = allowance.maPC;
+        this.allowanceTypeErrorMessage = '';
+
+        this.phuCapService
+            .delete(allowance.maPC)
+            .pipe(
+                finalize(() => {
+                    this.deletingAllowanceTypeId = null;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: () => {
+                    this.allowanceTypes = this.allowanceTypes.filter(
+                        (item) => item.maPC !== allowance.maPC,
+                    );
+
+                    if (this.allowanceForm.maPC === allowance.maPC) {
+                        this.resetAllowanceForm();
+                    }
+
+                    if (this.editingAllowanceTypeId === allowance.maPC) {
+                        this.resetAllowanceTypeForm();
+                    }
+
+                    this.showToast('Đã xóa danh mục phụ cấp.');
+                },
+                error: (error: unknown) => {
+                    this.allowanceTypeErrorMessage = this.getErrorMessage(
+                        error,
+                        'Không thể xóa danh mục phụ cấp.',
+                    );
+                    this.showToast(this.allowanceTypeErrorMessage);
+                },
+            });
+    }
+
     sendEmail(): void {
         const email = this.employee.personalEmail.trim();
         if (!email) {
@@ -468,7 +934,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             this.isDeleting ||
             this.isSuspending ||
             this.isAllowanceBusy ||
-            !this.canManageEmployeeRecord ||
+            !this.canDeleteEmployees ||
             this.employeeId <= 0
         ) {
             return;
@@ -510,7 +976,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             this.isDeleting ||
             this.isSuspending ||
             this.isAllowanceBusy ||
-            !this.canManageEmployeeRecord ||
+            !this.canEditEmployees ||
             !this.originalEmployee ||
             this.originalEmployee.trangThai === NHAN_VIEN_TRANG_THAI.TAM_NGHI
         ) {
@@ -527,6 +993,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
         }
 
         const payload: UpdateNhanVienRequest = {
+            maNV: this.employeeId,
             hoTen: this.employee.fullName.trim(),
             gioiTinh: this.employee.gender.trim(),
             ngaySinh: this.employee.dateOfBirth,
@@ -570,15 +1037,115 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             });
     }
 
+    private initializeAccess(): void {
+        const requestedTab =
+            this.route.snapshot
+                .queryParamMap
+                .get('tab');
+
+        if (
+            this.isEditTab(
+                requestedTab,
+            ) &&
+            this.visibleTabs.some(
+                (tab) =>
+                    tab.id ===
+                    requestedTab,
+            )
+        ) {
+            this.activeTab =
+                requestedTab;
+        } else {
+            this.activeTab =
+                this.visibleTabs[0]
+                    ?.id ??
+                'personal';
+        }
+
+        if (
+            this.canViewEmployees ||
+            this.canEditEmployees
+        ) {
+            this.loadEmployee();
+        }
+
+        if (
+            this.canViewAllowances
+        ) {
+            this.loadAllowanceData();
+        }
+
+        if (
+            !this.visibleTabs.length
+        ) {
+            this.errorMessage =
+                'Bạn không có quyền truy cập thông tin nhân viên hoặc phụ cấp.';
+        }
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    private getCurrentRole(): RoleKey | null {
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
+    }
+
+    private isRole(
+        ...roles: RoleKey[]
+    ): boolean {
+        const currentRole =
+            this.getCurrentRole();
+
+        return (
+            currentRole !==
+            null &&
+            roles.includes(
+                currentRole,
+            )
+        );
+    }
+
     private loadEmployee(): void {
+        if (
+            this.employeeId <= 0 ||
+            (
+                !this.canViewEmployees &&
+                !this.canEditEmployees
+            )
+        ) {
+            return;
+        }
+
         this.isLoading = true;
         this.errorMessage = '';
 
         forkJoin({
-            employee: this.nhanVienService.getById(this.employeeId),
-            departments: this.phongBanService.getAll(),
-            positions: this.chucVuService.getAll(),
-            qualifications: this.trinhDoService.getAll(),
+            employee:
+                this.nhanVienService
+                    .getById(
+                        this.employeeId,
+                    ),
+
+            departments:
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of<PhongBan[]>([]),
+
+            positions:
+                this.canViewPositions
+                    ? this.chucVuService
+                        .getAll()
+                    : of<ChucVu[]>([]),
+
+            qualifications:
+                this.canViewQualifications
+                    ? this.trinhDoService
+                        .getAll()
+                    : of<TrinhDo[]>([]),
         })
             .pipe(
                 finalize(() => {
@@ -603,7 +1170,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
 
     private loadAllowanceData(): void {
         if (
-            !this.canManageAllowances ||
+            !this.canViewAllowances ||
             this.employeeId <= 0 ||
             this.isLoadingAllowances
         ) {
@@ -611,6 +1178,7 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
         }
 
         this.isLoadingAllowances = true;
+        this.allowanceLoadFailed = false;
         this.allowanceErrorMessage = '';
 
         forkJoin({
@@ -625,15 +1193,22 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
             )
             .subscribe({
                 next: ({ allowanceTypes, assignments }) => {
+                    this.allowanceLoadFailed = false;
                     this.allowanceTypes = allowanceTypes;
+                    this.sortAllowanceTypes();
+                    this.allowanceTypeErrorMessage = '';
                     this.employeeAllowances = this.mapAllowances(
                         assignments.filter((item) => item.maNV === this.employeeId),
                         allowanceTypes,
                     );
                 },
                 error: (error: unknown) => {
+                    this.allowanceLoadFailed = true;
                     this.allowanceTypes = [];
                     this.employeeAllowances = [];
+                    this.allowanceForm.maPC = null;
+                    this.resetAllowanceTypeForm();
+                    this.allowanceTypeErrorMessage = '';
                     this.allowanceErrorMessage = this.getErrorMessage(
                         error,
                         'Không thể tải phụ cấp của nhân viên.',
@@ -814,6 +1389,26 @@ export class EditEmployeeComponent implements OnInit, OnDestroy {
     private resetAllowanceForm(): void {
         this.editingAllowanceId = null;
         this.allowanceForm = this.createEmptyAllowanceForm();
+    }
+
+    private createEmptyAllowanceTypeForm(): AllowanceTypeForm {
+        return {
+            tenPC: '',
+            soTien: 0,
+            moTa: '',
+        };
+    }
+
+    private resetAllowanceTypeForm(): void {
+        this.editingAllowanceTypeId = null;
+        this.allowanceTypeForm = this.createEmptyAllowanceTypeForm();
+        this.allowanceTypeErrorMessage = '';
+    }
+
+    private sortAllowanceTypes(): void {
+        this.allowanceTypes = [...this.allowanceTypes].sort((first, second) =>
+            first.tenPC.localeCompare(second.tenPC, 'vi'),
+        );
     }
 
     private mapStatus(status: NhanVienTrangThai): EditEmployeeForm['status'] {

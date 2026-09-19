@@ -4,6 +4,13 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import {
+    canManageOrganization,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+import { StorageService } from '../../../core/services/storage.service';
 import { TrinhDoService } from '../services/trinh-do.service';
 import { EditQualificationForm } from './edit-qualification.model';
 
@@ -23,22 +30,35 @@ export class EditQualificationComponent implements OnInit {
     errorMessage = '';
     toastMessage = '';
     submitted = false;
-
     constructor(
         private readonly route: ActivatedRoute,
         private readonly router: Router,
         private readonly trinhDoService: TrinhDoService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
-        const id = Number(this.route.snapshot.paramMap.get('id'));
-        if (!Number.isInteger(id) || id <= 0) {
-            this.errorMessage = 'Mã trình độ không hợp lệ.';
-            return;
-        }
-        this.qualificationId = id;
-        this.load();
+        this.loadPermissions();
+    }
+
+    get canViewQualification(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canEditQualification(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canUseQualificationForm(): boolean {
+        return (
+            this.canViewQualification &&
+            this.canEditQualification
+        );
     }
 
     get qualificationCode(): string {
@@ -53,13 +73,20 @@ export class EditQualificationComponent implements OnInit {
 
     retry(): void {
         if (!this.isLoading && this.qualificationId > 0) {
-            this.load();
+            this.loadPermissions();
         }
     }
 
     save(): void {
         this.submitted = true;
-        if (this.isLoading || this.isSaving || this.nameInvalid || this.qualificationId <= 0) {
+
+        if (
+            !this.canUseQualificationForm ||
+            this.isLoading ||
+            this.isSaving ||
+            this.nameInvalid ||
+            this.qualificationId <= 0
+        ) {
             return;
         }
 
@@ -79,7 +106,15 @@ export class EditQualificationComponent implements OnInit {
             )
             .subscribe({
                 next: () => {
-                    void this.router.navigate(['/qualifications', this.qualificationId]);
+                    if (this.canViewQualification) {
+                        void this.router.navigate([
+                            '/qualifications',
+                            this.qualificationId,
+                        ]);
+                        return;
+                    }
+
+                    void this.router.navigate(['/dashboard']);
                 },
                 error: (error: HttpErrorResponse) => {
                     this.showToast(this.getErrorMessage(error, 'Không thể cập nhật trình độ.'));
@@ -88,16 +123,75 @@ export class EditQualificationComponent implements OnInit {
     }
 
     cancel(): void {
-        if (!this.isSaving) {
+        if (this.isSaving) {
+            return;
+        }
+
+        if (this.canViewQualification) {
             void this.router.navigate(
                 this.qualificationId > 0
                     ? ['/qualifications', this.qualificationId]
                     : ['/qualifications'],
             );
+            return;
         }
+
+        void this.router.navigate(['/dashboard']);
+    }
+
+    private loadPermissions(): void {
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        if (
+            !this.canEditQualification
+        ) {
+            this.resetForm();
+            this.isLoading = false;
+            this.errorMessage =
+                'Bạn không có quyền chỉnh sửa trình độ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        if (
+            !this.canViewQualification
+        ) {
+            this.resetForm();
+            this.isLoading = false;
+            this.errorMessage =
+                'Bạn cần quyền xem trình độ để tải dữ liệu cần chỉnh sửa.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.isLoading = false;
+        this.readRouteId();
+    }
+
+    private readRouteId(): void {
+        const id = Number(this.route.snapshot.paramMap.get('id'));
+
+        if (!Number.isInteger(id) || id <= 0) {
+            this.qualificationId = 0;
+            this.resetForm();
+            this.errorMessage = 'Mã trình độ không hợp lệ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.qualificationId = id;
+        this.load();
     }
 
     private load(): void {
+        if (
+            !this.canUseQualificationForm ||
+            this.qualificationId <= 0
+        ) {
+            return;
+        }
+
         this.isLoading = true;
         this.errorMessage = '';
         this.trinhDoService
@@ -117,6 +211,23 @@ export class EditQualificationComponent implements OnInit {
                     this.errorMessage = this.getErrorMessage(error, 'Không thể tải trình độ.');
                 },
             });
+    }
+
+    private resetForm(): void {
+        this.form = {
+            maTD: this.qualificationId,
+            tenTD: '',
+        };
+        this.submitted = false;
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private getErrorMessage(error: HttpErrorResponse, fallback: string): string {

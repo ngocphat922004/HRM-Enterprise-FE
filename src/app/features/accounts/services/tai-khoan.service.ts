@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
 import {
@@ -88,35 +88,41 @@ export class TaiKhoanService {
         maTK: number,
         payload: UpdateTaiKhoanRequest,
     ): Observable<TaiKhoanChiTiet> {
+        if (!Number.isInteger(maTK) || maTK <= 0) {
+            return throwError(
+                () => new Error('Mã tài khoản không hợp lệ.'),
+            );
+        }
+
+        if (payload.maTK !== maTK) {
+            return throwError(
+                () =>
+                    new Error(
+                        'Mã tài khoản trong URL và dữ liệu cập nhật không khớp.',
+                    ),
+            );
+        }
+
+        /*
+         * Swagger khai báo PUT /api/tai-khoans/{id}
+         * chỉ trả 200 OK, không có response body.
+         *
+         * Không tạo dữ liệu tài khoản giả từ payload.
+         * Sau khi cập nhật thành công, đọc lại tài khoản
+         * thật từ backend bằng GET /api/tai-khoans/{id}.
+         */
         return this.http
-            .put<
-                ApiResponse<TaiKhoanApiItem | null> |
-                TaiKhoanApiItem |
-                null
-            >(
+            .put<unknown>(
                 `${environment.apiBaseUrl}${API_ENDPOINTS.taiKhoanById(maTK)}`,
                 payload,
             )
             .pipe(
-                map((response) => {
-                    if (this.isApiResponse<TaiKhoanApiItem | null>(response)) {
-                        const account = this.unwrapResponse(response, null);
-                        if (account) {
-                            return this.normalizeAccount(account, payload.trangThai);
-                        }
-                    } else if (response) {
-                        return this.normalizeAccount(response, payload.trangThai);
-                    }
-
-                    return {
-                        maTK,
-                        tenDangNhap: payload.tenDangNhap,
-                        maNV: payload.maNV,
-                        maQuyen: payload.maQuyen,
-                        trangThai: payload.trangThai,
-                        tenQuyen: '',
-                    };
-                }),
+                switchMap(
+                    () =>
+                        this.getById(
+                            maTK,
+                        ),
+                ),
             );
     }
 

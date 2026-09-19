@@ -3,7 +3,11 @@
         <section class="detail-heading">
             <div>
                 <p class="breadcrumb">
+                    @if (canViewEmployees) {
                     <a routerLink="/employees">Nhân sự</a>
+                    } @else {
+                    <span>Nhân sự</span>
+                    }
                     <span>/</span>
                     <a routerLink="/qualifications">Trình độ</a>
                     <span>/</span>
@@ -34,6 +38,7 @@
             </div>
 
             <div class="detail-heading__actions">
+                @if (canViewQualification) {
                 <a class="back-button" routerLink="/qualifications">
                     <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -41,7 +46,9 @@
                     </svg>
                     Quay lại
                 </a>
+                }
 
+                @if (canEditQualification) {
                 <button class="edit-button" type="button" (click)="editQualification()" [disabled]="
                         isLoading ||
                         isDeleting ||
@@ -55,6 +62,7 @@
                     </svg>
                     Chỉnh sửa
                 </button>
+                }
             </div>
         </section>
 
@@ -118,7 +126,13 @@
                         </div>
                         <div class="information-item">
                             <span>Số nhân viên</span>
-                            <strong>{{ qualification.employeeCount }}</strong>
+                            <strong>
+                                {{
+                                canViewEmployees
+                                ? qualification.employeeCount
+                                : '—'
+                                }}
+                            </strong>
                         </div>
                     </div>
                 </section>
@@ -135,10 +149,29 @@
                             </svg>
                             <h2>Nhân viên đang sử dụng trình độ</h2>
                         </div>
-                        <span class="employee-count">{{ qualification.employeeCount }} nhân viên</span>
+                        <span class="employee-count">
+                            @if (canViewEmployees) {
+                            {{ qualification.employeeCount }} nhân viên
+                            } @else {
+                            Không có quyền xem
+                            }
+                        </span>
                     </header>
 
-                    @if (employees.length > 0) {
+                    @if (!canViewEmployees) {
+                    <div class="empty-employees">
+                        <span aria-hidden="true">
+                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 8v4"></path>
+                                <path d="M12 16h.01"></path>
+                            </svg>
+                        </span>
+                        <strong>Bạn không có quyền xem danh sách nhân viên</strong>
+                        <p>Hệ thống không gọi API nhân viên cho trang này.</p>
+                    </div>
+                    } @else if (employees.length > 0) {
                     <div class="employee-table-wrapper">
                         <table>
                             <thead>
@@ -203,8 +236,20 @@
                         </svg>
                     </span>
                     <small>Nhân viên thuộc trình độ</small>
-                    <strong>{{ qualification.employeeCount }}</strong>
-                    <p>Số hồ sơ nhân viên đang sử dụng trình độ này</p>
+                    <strong>
+                        {{
+                        canViewEmployees
+                        ? qualification.employeeCount
+                        : '—'
+                        }}
+                    </strong>
+                    <p>
+                        @if (canViewEmployees) {
+                        Số hồ sơ nhân viên đang sử dụng trình độ này
+                        } @else {
+                        Không tải dữ liệu nhân viên do thiếu quyền xem
+                        }
+                    </p>
                 </section>
 
                 <section class="data-note-card">
@@ -217,7 +262,12 @@
                         <h2>Tình trạng sử dụng</h2>
                     </header>
 
-                    @if (qualification.employeeCount > 0) {
+                    @if (!canViewEmployees) {
+                    <p>
+                        Bạn không có quyền xem dữ liệu nhân viên nên frontend không xác định số hồ sơ đang sử dụng
+                        trình độ này.
+                    </p>
+                    } @else if (qualification.employeeCount > 0) {
                     <p>Trình độ này đang được sử dụng trong hồ sơ của <strong>{{ qualification.employeeCount }}</strong>
                         nhân viên.</p>
                     } @else {
@@ -236,13 +286,27 @@
                         <h2>Thao tác danh mục</h2>
                     </header>
 
-                    @if (qualification.employeeCount > 0) {
+                    @if (!canDeleteQualification) {
+                    <p>Bạn không có quyền xóa trình độ.</p>
+                    } @else if (
+                    canViewEmployees &&
+                    qualification.employeeCount > 0
+                    ) {
                     <p>
                         Muốn xóa trình độ này, hãy chuyển <strong>{{ qualification.employeeCount }}</strong> nhân viên
                         đang sử dụng sang trình độ phù hợp khác trước.
                     </p>
                     } @else {
-                    <p>Trình độ này hiện không được sử dụng trong hồ sơ nhân viên và có thể xóa khỏi danh mục.</p>
+                    @if (canViewEmployees) {
+                    <p>Trình độ này hiện không được sử dụng trong hồ sơ nhân viên. Backend vẫn kiểm tra trước khi xóa.
+                    </p>
+                    } @else {
+                    <p>
+                        Frontend không được phép tải danh sách nhân viên. Backend sẽ là nguồn kiểm tra cuối cùng xem
+                        trình độ có đang được sử dụng hay không.
+                    </p>
+                    }
+
                     <button class="delete-detail-button" type="button" (click)="deleteQualification()"
                         [disabled]="isDeleting">
                         @if (isDeleting) {

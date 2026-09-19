@@ -25,11 +25,24 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     KHEN_THUONG_KY_LUAT_LOAI,
 } from '../../../core/constants/status.constants';
+
+import {
+    canManageRewards,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    canViewRewards,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     PhongBanService,
@@ -165,6 +178,9 @@ export class EditRewardsDisciplineComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) {
@@ -177,48 +193,7 @@ export class EditRewardsDisciplineComponent
     ngOnInit():
         void {
 
-        const rawId =
-            this.route
-                .snapshot
-                .paramMap
-                .get(
-                    'id',
-                );
-
-
-        const routeId =
-            Number(
-                rawId,
-            );
-
-
-        if (
-            !rawId ||
-
-            !Number.isInteger(
-                routeId,
-            ) ||
-
-            routeId <= 0
-        ) {
-
-            this.loadError =
-                'Mã quyết định không hợp lệ.';
-
-
-            this.changeDetectorRef
-                .markForCheck();
-
-
-            return;
-        }
-
-
-        this.decisionId =
-            routeId;
-
-
-        this.loadDecision();
+        this.initializeComponent();
     }
 
 
@@ -238,6 +213,62 @@ export class EditRewardsDisciplineComponent
 
 
 
+
+
+    get canViewDecisions():
+        boolean {
+
+        return canViewRewards(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canEditDecisions():
+        boolean {
+
+        return canManageRewards(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canViewEmployees():
+        boolean {
+
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canViewDepartments():
+        boolean {
+
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canViewPositions():
+        boolean {
+
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canUseDecisionForm():
+        boolean {
+
+        return (
+            this.canViewDecisions &&
+            this.canEditDecisions &&
+            this.canViewEmployees
+        );
+    }
 
 
     get decisionCode():
@@ -364,7 +395,7 @@ export class EditRewardsDisciplineComponent
             this.form.lyDo
                 .trim()
                 .length >
-            1000
+            255
         );
     }
 
@@ -462,7 +493,7 @@ export class EditRewardsDisciplineComponent
         }
 
 
-        this.loadDecision();
+        this.initializeComponent();
     }
 
 
@@ -482,6 +513,7 @@ export class EditRewardsDisciplineComponent
 
 
         if (
+            this.canViewDecisions &&
             this.decisionId !==
             null
         ) {
@@ -496,9 +528,22 @@ export class EditRewardsDisciplineComponent
         }
 
 
+        if (
+            this.canViewDecisions
+        ) {
+
+            void this.router
+                .navigate([
+                    '/rewards-discipline',
+                ]);
+
+            return;
+        }
+
+
         void this.router
             .navigate([
-                '/rewards-discipline',
+                '/dashboard',
             ]);
     }
 
@@ -518,6 +563,7 @@ export class EditRewardsDisciplineComponent
 
 
         if (
+            !this.canUseDecisionForm ||
             this.isSaving ||
             this.isLoading
         ) {
@@ -596,11 +642,24 @@ export class EditRewardsDisciplineComponent
                     window.setTimeout(
                         () => {
 
+                            if (
+                                this.canViewDecisions
+                            ) {
+
+                                void this.router
+                                    .navigate([
+                                        '/rewards-discipline',
+                                        updatedDecision
+                                            .maKTKL,
+                                    ]);
+
+                                return;
+                            }
+
+
                             void this.router
                                 .navigate([
-                                    '/rewards-discipline',
-                                    updatedDecision
-                                        .maKTKL,
+                                    '/dashboard',
                                 ]);
 
                         },
@@ -633,10 +692,138 @@ export class EditRewardsDisciplineComponent
 
 
 
+    private initializeComponent():
+        void {
+
+        this.loadError =
+            '';
+
+
+        this.decision =
+            null;
+
+
+        this.employees =
+            [];
+
+
+        if (
+            !this.canEditDecisions
+        ) {
+
+            this.decisionId =
+                null;
+
+
+            this.loadError =
+                'Bạn không có quyền chỉnh sửa khen thưởng, kỷ luật.';
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+
+        if (
+            !this.canViewDecisions
+        ) {
+
+            this.decisionId =
+                null;
+
+
+            this.loadError =
+                'Bạn không có quyền xem khen thưởng, kỷ luật.';
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+
+        if (
+            !this.canViewEmployees
+        ) {
+
+            this.decisionId =
+                null;
+
+
+            this.loadError =
+                'Bạn không có quyền xem danh sách nhân viên.';
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+
+        this.readRouteId();
+    }
+
+
+    private readRouteId():
+        void {
+
+        const rawId =
+            this.route
+                .snapshot
+                .paramMap
+                .get(
+                    'id',
+                );
+
+
+        const routeId =
+            Number(
+                rawId,
+            );
+
+
+        if (
+            !rawId ||
+
+            !Number.isInteger(
+                routeId,
+            ) ||
+
+            routeId <= 0
+        ) {
+
+            this.decisionId =
+                null;
+
+            this.decision =
+                null;
+
+            this.loadError =
+                'Mã quyết định không hợp lệ.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+
+        this.decisionId =
+            routeId;
+
+        this.loadDecision();
+    }
+
+
     private loadDecision():
         void {
 
         if (
+            !this.canUseDecisionForm ||
             this.decisionId ===
             null
         ) {
@@ -677,8 +864,10 @@ export class EditRewardsDisciplineComponent
                     .getAll(),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -754,21 +943,33 @@ export class EditRewardsDisciplineComponent
                                             employee.hoTen,
 
                                         email:
-                                            employeeExtra
-                                                .email ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employeeExtra
+                                                        .email ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenPB:
-                                            department
-                                                ?.tenPB ??
-                                            employeeExtra
-                                                .tenPB ??
-                                            null,
+                                            this.canViewDepartments
+                                                ? (
+                                                    department
+                                                        ?.tenPB ??
+                                                    employeeExtra
+                                                        .tenPB ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenCV:
-                                            employeeExtra
-                                                .tenCV ??
-                                            null,
+                                            this.canViewPositions
+                                                ? (
+                                                    employeeExtra
+                                                        .tenCV ??
+                                                    null
+                                                )
+                                                : null,
 
                                     } as
                                         EditRewardsDisciplineEmployeeOption;
@@ -945,6 +1146,8 @@ export class EditRewardsDisciplineComponent
         boolean {
 
         return (
+            this.canUseDecisionForm &&
+
             this.form.maNV !==
             null &&
 
@@ -1084,6 +1287,19 @@ export class EditRewardsDisciplineComponent
 
 
 
+
+
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+
+        return resolveUserRole(
+            currentUser,
+        );
+    }
 
 
     private formatDecisionCode(

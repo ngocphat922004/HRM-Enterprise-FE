@@ -1,9 +1,21 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    OnInit,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+import {
+    canManageOrganization,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+import { StorageService } from '../../../core/services/storage.service';
 import { TrinhDoService } from '../services/trinh-do.service';
 import { AddQualificationForm } from './add-qualification.model';
 
@@ -15,17 +27,39 @@ import { AddQualificationForm } from './add-qualification.model';
     styleUrl: './add-qualification.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AddQualificationComponent {
+export class AddQualificationComponent implements OnInit {
     form: AddQualificationForm = { tenTD: '' };
     submitted = false;
+    isLoading = false;
     isSaving = false;
     toastMessage = '';
-
+    errorMessage = '';
     constructor(
         private readonly router: Router,
         private readonly trinhDoService: TrinhDoService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
+
+    ngOnInit(): void {
+        this.loadPermissions();
+    }
+
+    get canViewQualification(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canCreateQualification(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canUseQualificationForm(): boolean {
+        return this.canCreateQualification;
+    }
 
     get nameInvalid(): boolean {
         return this.submitted && !this.form.tenTD.trim();
@@ -33,7 +67,14 @@ export class AddQualificationComponent {
 
     save(): void {
         this.submitted = true;
-        if (this.nameInvalid || this.isSaving) {
+        this.errorMessage = '';
+
+        if (
+            !this.canUseQualificationForm ||
+            this.nameInvalid ||
+            this.isLoading ||
+            this.isSaving
+        ) {
             return;
         }
 
@@ -44,7 +85,9 @@ export class AddQualificationComponent {
 
         this.isSaving = true;
         this.trinhDoService
-            .create({ tenTD: this.form.tenTD })
+            .create({
+                tenTD: this.form.tenTD.trim(),
+            })
             .pipe(
                 finalize(() => {
                     this.isSaving = false;
@@ -53,18 +96,77 @@ export class AddQualificationComponent {
             )
             .subscribe({
                 next: (qualification) => {
-                    void this.router.navigate(['/qualifications', qualification.maTD]);
+                    this.showToast('Đã thêm trình độ thành công.');
+
+                    if (this.canViewQualification) {
+                        void this.router.navigate([
+                            '/qualifications',
+                            qualification.maTD,
+                        ]);
+                        return;
+                    }
+
+                    void this.router.navigate(['/dashboard']);
                 },
                 error: (error: HttpErrorResponse) => {
-                    this.showToast(this.getErrorMessage(error, 'Không thể thêm trình độ.'));
+                    this.errorMessage = this.getErrorMessage(
+                        error,
+                        'Không thể thêm trình độ.',
+                    );
+                    this.showToast(this.errorMessage);
                 },
             });
     }
 
     cancel(): void {
-        if (!this.isSaving) {
-            void this.router.navigate(['/qualifications']);
+        if (this.isSaving) {
+            return;
         }
+
+        if (this.canViewQualification) {
+            void this.router.navigate(['/qualifications']);
+            return;
+        }
+
+        void this.router.navigate(['/dashboard']);
+    }
+
+    retryPermissions(): void {
+        if (
+            this.isLoading ||
+            this.isSaving
+        ) {
+            return;
+        }
+
+        this.loadPermissions();
+    }
+
+    private loadPermissions(): void {
+        this.isLoading = true;
+        this.errorMessage = '';
+
+        if (
+            !this.canCreateQualification
+        ) {
+            this.isLoading = false;
+            this.errorMessage =
+                'Bạn không có quyền thêm trình độ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.isLoading = false;
+        this.changeDetectorRef.markForCheck();
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private getErrorMessage(error: HttpErrorResponse, fallback: string): string {

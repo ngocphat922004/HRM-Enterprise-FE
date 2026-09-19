@@ -25,11 +25,21 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     TAI_KHOAN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
+
+import {
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     QuyenService,
@@ -106,9 +116,6 @@ export class RoleDetailComponent
     isLoading =
         false;
 
-    isDeleting =
-        false;
-
     errorMessage =
         '';
 
@@ -120,6 +127,10 @@ export class RoleDetailComponent
 
     readonly pageSize =
         8;
+
+    private currentRole:
+        RoleKey | null =
+        null;
 
     private toastTimer:
         ReturnType<
@@ -149,6 +160,9 @@ export class RoleDetailComponent
         private readonly chucVuService:
             ChucVuService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -156,7 +170,13 @@ export class RoleDetailComponent
     ngOnInit():
         void {
 
-        this.readRouteId();
+        this.currentRole =
+            resolveUserRole(
+                this.storageService
+                    .getCurrentUser(),
+            );
+
+        this.loadPermissions();
     }
 
     ngOnDestroy():
@@ -170,6 +190,45 @@ export class RoleDetailComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get canViewRoles():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewPositions():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    private get isAdmin():
+        boolean {
+
+        return (
+            this.currentRole ===
+            'admin'
+        );
     }
 
     get roleCode():
@@ -500,165 +559,14 @@ export class RoleDetailComponent
         );
     }
 
+
     backToList():
         void {
 
-        if (
-            this.isDeleting
-        ) {
-
-            return;
-        }
-
         void this.router
             .navigate([
                 '/settings/roles',
             ]);
-    }
-
-    editRole():
-        void {
-
-        if (
-            this.roleId ===
-            null ||
-
-            this.isLoading ||
-
-            this.isDeleting
-        ) {
-
-            this.showToast(
-                'Mã quyền không hợp lệ.',
-            );
-
-            return;
-        }
-
-        void this.router
-            .navigate([
-                '/settings/roles',
-                this.roleId,
-                'edit',
-            ]);
-    }
-
-    deleteRole():
-        void {
-
-        if (
-            this.isLoading ||
-            this.isDeleting
-        ) {
-
-            return;
-        }
-
-        if (
-            !this.role ||
-            this.roleId ===
-            null
-        ) {
-
-            this.showToast(
-                'Chưa có dữ liệu quyền để xóa.',
-            );
-
-            return;
-        }
-
-        if (
-            this.role
-                .soTaiKhoan >
-            0
-        ) {
-
-            this.showToast(
-                `Không thể xóa quyền vì đang có ${this.role.soTaiKhoan} tài khoản sử dụng.`,
-            );
-
-            return;
-        }
-
-        const confirmed =
-            typeof window ===
-                'undefined'
-
-                ? true
-
-                : window.confirm(
-                    `Bạn có chắc muốn xóa quyền “${this.role.tenQuyen}”?`,
-                );
-
-        if (
-            !confirmed
-        ) {
-
-            return;
-        }
-
-        const id =
-            this.roleId;
-
-        this.isDeleting =
-            true;
-
-        this.errorMessage =
-            '';
-
-        this.quyenService
-            .delete(
-                id,
-            )
-            .pipe(
-                finalize(
-                    () => {
-
-                        this.isDeleting =
-                            false;
-
-                        this.changeDetectorRef
-                            .markForCheck();
-                    },
-                ),
-            )
-            .subscribe({
-
-                next: () => {
-
-                    this.showToast(
-                        'Xóa quyền thành công.',
-                    );
-
-                    window.setTimeout(
-                        () => {
-
-                            void this.router
-                                .navigate([
-                                    '/settings/roles',
-                                ]);
-
-                        },
-                        650,
-                    );
-                },
-
-                error: (
-                    error:
-                        HttpErrorResponse,
-                ) => {
-                    this.errorMessage =
-                        this.getApiErrorMessage(
-                            error,
-
-                            'Không thể xóa quyền.',
-                        );
-
-                    this.showToast(
-                        this.errorMessage,
-                    );
-                },
-            });
     }
 
     viewAccount(
@@ -667,8 +575,8 @@ export class RoleDetailComponent
     ): void {
 
         if (
-            this.isLoading ||
-            this.isDeleting
+            !this.canViewAccounts ||
+            this.isLoading
         ) {
 
             return;
@@ -684,12 +592,24 @@ export class RoleDetailComponent
     applyAccountSearch():
         void {
 
+        if (
+            !this.canViewAccounts
+        ) {
+            return;
+        }
+
         this.currentPage =
             1;
     }
 
     clearAccountSearch():
         void {
+
+        if (
+            !this.canViewAccounts
+        ) {
+            return;
+        }
 
         this.accountSearchTerm =
             '';
@@ -704,8 +624,6 @@ export class RoleDetailComponent
     ): void {
 
         if (
-            this.isDeleting ||
-
             page <
             1 ||
 
@@ -724,12 +642,12 @@ export class RoleDetailComponent
         void {
 
         if (
+            !this.canViewRoles ||
+
             this.roleId ===
             null ||
 
-            this.isLoading ||
-
-            this.isDeleting
+            this.isLoading
         ) {
 
             return;
@@ -803,6 +721,30 @@ export class RoleDetailComponent
         )}`;
     }
 
+    private loadPermissions():
+        void {
+
+        if (
+            !this.isAdmin
+        ) {
+            this.roleId =
+                null;
+
+            this.role =
+                null;
+
+            this.errorMessage =
+                'Chỉ Quản trị viên được phép xem chi tiết quyền.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.readRouteId();
+    }
+
     private readRouteId():
         void {
 
@@ -855,6 +797,7 @@ export class RoleDetailComponent
         void {
 
         if (
+            !this.canViewRoles ||
             this.roleId ===
             null
         ) {
@@ -886,20 +829,39 @@ export class RoleDetailComponent
                     ),
 
             accounts:
-                this.taiKhoanService
-                    .getAll(),
+                this.canViewAccounts
+                    ? this.taiKhoanService
+                        .getAll()
+                    : of([]),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                (
+                    this.canViewAccounts &&
+                    this.canViewEmployees
+                )
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                (
+                    this.canViewAccounts &&
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
             positions:
-                this.chucVuService
-                    .getAll(),
+                (
+                    this.canViewAccounts &&
+                    this.canViewEmployees &&
+                    this.canViewPositions
+                )
+                    ? this.chucVuService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -1002,29 +964,55 @@ export class RoleDetailComponent
                                             account.trangThai,
 
                                         hoTen:
-                                            employee
-                                                ?.hoTen ??
-                                            `Nhân viên #${account.maNV}`,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employee
+                                                        ?.hoTen ??
+                                                    `Nhân viên #${account.maNV}`
+                                                )
+                                                : `NV-${String(account.maNV).padStart(4, '0')}`,
 
                                         email:
-                                            employee
-                                                ?.email ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employee
+                                                        ?.email ??
+                                                    null
+                                                )
+                                                : null,
 
                                         hinhAnh:
-                                            employee
-                                                ?.hinhAnh ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employee
+                                                        ?.hinhAnh ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenPB:
-                                            department
-                                                ?.tenPB ??
-                                            null,
+                                            (
+                                                this.canViewEmployees &&
+                                                this.canViewDepartments
+                                            )
+                                                ? (
+                                                    department
+                                                        ?.tenPB ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenCV:
-                                            position
-                                                ?.tenCV ??
-                                            null,
+                                            (
+                                                this.canViewEmployees &&
+                                                this.canViewPositions
+                                            )
+                                                ? (
+                                                    position
+                                                        ?.tenCV ??
+                                                    null
+                                                )
+                                                : null,
                                     };
 
                                     return accountItem;
@@ -1213,13 +1201,6 @@ export class RoleDetailComponent
                 return (
                     'Không tìm thấy quyền.'
                 );
-
-            case 409:
-
-                return (
-                    'Không thể xóa quyền vì quyền đang được sử dụng.'
-                );
-
             default:
 
                 return fallback;

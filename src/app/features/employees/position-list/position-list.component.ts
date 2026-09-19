@@ -26,12 +26,24 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
+
+import {
+    canManageOrganization,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
 
 import {
     ExcelExportService,
 } from '../../../core/services/excel-export.service';
 
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     NhanVienChiTiet,
@@ -106,11 +118,22 @@ export class PositionListComponent
         private readonly excelExportService:
             ExcelExportService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
+        if (!this.canViewPositions) {
+            this.positions = [];
+            this.errorMessage =
+                'Bạn không có quyền xem danh sách chức vụ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.loadPositions();
     }
 
@@ -122,6 +145,46 @@ export class PositionListComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get canViewPositions():
+        boolean {
+
+        return canViewOrganization(
+            this.currentRole,
+        );
+    }
+
+    get canCreatePositions():
+        boolean {
+
+        return canManageOrganization(
+            this.currentRole,
+        );
+    }
+
+    get canEditPositions():
+        boolean {
+
+        return canManageOrganization(
+            this.currentRole,
+        );
+    }
+
+    get canDeletePositions():
+        boolean {
+
+        return canManageOrganization(
+            this.currentRole,
+        );
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return canViewEmployeeDirectory(
+            this.currentRole,
+        );
     }
 
     get filteredPositions():
@@ -345,6 +408,7 @@ export class PositionListComponent
     ): void {
 
         if (
+            !this.canViewPositions ||
             this.deletingPositionId !==
             null
         ) {
@@ -371,6 +435,7 @@ export class PositionListComponent
     ): void {
 
         if (
+            !this.canEditPositions ||
             this.deletingPositionId !==
             null
         ) {
@@ -391,6 +456,7 @@ export class PositionListComponent
     ): void {
 
         if (
+            !this.canDeletePositions ||
             this.deletingPositionId !==
             null
         ) {
@@ -398,6 +464,7 @@ export class PositionListComponent
         }
 
         if (
+            this.canViewEmployees &&
             position.employeeCount >
             0
         ) {
@@ -492,7 +559,8 @@ export class PositionListComponent
 
     retry(): void {
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canViewPositions
         ) {
             return;
         }
@@ -502,7 +570,8 @@ export class PositionListComponent
 
     exportReport(): void {
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canViewPositions
         ) {
             return;
         }
@@ -555,9 +624,26 @@ export class PositionListComponent
     private loadPositions():
         void {
 
-        this.isLoading = true;
+        if (
+            this.isLoading ||
+            !this.canViewPositions
+        ) {
+            return;
+        }
 
+        this.isLoading = true;
         this.errorMessage = '';
+
+        const role =
+            this.currentRole;
+
+        const manager$ =
+            role === 'manager'
+                ? this.nhanVienService
+                    .getMe()
+                : of<NhanVienChiTiet | null>(
+                    null,
+                );
 
         forkJoin({
             positions:
@@ -565,8 +651,15 @@ export class PositionListComponent
                     .getAll(),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of<
+                        NhanVienChiTiet[]
+                    >([]),
+
+            manager:
+                manager$,
         })
             .pipe(
                 finalize(
@@ -583,7 +676,20 @@ export class PositionListComponent
                 next: ({
                     positions,
                     employees,
+                    manager,
                 }) => {
+                    const visibleEmployees =
+                        role === 'manager'
+                            ? employees
+                                .filter(
+                                    employee =>
+                                        manager !== null &&
+                                        manager.maPB !== null &&
+                                        employee.maPB ===
+                                        manager.maPB,
+                                )
+                            : employees;
+
                     this.positions =
                         positions
                             .map(
@@ -599,7 +705,7 @@ export class PositionListComponent
 
                                     employeeCount:
                                         this.countEmployeesByPosition(
-                                            employees,
+                                            visibleEmployees,
                                             position.maCV,
                                         ),
                                 }),
@@ -642,6 +748,15 @@ export class PositionListComponent
                     );
                 },
             });
+    }
+
+    private get currentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private countEmployeesByPosition(

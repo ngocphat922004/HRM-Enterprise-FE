@@ -1,3 +1,7 @@
+import {
+    NghiPhepTrangThai,
+} from '../../../core/constants/status.constants';
+
 export interface LeaveDetail {
     maNP: number;
     maNV: number;
@@ -5,20 +9,20 @@ export interface LeaveDetail {
     email: string | null;
     tenPB: string | null;
     tenCV: string | null;
-
     maLoaiNP: number;
     tenLoaiNP: string;
-
     tuNgay: string;
     denNgay: string;
     soNgay: number;
-
     lyDo: string | null;
-    trangThai: string;
-
-    nguoiDuyet: number | null;
-    tenNguoiDuyet: string | null;
-    chucVuNguoiDuyet: string | null;
+    trangThai:
+    NghiPhepTrangThai;
+    nguoiDuyet:
+    number | null;
+    tenNguoiDuyet:
+    string | null;
+    chucVuNguoiDuyet:
+    string | null;
 }
 
 export interface LeaveProcessStep {
@@ -29,3 +33,8 @@ export interface LeaveProcessStep {
     active: boolean;
 }
 
+export interface LeaveDetailSidebarItem {
+    label: string;
+    icon: string;
+    route: string;
+}

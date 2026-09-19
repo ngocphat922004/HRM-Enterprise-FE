@@ -10,6 +10,7 @@ import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
+    OnInit,
 } from '@angular/core';
 
 import {
@@ -24,6 +25,17 @@ import {
 import {
     finalize,
 } from 'rxjs';
+
+import {
+    canManageOrganization,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     ChucVuService,
@@ -48,10 +60,14 @@ import {
     changeDetection:
         ChangeDetectionStrategy.OnPush,
 })
-export class AddPositionComponent {
+export class AddPositionComponent
+    implements OnInit {
+
+    isLoading = false;
     isSaving = false;
     submitted = false;
     toastMessage = '';
+    errorMessage = '';
 
     form:
         AddPositionForm = {
@@ -66,9 +82,32 @@ export class AddPositionComponent {
         private readonly chucVuService:
             ChucVuService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
+
+    ngOnInit(): void {
+        this.loadPermissions();
+    }
+
+    get canViewPosition(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canCreatePosition(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canUsePositionForm(): boolean {
+        return this.canCreatePosition;
+    }
 
     get isPositionNameInvalid():
         boolean {
@@ -80,16 +119,45 @@ export class AddPositionComponent {
     }
 
     cancel(): void {
+        if (
+            this.isSaving
+        ) {
+            return;
+        }
+
+        if (
+            this.canViewPosition
+        ) {
+            void this.router.navigate([
+                '/positions',
+            ]);
+
+            return;
+        }
+
         void this.router.navigate([
-            '/positions',
+            '/dashboard',
         ]);
+    }
+
+    retryPermissions(): void {
+        if (
+            this.isLoading ||
+            this.isSaving
+        ) {
+            return;
+        }
+
+        this.loadPermissions();
     }
 
     savePosition(): void {
         this.submitted = true;
 
         if (
+            !this.canUsePositionForm ||
             this.isPositionNameInvalid ||
+            this.isLoading ||
             this.isSaving
         ) {
             return;
@@ -151,6 +219,44 @@ export class AddPositionComponent {
                         .markForCheck();
                 },
             });
+    }
+
+    private loadPermissions(): void {
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        if (
+            !this.canCreatePosition
+        ) {
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền thêm chức vụ.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.isLoading =
+            false;
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private getApiErrorMessage(

@@ -12,7 +12,7 @@
     </svg>
 
     <input type="search" name="globalSearch" [(ngModel)]="searchTerm" placeholder="Tìm kiếm nhân viên, hồ sơ..."
-        aria-label="Tìm kiếm" />
+        aria-label="Tìm kiếm nhân viên" />
 </form>
 }
 
@@ -22,28 +22,108 @@
         <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 12h14M12 5v14"></path>
         </svg>
-        <span>Thêm mới</span>
+
+        <span>Thêm nhân viên</span>
     </a>
     }
 
+    @if (canOpenNotifications) {
     <div class="header-action-wrapper">
         <button type="button" class="icon-button notification-button" (click)="toggleNotifications($event)"
-            aria-label="Thông báo">
+            [attr.aria-expanded]="isNotificationOpen" [attr.aria-label]="
+                hasUnreadNotifications
+                    ? 'Thông báo, ' + unreadNotificationCount + ' chưa đọc'
+                    : 'Thông báo'
+            ">
             <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0M4 17h16M6 17V9a6 6 0 0 1 12 0v8"></path>
             </svg>
+
+            @if (hasUnreadNotifications) {
+            <span class="notification-dot" aria-hidden="true"></span>
+            }
         </button>
 
         @if (isNotificationOpen) {
-        <div class="header-popover notification-popover">
-            <strong>Thông báo</strong>
-            <p>Bạn chưa có thông báo mới.</p>
+        <div class="header-popover notification-popover" role="region" aria-label="Danh sách thông báo">
+            <div class="notification-popover__header">
+                <div>
+                    <strong>Thông báo</strong>
+
+                    @if (hasUnreadNotifications) {
+                    <span>
+                        {{ unreadNotificationCount }} chưa đọc
+                    </span>
+                    }
+                </div>
+
+                <button type="button" class="notification-refresh-button" (click)="retryNotifications()"
+                    [disabled]="isNotificationLoading" aria-label="Tải lại thông báo">
+                    <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"></path>
+                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"></path>
+                    </svg>
+                </button>
+            </div>
+
+            @if (isNotificationLoading) {
+            <div class="notification-state">
+                <span class="notification-state__spinner"></span>
+                <p>Đang tải thông báo...</p>
+            </div>
+            } @else if (notificationError) {
+            <div class="notification-state notification-state--error">
+                <p>{{ notificationError }}</p>
+
+                <button type="button" (click)="retryNotifications()">
+                    Thử lại
+                </button>
+            </div>
+            } @else if (notifications.length === 0) {
+            <div class="notification-state">
+                <p>Bạn chưa có thông báo.</p>
+            </div>
+            } @else {
+            <div class="notification-list">
+                @for (
+                notification of notifications;
+                track notification.maThongBao
+                ) {
+                <button type="button" class="notification-item" [class.notification-item--unread]="!notification.daDoc"
+                    (click)="openNotification(notification)">
+                    <span class="notification-item__status"
+                        [class.notification-item__status--unread]="!notification.daDoc" aria-hidden="true"></span>
+
+                    <span class="notification-item__content">
+                        <strong>
+                            {{ notification.tieuDe }}
+                        </strong>
+
+                        <span>
+                            {{ notification.noiDung }}
+                        </span>
+
+                        <small>
+                            {{
+                            notification.ngayTao
+                            | date: 'dd/MM/yyyy HH:mm'
+                            }}
+                        </small>
+                    </span>
+                </button>
+                }
+            </div>
+            }
         </div>
         }
     </div>
+    }
 
-    <button type="button" class="icon-button" (click)="toggleDarkMode()"
-        [attr.aria-label]="isDarkMode ? 'Bật giao diện sáng' : 'Bật giao diện tối'">
+    <button type="button" class="icon-button" (click)="toggleDarkMode()" [attr.aria-label]="
+            isDarkMode
+                ? 'Bật giao diện sáng'
+                : 'Bật giao diện tối'
+        ">
         @if (isDarkMode) {
         <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="4"></circle>
@@ -58,6 +138,7 @@
         }
     </button>
 
+    @if (canOpenAi) {
     <button type="button" class="icon-button ai-button" (click)="toggleAiChat($event)" aria-label="Trợ lý AI">
         <svg class="lucide-icon" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="7" width="18" height="13" rx="2"></rect>
@@ -71,19 +152,41 @@
     </div>
     }
 
+    }
+
     <div class="header-account">
         <button type="button" class="header-profile" [class.header-profile--open]="isMenuOpen"
             (click)="toggleMenu($event)" [attr.aria-expanded]="isMenuOpen" aria-label="Mở tùy chọn tài khoản">
             <div class="header-profile__info">
-                <strong>{{ isLoading ? 'Đang tải...' : displayName || username || 'Tài khoản' }}</strong>
-                <span>{{ isLoading ? 'Người dùng' : roleName || 'Người dùng' }}</span>
+                <strong>
+                    {{
+                    isLoading
+                    ? 'Đang tải...'
+                    : displayName ||
+                    username ||
+                    'Tài khoản'
+                    }}
+                </strong>
+
+                <span>
+                    {{
+                    isLoading
+                    ? 'Người dùng'
+                    : roleName ||
+                    'Người dùng'
+                    }}
+                </span>
             </div>
 
             <span class="header-profile__avatar">
                 @if (!isLoading && avatarUrl) {
                 <img [src]="avatarUrl" [alt]="displayName || username" (error)="handleImageError()" />
                 } @else {
-                {{ isLoading ? '…' : initials }}
+                {{
+                isLoading
+                ? '…'
+                : initials
+                }}
                 }
             </span>
 
@@ -104,20 +207,46 @@
                 </span>
 
                 <div>
-                    <strong>{{ displayName || username || 'Tài khoản' }}</strong>
-                    <span>{{ employee?.email || username }}</span>
-                    <small>{{ roleName || 'Người dùng' }}</small>
+                    <strong>
+                        {{
+                        displayName ||
+                        username ||
+                        'Tài khoản'
+                        }}
+                    </strong>
+
+                    <span>
+                        {{
+                        employee?.email ||
+                        username
+                        }}
+                    </span>
+
+                    <small>
+                        {{
+                        roleName ||
+                        'Người dùng'
+                        }}
+                    </small>
+
                     @if (loadError) {
-                    <small class="account-error">{{ loadError }}</small>
+                    <small class="account-error">
+                        {{ loadError }}
+                    </small>
                     }
                 </div>
             </div>
 
             <div class="popover-divider"></div>
 
-            <button type="button" class="popover-menu-item" (click)="goToProfile()">Hồ sơ cá nhân</button>
+            <button type="button" class="popover-menu-item" (click)="goToProfile()">
+                Hồ sơ cá nhân
+            </button>
+
             @if (canOpenSettings) {
-            <button type="button" class="popover-menu-item" (click)="goToSettings()">Cài đặt</button>
+            <button type="button" class="popover-menu-item" (click)="goToSettings()">
+                Cài đặt
+            </button>
             }
 
             <div class="popover-divider"></div>

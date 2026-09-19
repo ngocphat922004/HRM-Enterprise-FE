@@ -25,11 +25,16 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
-    MA_QUYEN,
-} from '../../../core/constants/role.constants';
+    canManagePayroll,
+    canViewEmployeeDirectory,
+    canViewPayroll as canRoleViewPayroll,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
 
 import {
     StorageService,
@@ -98,9 +103,6 @@ export class PayrollDetailComponent
     toastMessage =
         '';
 
-    currentRoleId =
-        0;
-
     private shouldPrintAfterLoad =
         false;
 
@@ -133,11 +135,6 @@ export class PayrollDetailComponent
     ngOnInit():
         void {
 
-        this.currentRoleId =
-            this.storageService
-                .getCurrentRoleId() ??
-            0;
-
         this.shouldPrintAfterLoad =
             this.route
                 .snapshot
@@ -147,7 +144,7 @@ export class PayrollDetailComponent
                 ) ===
             '1';
 
-        this.readRouteId();
+        this.initialize();
     }
 
     ngOnDestroy():
@@ -163,23 +160,36 @@ export class PayrollDetailComponent
         }
     }
 
-    get isEmployeeSelfView():
+    get canViewPayroll():
         boolean {
 
-        return (
-            this.currentRoleId ===
-            MA_QUYEN.NHAN_VIEN
+        return canRoleViewPayroll(
+            this.getCurrentRole(),
         );
     }
 
     get canEditPayroll():
         boolean {
 
+        return canManagePayroll(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
+        );
+    }
+
+    get isEmployeeSelfView():
+        boolean {
+
         return (
-            this.currentRoleId ===
-            MA_QUYEN.QUAN_TRI_VIEN ||
-            this.currentRoleId ===
-            MA_QUYEN.KE_TOAN
+            this.getCurrentRole() ===
+            'employee'
         );
     }
 
@@ -291,7 +301,8 @@ export class PayrollDetailComponent
         void {
 
         if (
-            !this.canEditPayroll
+            !this.canEditPayroll ||
+            this.isEmployeeSelfView
         ) {
 
             this.showToast(
@@ -323,6 +334,18 @@ export class PayrollDetailComponent
         if (
             !this.payroll
         ) {
+
+            return;
+        }
+
+        if (
+            !this.isEmployeeSelfView &&
+            !this.canViewEmployees
+        ) {
+
+            this.showToast(
+                'Bạn không có quyền xem hồ sơ nhân viên.',
+            );
 
             return;
         }
@@ -370,7 +393,7 @@ export class PayrollDetailComponent
             return;
         }
 
-        this.loadPayrollDetail();
+        this.initialize();
     }
 
     getInitials(
@@ -423,6 +446,31 @@ export class PayrollDetailComponent
                 '',
             )
             .toUpperCase();
+    }
+
+    private initialize():
+        void {
+
+        this.errorMessage =
+            '';
+
+        this.payroll =
+            null;
+
+        if (
+            !this.canViewPayroll
+        ) {
+
+            this.errorMessage =
+                'Bạn không có quyền xem bảng lương.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.readRouteId();
     }
 
     private readRouteId():
@@ -606,8 +654,10 @@ export class PayrollDetailComponent
                     ),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -808,6 +858,15 @@ export class PayrollDetailComponent
                     ?.tenCV ??
                 null,
         };
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private formatPayrollCode(

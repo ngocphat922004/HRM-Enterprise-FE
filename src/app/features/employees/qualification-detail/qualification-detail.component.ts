@@ -7,8 +7,26 @@ import {
     OnDestroy,
     OnInit,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import {
+    ActivatedRoute,
+    Router,
+    RouterLink,
+} from '@angular/router';
+import {
+    finalize,
+    forkJoin,
+    of,
+} from 'rxjs';
+
+import {
+    canManageOrganization,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+import { StorageService } from '../../../core/services/storage.service';
+import { NhanVienChiTiet } from '../models/nhan-vien.model';
 import { NhanVienService } from '../services/nhan-vien.service';
 import { TrinhDoService } from '../services/trinh-do.service';
 import {
@@ -26,12 +44,15 @@ import {
 })
 export class QualificationDetailComponent implements OnInit, OnDestroy {
     qualificationId = 0;
+
     qualification: QualificationDetail = {
         maTD: 0,
         tenTD: '',
         employeeCount: 0,
     };
+
     employees: QualificationEmployee[] = [];
+
     isLoading = false;
     isDeleting = false;
     errorMessage = '';
@@ -44,25 +65,34 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
         private readonly router: Router,
         private readonly trinhDoService: TrinhDoService,
         private readonly nhanVienService: NhanVienService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
-        const id = Number(this.route.snapshot.paramMap.get('id'));
-
-        if (!Number.isInteger(id) || id <= 0) {
-            this.errorMessage = 'Mã trình độ không hợp lệ.';
-            return;
-        }
-
-        this.qualificationId = id;
-        this.load();
+        this.initializePage();
     }
 
     ngOnDestroy(): void {
         if (this.toastTimer) {
             clearTimeout(this.toastTimer);
         }
+    }
+
+    get canViewQualification(): boolean {
+        return canViewOrganization(this.currentRole);
+    }
+
+    get canEditQualification(): boolean {
+        return canManageOrganization(this.currentRole);
+    }
+
+    get canDeleteQualification(): boolean {
+        return canManageOrganization(this.currentRole);
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(this.currentRole);
     }
 
     get qualificationCode(): string {
@@ -72,13 +102,19 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
     }
 
     retry(): void {
-        if (!this.isLoading && !this.isDeleting && this.qualificationId > 0) {
-            this.load();
+        if (
+            this.isLoading ||
+            this.isDeleting
+        ) {
+            return;
         }
+
+        this.initializePage();
     }
 
     editQualification(): void {
         if (
+            !this.canEditQualification ||
             this.qualificationId <= 0 ||
             this.isLoading ||
             this.isDeleting ||
@@ -94,24 +130,39 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
         ]);
     }
 
-    viewEmployee(employee: QualificationEmployee): void {
-        if (this.isDeleting) {
+    viewEmployee(
+        employee: QualificationEmployee,
+    ): void {
+        if (
+            !this.canViewEmployees ||
+            this.isDeleting
+        ) {
             return;
         }
 
-        void this.router.navigate(['/employees', employee.maNV]);
+        void this.router.navigate([
+            '/employees',
+            employee.maNV,
+        ]);
     }
 
     deleteQualification(): void {
         if (
+            !this.canDeleteQualification ||
             this.isLoading ||
             this.isDeleting ||
-            this.qualificationId <= 0 ||
+            this.qualificationId <= 0
+        ) {
+            return;
+        }
+
+        if (
+            this.canViewEmployees &&
             this.qualification.employeeCount > 0
         ) {
-            if (this.qualification.employeeCount > 0) {
-                this.showToast('Không thể xóa trình độ đang được nhân viên sử dụng.');
-            }
+            this.showToast(
+                'Không thể xóa trình độ đang được nhân viên sử dụng.',
+            );
             return;
         }
 
@@ -141,7 +192,13 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
             .subscribe({
                 next: () => {
                     this.showToast('Đã xóa trình độ thành công.');
-                    void this.router.navigate(['/qualifications']);
+
+                    if (this.canViewQualification) {
+                        void this.router.navigate(['/qualifications']);
+                        return;
+                    }
+
+                    void this.router.navigate(['/dashboard']);
                 },
                 error: (error: HttpErrorResponse) => {
                     this.errorMessage = this.getErrorMessage(
@@ -149,11 +206,14 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
                         'Không thể xóa trình độ.',
                     );
                     this.showToast(this.errorMessage);
+                    this.changeDetectorRef.markForCheck();
                 },
             });
     }
 
-    createInitials(fullName: string): string {
+    createInitials(
+        fullName: string,
+    ): string {
         const parts = fullName
             .trim()
             .split(/\s+/)
@@ -164,24 +224,82 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
         }
 
         if (parts.length === 1) {
-            return parts[0].slice(0, 2).toUpperCase();
+            return parts[0]
+                .slice(0, 2)
+                .toUpperCase();
         }
 
         return parts
             .slice(-2)
-            .map((part) => part[0])
+            .map(part => part[0])
             .join('')
             .toUpperCase();
     }
 
+    private get currentRole(): RoleKey | null {
+        return resolveUserRole(
+            this.storageService.getCurrentUser(),
+        );
+    }
+
+    private initializePage(): void {
+        this.errorMessage = '';
+
+        if (!this.canViewQualification) {
+            this.resetData();
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu trình độ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.readRouteId();
+    }
+
+    private readRouteId(): void {
+        const id = Number(
+            this.route.snapshot.paramMap.get('id'),
+        );
+
+        if (
+            !Number.isInteger(id) ||
+            id <= 0
+        ) {
+            this.qualificationId = 0;
+            this.resetData();
+            this.errorMessage = 'Mã trình độ không hợp lệ.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
+        this.qualificationId = id;
+        this.load();
+    }
+
     private load(): void {
+        if (
+            !this.canViewQualification ||
+            this.qualificationId <= 0
+        ) {
+            return;
+        }
+
+        const role = this.currentRole;
+
         this.isLoading = true;
         this.errorMessage = '';
         this.changeDetectorRef.markForCheck();
 
         forkJoin({
-            qualification: this.trinhDoService.getById(this.qualificationId),
-            employees: this.nhanVienService.getAll(),
+            qualification: this.trinhDoService.getById(
+                this.qualificationId,
+            ),
+            employees: this.canViewEmployees
+                ? this.nhanVienService.getAll()
+                : of([] as NhanVienChiTiet[]),
+            currentEmployee: role === 'manager'
+                ? this.nhanVienService.getMe()
+                : of(null),
         })
             .pipe(
                 finalize(() => {
@@ -190,24 +308,47 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
                 }),
             )
             .subscribe({
-                next: ({ qualification, employees }) => {
-                    this.employees = employees
-                        .filter((employee) => employee.maTD === qualification.maTD)
-                        .map((employee) => ({
-                            maNV: employee.maNV,
-                            hoTen: employee.hoTen,
-                            email: employee.email,
-                            tenPB: employee.tenPB,
-                            tenCV: employee.tenCV,
-                        }))
-                        .sort((first, second) =>
-                            first.hoTen.localeCompare(second.hoTen, 'vi'),
+                next: ({
+                    qualification,
+                    employees,
+                    currentEmployee,
+                }) => {
+                    const scopedEmployees =
+                        role === 'manager'
+                            ? currentEmployee?.maPB != null
+                                ? employees.filter(
+                                    employee =>
+                                        employee.maPB ===
+                                        currentEmployee.maPB,
+                                )
+                                : []
+                            : employees;
+
+                    this.employees = scopedEmployees
+                        .filter(
+                            employee =>
+                                employee.maTD ===
+                                qualification.maTD,
+                        )
+                        .map(
+                            employee =>
+                                this.mapEmployee(employee),
+                        )
+                        .sort(
+                            (first, second) =>
+                                first.hoTen.localeCompare(
+                                    second.hoTen,
+                                    'vi',
+                                ),
                         );
 
                     this.qualification = {
-                        ...qualification,
+                        maTD: qualification.maTD,
+                        tenTD: qualification.tenTD,
                         employeeCount: this.employees.length,
                     };
+
+                    this.changeDetectorRef.markForCheck();
                 },
                 error: (error: HttpErrorResponse) => {
                     this.qualification = {
@@ -220,8 +361,30 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
                         error,
                         'Không thể tải thông tin trình độ.',
                     );
+                    this.changeDetectorRef.markForCheck();
                 },
             });
+    }
+
+    private mapEmployee(
+        employee: NhanVienChiTiet,
+    ): QualificationEmployee {
+        return {
+            maNV: employee.maNV,
+            hoTen: employee.hoTen,
+            email: employee.email,
+            tenPB: employee.tenPB,
+            tenCV: employee.tenCV,
+        };
+    }
+
+    private resetData(): void {
+        this.qualification = {
+            maTD: this.qualificationId,
+            tenTD: '',
+            employeeCount: 0,
+        };
+        this.employees = [];
     }
 
     private getErrorMessage(
@@ -260,7 +423,9 @@ export class QualificationDetailComponent implements OnInit, OnDestroy {
         return fallback;
     }
 
-    private showToast(message: string): void {
+    private showToast(
+        message: string,
+    ): void {
         this.toastMessage = message;
         this.changeDetectorRef.markForCheck();
 

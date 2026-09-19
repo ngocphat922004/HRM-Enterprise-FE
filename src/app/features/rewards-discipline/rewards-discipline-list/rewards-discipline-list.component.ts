@@ -24,6 +24,7 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
@@ -32,8 +33,19 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    canManageRewards,
+    canViewRewards,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
     ExcelExportService,
 } from '../../../core/services/excel-export.service';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     PhongBanService,
@@ -153,6 +165,9 @@ export class RewardsDisciplineListComponent
         private readonly excelExportService:
             ExcelExportService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) {
@@ -171,6 +186,16 @@ export class RewardsDisciplineListComponent
     ngOnInit():
         void {
 
+        if (!this.canViewDecisions) {
+            this.records = [];
+            this.departments = [];
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu khen thưởng, kỷ luật.';
+            this.changeDetectorRef
+                .markForCheck();
+            return;
+        }
+
         this.loadData();
     }
 
@@ -187,11 +212,76 @@ export class RewardsDisciplineListComponent
         }
     }
 
+    get currentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
+    }
+
+    get canViewDecisions():
+        boolean {
+
+        return canViewRewards(
+            this.currentRole,
+        );
+    }
+
+    get canCreateDecisions():
+        boolean {
+
+        return canManageRewards(
+            this.currentRole,
+        );
+    }
+
+    get canEditDecisions():
+        boolean {
+
+        return canManageRewards(
+            this.currentRole,
+        );
+    }
+
+    get canDeleteDecisions():
+        boolean {
+
+        return canManageRewards(
+            this.currentRole,
+        );
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        /*
+         * Employee được xem thông tin của chính mình.
+         * Các role quản lý được xem thông tin nhân viên
+         * theo quyền của module Nhân viên.
+         */
+        return this.canViewDecisions;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        const role =
+            this.currentRole;
+
+        return (
+            role !== null &&
+            role !== 'employee'
+        );
+    }
+
     loadData():
         void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canViewDecisions
         ) {
 
             return;
@@ -203,19 +293,33 @@ export class RewardsDisciplineListComponent
         this.errorMessage =
             '';
 
+        const isEmployee =
+            this.currentRole ===
+            'employee';
+
         forkJoin({
 
             decisions:
-                this.khenThuongKyLuatService
-                    .getAll(),
+                isEmployee
+                    ? this.khenThuongKyLuatService
+                        .getMe()
+                    : this.khenThuongKyLuatService
+                        .getAll(),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                isEmployee
+                    ? forkJoin([
+                        this.nhanVienService
+                            .getMe(),
+                    ])
+                    : this.nhanVienService
+                        .getAll(),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                isEmployee
+                    ? of([])
+                    : this.phongBanService
+                        .getAll(),
 
         })
             .pipe(
@@ -238,6 +342,16 @@ export class RewardsDisciplineListComponent
                     departments,
                 }) => {
 
+                    const scopedDecisions =
+                        isEmployee &&
+                            employees.length > 0
+                            ? decisions.filter(
+                                decision =>
+                                    decision.maNV ===
+                                    employees[0].maNV,
+                            )
+                            : decisions;
+
                     this.departments =
                         departments.map(
                             (
@@ -254,7 +368,7 @@ export class RewardsDisciplineListComponent
                         );
 
                     this.records =
-                        decisions.map(
+                        scopedDecisions.map(
                             (
                                 decision,
                             ) => {
@@ -754,6 +868,7 @@ export class RewardsDisciplineListComponent
         void {
 
         if (
+            !this.canCreateDecisions ||
             this.isLoading ||
             this.deletingDecisionId !==
             null
@@ -775,6 +890,7 @@ export class RewardsDisciplineListComponent
     ): void {
 
         if (
+            !this.canViewDecisions ||
             this.deletingDecisionId !==
             null
         ) {
@@ -795,6 +911,7 @@ export class RewardsDisciplineListComponent
     ): void {
 
         if (
+            !this.canEditDecisions ||
             this.deletingDecisionId !==
             null
         ) {
@@ -816,6 +933,7 @@ export class RewardsDisciplineListComponent
     ): void {
 
         if (
+            !this.canViewDecisions ||
             this.deletingDecisionId !==
             null
         ) {
@@ -845,6 +963,7 @@ export class RewardsDisciplineListComponent
     ): void {
 
         if (
+            !this.canDeleteDecisions ||
             this.deletingDecisionId !==
             null
         ) {
@@ -946,6 +1065,12 @@ export class RewardsDisciplineListComponent
 
     exportReport():
         void {
+
+        if (
+            !this.canViewDecisions
+        ) {
+            return;
+        }
 
         const data = this.filteredRecords.map((record) => ({
             'Mã quyết định': this.formatDecisionCode(record.maKTKL),

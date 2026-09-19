@@ -23,6 +23,7 @@
         </p>
     </div>
 
+    @if (canViewAttendance) {
     <div class="overview-heading__actions">
         <button class="secondary-button" type="button" (click)="selectToday()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -49,6 +50,7 @@
             Xuất Excel
         </button>
     </div>
+    }
 </section>
 
 @if (errorMessage) {
@@ -63,6 +65,7 @@
 </section>
 }
 
+@if (canViewAttendance) {
 <section class="overview-toolbar" aria-label="Bộ lọc tổng quan chấm công">
     <label class="overview-filter">
         <span>
@@ -72,6 +75,10 @@
         <input type="date" [(ngModel)]="selectedDate" (change)="applyFilters()" [disabled]="isLoading" />
     </label>
 
+    @if (
+    canViewEmployees &&
+    canViewDepartments
+    ) {
     <label class="overview-filter">
         <span>
             Phòng ban
@@ -94,7 +101,9 @@
             }
         </select>
     </label>
+    }
 
+    @if (canViewAllAttendance) {
     <button class="table-link-button" type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
         Xem bảng chấm công
 
@@ -104,6 +113,7 @@
             <path d="m13 6 6 6-6 6"></path>
         </svg>
     </button>
+    }
 </section>
 
 @if (isLoading) {
@@ -116,8 +126,8 @@
         </strong>
 
         <p>
-            Đang lấy dữ liệu nhân viên,
-            phòng ban, ca làm và chấm công.
+            Đang tải dữ liệu chấm công
+            và các nguồn liên quan được phép xem.
         </p>
     </div>
 </section>
@@ -471,9 +481,11 @@
                 </p>
             </div>
 
+            @if (canViewAllAttendance) {
             <button class="text-button" type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
                 Xem tất cả
             </button>
+            }
         </div>
 
         @if (isLoading) {
@@ -519,12 +531,17 @@
                         Mã NV:
                         {{ employee.maNV }}
 
+                        @if (
+                        canViewEmployees &&
+                        canViewDepartments
+                        ) {
                         ·
 
                         {{
                         employee.tenPB ||
                         'Chưa phân phòng'
                         }}
+                        }
                     </span>
                 </div>
 
@@ -691,14 +708,30 @@
             </div>
         </div>
 
+        @if (canViewAllAttendance) {
         <button class="
                             primary-button
                             daily-summary-card__button
                         " type="button" (click)="viewAttendanceTable()" [disabled]="isLoading">
             Mở bảng chấm công chi tiết
         </button>
+        }
     </article>
 </section>
+} @else if (!isLoading) {
+<section class="overview-error" role="alert">
+    <div>
+        <strong>Không thể hiển thị tổng quan chấm công</strong>
+        <p>
+            {{
+            errorMessage ||
+            'Bạn không có quyền xem dữ liệu chấm công.'
+            }}
+        </p>
+    </div>
+</section>
+}
+
 @if (toastMessage) {
 <div class="page-toast" role="status">
     {{ toastMessage }}

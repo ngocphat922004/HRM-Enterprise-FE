@@ -12,7 +12,6 @@ import {
     OnInit,
 } from '@angular/core';
 
-
 import {
     ActivatedRoute,
     Router,
@@ -22,6 +21,7 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
@@ -29,10 +29,22 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    canManageRewards,
+    canViewRewards,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
     PhongBanService,
 } from '../../departments/services/phong-ban.service';
 
 import {
+    NhanVien,
     NhanVienChiTiet,
 } from '../../employees/models/nhan-vien.model';
 
@@ -124,6 +136,9 @@ export class RewardsDisciplineDetailComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -140,6 +155,18 @@ export class RewardsDisciplineDetailComponent
                 ) ===
             '1';
 
+        if (
+            !this.canViewDecisions
+        ) {
+            this.errorMessage =
+                'Bạn không có quyền xem khen thưởng, kỷ luật.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
         this.readRouteId();
     }
 
@@ -149,11 +176,73 @@ export class RewardsDisciplineDetailComponent
         if (
             this.toastTimer
         ) {
-
             clearTimeout(
                 this.toastTimer,
             );
         }
+    }
+
+    get currentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
+    }
+
+    get canViewDecisions():
+        boolean {
+
+        return canViewRewards(
+            this.currentRole,
+        );
+    }
+
+    get canEditDecisions():
+        boolean {
+
+        return canManageRewards(
+            this.currentRole,
+        );
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        /*
+         * Các role được xem quyết định đều có thể xem
+         * thông tin nhân viên liên quan trong phạm vi
+         * quyết định mà họ được phép mở.
+         *
+         * Employee chỉ đi qua API /me nên đây vẫn là
+         * thông tin của chính Employee.
+         */
+        return this.canViewDecisions;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        const role =
+            this.currentRole;
+
+        return (
+            role !== null &&
+            role !== 'employee'
+        );
+    }
+
+    get canViewPositions():
+        boolean {
+
+        const role =
+            this.currentRole;
+
+        return (
+            role !== null &&
+            role !== 'employee'
+        );
     }
 
     get decisionCode():
@@ -168,7 +257,6 @@ export class RewardsDisciplineDetailComponent
             id ===
             null
         ) {
-
             return '—';
         }
 
@@ -204,7 +292,6 @@ export class RewardsDisciplineDetailComponent
         if (
             this.isLoading
         ) {
-
             return;
         }
 
@@ -218,9 +305,9 @@ export class RewardsDisciplineDetailComponent
         void {
 
         if (
+            !this.canEditDecisions ||
             this.isLoading
         ) {
-
             return;
         }
 
@@ -233,7 +320,6 @@ export class RewardsDisciplineDetailComponent
             id ===
             null
         ) {
-
             this.showToast(
                 'Mã quyết định không hợp lệ.',
             );
@@ -253,11 +339,40 @@ export class RewardsDisciplineDetailComponent
         void {
 
         if (
+            !this.canViewEmployees ||
             !this.decision ||
             this.isLoading
         ) {
-
             return;
+        }
+
+        const role =
+            this.currentRole;
+
+        if (
+            role === 'employee'
+        ) {
+            const currentEmployeeId =
+                Number(
+                    this.storageService
+                        .getCurrentUser()
+                        ?.maNV,
+                );
+
+            if (
+                !Number.isInteger(
+                    currentEmployeeId,
+                ) ||
+                currentEmployeeId <= 0 ||
+                currentEmployeeId !==
+                this.decision.maNV
+            ) {
+                this.showToast(
+                    'Bạn chỉ có thể xem hồ sơ của chính mình.',
+                );
+
+                return;
+            }
         }
 
         void this.router
@@ -271,9 +386,9 @@ export class RewardsDisciplineDetailComponent
         void {
 
         if (
+            !this.canViewDecisions ||
             !this.decision
         ) {
-
             this.showToast(
                 'Chưa có dữ liệu quyết định để in.',
             );
@@ -285,7 +400,6 @@ export class RewardsDisciplineDetailComponent
             typeof window !==
             'undefined'
         ) {
-
             window.print();
         }
     }
@@ -296,10 +410,9 @@ export class RewardsDisciplineDetailComponent
         if (
             this.decisionId ===
             null ||
-
-            this.isLoading
+            this.isLoading ||
+            !this.canViewDecisions
         ) {
-
             return;
         }
 
@@ -325,7 +438,6 @@ export class RewardsDisciplineDetailComponent
             parts.length ===
             0
         ) {
-
             return 'NV';
         }
 
@@ -333,7 +445,6 @@ export class RewardsDisciplineDetailComponent
             parts.length ===
             1
         ) {
-
             return parts[0]
                 .slice(
                     0,
@@ -376,14 +487,11 @@ export class RewardsDisciplineDetailComponent
 
         if (
             !rawId ||
-
             !Number.isInteger(
                 parsedId,
             ) ||
-
             parsedId <= 0
         ) {
-
             this.decisionId =
                 null;
 
@@ -409,10 +517,134 @@ export class RewardsDisciplineDetailComponent
         void {
 
         if (
+            !this.canViewDecisions ||
             this.decisionId ===
             null
         ) {
+            return;
+        }
 
+        if (
+            this.currentRole ===
+            'employee'
+        ) {
+            this.loadEmployeeDecisionDetail();
+            return;
+        }
+
+        this.loadManagementDecisionDetail();
+    }
+
+    private loadEmployeeDecisionDetail():
+        void {
+
+        if (
+            this.decisionId ===
+            null
+        ) {
+            return;
+        }
+
+        const decisionId =
+            this.decisionId;
+
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        this.decision =
+            null;
+
+        forkJoin({
+            decisions:
+                this.khenThuongKyLuatService
+                    .getMe(),
+
+            employee:
+                this.nhanVienService
+                    .getMe(),
+        })
+            .pipe(
+                finalize(
+                    () => {
+                        this.isLoading =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: ({
+                    decisions,
+                    employee,
+                }) => {
+                    const decision =
+                        decisions.find(
+                            (
+                                item,
+                            ) =>
+                                item.maKTKL ===
+                                decisionId,
+                        );
+
+                    if (
+                        !decision ||
+                        decision.maNV !==
+                        employee.maNV
+                    ) {
+                        this.decision =
+                            null;
+
+                        this.errorMessage =
+                            'Bạn không có quyền xem quyết định này.';
+
+                        this.changeDetectorRef
+                            .markForCheck();
+
+                        return;
+                    }
+
+                    this.decision =
+                        this.mapDecisionDetail(
+                            decision,
+                            employee,
+                            null,
+                        );
+
+                    this.afterDecisionLoaded();
+                },
+
+                error: (
+                    error:
+                        unknown,
+                ) => {
+                    this.decision =
+                        null;
+
+                    this.errorMessage =
+                        this.getApiErrorMessage(
+                            error,
+                            'Không thể tải quyết định của bạn.',
+                        );
+
+                    this.showToast(
+                        this.errorMessage,
+                    );
+                },
+            });
+    }
+
+    private loadManagementDecisionDetail():
+        void {
+
+        if (
+            this.decisionId ===
+            null
+        ) {
             return;
         }
 
@@ -426,7 +658,6 @@ export class RewardsDisciplineDetailComponent
             null;
 
         forkJoin({
-
             decision:
                 this.khenThuongKyLuatService
                     .getById(
@@ -438,14 +669,14 @@ export class RewardsDisciplineDetailComponent
                     .getAll(),
 
             departments:
-                this.phongBanService
-                    .getAll(),
-
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
         })
             .pipe(
                 finalize(
                     () => {
-
                         this.isLoading =
                             false;
 
@@ -455,13 +686,11 @@ export class RewardsDisciplineDetailComponent
                 ),
             )
             .subscribe({
-
                 next: ({
                     decision,
                     employees,
                     departments,
                 }) => {
-
                     const employee =
                         employees.find(
                             (
@@ -476,7 +705,6 @@ export class RewardsDisciplineDetailComponent
                             null &&
                             employee?.maPB !==
                             undefined
-
                             ? departments.find(
                                 (
                                     item,
@@ -484,7 +712,6 @@ export class RewardsDisciplineDetailComponent
                                     item.maPB ===
                                     employee.maPB,
                             )
-
                             : undefined;
 
                     this.decision =
@@ -496,25 +723,7 @@ export class RewardsDisciplineDetailComponent
                             null,
                         );
 
-                    this.changeDetectorRef
-                        .markForCheck();
-
-                    if (
-                        this.shouldPrintAfterLoad
-                    ) {
-
-                        this.shouldPrintAfterLoad =
-                            false;
-
-                        window.setTimeout(
-                            () => {
-
-                                this.printDecision();
-
-                            },
-                            250,
-                        );
-                    }
+                    this.afterDecisionLoaded();
                 },
 
                 error: (
@@ -527,7 +736,6 @@ export class RewardsDisciplineDetailComponent
                     this.errorMessage =
                         this.getApiErrorMessage(
                             error,
-
                             'Không thể tải chi tiết quyết định.',
                         );
 
@@ -538,11 +746,35 @@ export class RewardsDisciplineDetailComponent
             });
     }
 
+    private afterDecisionLoaded():
+        void {
+
+        this.changeDetectorRef
+            .markForCheck();
+
+        if (
+            !this.shouldPrintAfterLoad
+        ) {
+            return;
+        }
+
+        this.shouldPrintAfterLoad =
+            false;
+
+        window.setTimeout(
+            () => {
+                this.printDecision();
+            },
+            250,
+        );
+    }
+
     private mapDecisionDetail(
         decision:
             KhenThuongKyLuat,
 
         employee:
+            NhanVien |
             NhanVienChiTiet |
             undefined,
 
@@ -553,17 +785,7 @@ export class RewardsDisciplineDetailComponent
         const employeeExtra =
             employee as
             (
-                NhanVienChiTiet & {
-
-                    email?:
-                    string | null;
-
-                    sdt?:
-                    string | null;
-
-                    hinhAnh?:
-                    string | null;
-
+                NhanVien & {
                     tenPB?:
                     string | null;
 
@@ -574,7 +796,6 @@ export class RewardsDisciplineDetailComponent
             undefined;
 
         return {
-
             maKTKL:
                 decision.maKTKL,
 
@@ -598,34 +819,61 @@ export class RewardsDisciplineDetailComponent
                 decision.ngayQuyetDinh,
 
             hoTen:
-                employee?.hoTen ??
-                `Nhân viên #${decision.maNV}`,
+                this.canViewEmployees
+                    ? (
+                        employee?.hoTen ??
+                        `Nhân viên #${decision.maNV}`
+                    )
+                    : `Nhân viên #${decision.maNV}`,
 
             email:
-                employeeExtra
-                    ?.email ??
-                null,
+                this.canViewEmployees
+                    ? (
+                        employee?.email ??
+                        null
+                    )
+                    : null,
 
             sdt:
-                employeeExtra
-                    ?.sdt ??
-                null,
+                this.canViewEmployees
+                    ? (
+                        employee?.sdt ??
+                        null
+                    )
+                    : null,
 
             hinhAnh:
-                employeeExtra
-                    ?.hinhAnh ??
-                null,
+                this.canViewEmployees
+                    ? (
+                        employee?.hinhAnh ??
+                        null
+                    )
+                    : null,
 
             tenPB:
-                departmentName ??
-                employeeExtra
-                    ?.tenPB ??
-                null,
+                (
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? (
+                        departmentName ??
+                        employeeExtra
+                            ?.tenPB ??
+                        null
+                    )
+                    : null,
 
             tenCV:
-                employeeExtra
-                    ?.tenCV ??
-                null,
+                (
+                    this.canViewEmployees &&
+                    this.canViewPositions
+                )
+                    ? (
+                        employeeExtra
+                            ?.tenCV ??
+                        null
+                    )
+                    : null,
         };
     }
 
@@ -660,16 +908,13 @@ export class RewardsDisciplineDetailComponent
             typeof error.error
                 ?.message ===
                 'string'
-
                 ? error.error
                     .message
-
                 : '';
 
         if (
             backendMessage
         ) {
-
             return backendMessage;
         }
 
@@ -682,7 +927,6 @@ export class RewardsDisciplineDetailComponent
             typeof backendErrors ===
             'object'
         ) {
-
             const messages =
                 Object.values(
                     backendErrors as
@@ -695,13 +939,11 @@ export class RewardsDisciplineDetailComponent
                         (
                             value,
                         ) => {
-
                             if (
                                 Array.isArray(
                                     value,
                                 )
                             ) {
-
                                 return value.map(
                                     (
                                         item,
@@ -727,7 +969,6 @@ export class RewardsDisciplineDetailComponent
                 messages.length >
                 0
             ) {
-
                 return messages
                     .join(
                         ' ',
@@ -738,39 +979,32 @@ export class RewardsDisciplineDetailComponent
         switch (
         error.status
         ) {
-
             case 0:
-
                 return (
                     'Không thể kết nối đến hệ thống.'
                 );
 
             case 400:
-
                 return (
                     'Yêu cầu lấy quyết định không hợp lệ.'
                 );
 
             case 401:
-
                 return (
                     'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
                 );
 
             case 403:
-
                 return (
                     'Bạn không có quyền xem quyết định này.'
                 );
 
             case 404:
-
                 return (
                     'Không tìm thấy quyết định.'
                 );
 
             default:
-
                 return fallback;
         }
     }
@@ -789,7 +1023,6 @@ export class RewardsDisciplineDetailComponent
         if (
             this.toastTimer
         ) {
-
             clearTimeout(
                 this.toastTimer,
             );
@@ -798,7 +1031,6 @@ export class RewardsDisciplineDetailComponent
         this.toastTimer =
             setTimeout(
                 () => {
-
                     this.toastMessage =
                         '';
 
@@ -807,7 +1039,6 @@ export class RewardsDisciplineDetailComponent
 
                     this.changeDetectorRef
                         .markForCheck();
-
                 },
                 3500,
             );

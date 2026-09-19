@@ -33,6 +33,16 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    canManageOrganization,
+    canViewOrganization,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
     PhongBanService,
 } from '../services/phong-ban.service';
 
@@ -124,6 +134,9 @@ export class EditDepartmentComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -148,6 +161,37 @@ export class EditDepartmentComponent
             );
         }
     }
+    get canViewDepartment(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canCreateDepartment(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canEditDepartment(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+
+    get canUseDepartmentForm(): boolean {
+        return this.isCreateMode
+            ? this.canCreateDepartment
+            : (
+                this.canViewDepartment &&
+                this.canEditDepartment
+            );
+    }
+
+
     get pageTitle():
         string {
 
@@ -236,8 +280,7 @@ export class EditDepartmentComponent
             this.resetForm();
 
 
-            this.changeDetectorRef
-                .markForCheck();
+            this.initializeAccess();
 
 
             return;
@@ -290,12 +333,91 @@ export class EditDepartmentComponent
             parsedId;
 
 
+        this.initializeAccess();
+    }
+
+
+    private initializeAccess():
+        void {
+
+        this.isLoading =
+            false;
+
+
+        this.errorMessage =
+            '';
+
+
+        if (
+            this.isCreateMode
+        ) {
+
+            if (
+                !this.canCreateDepartment
+            ) {
+
+                this.errorMessage =
+                    'Bạn không có quyền thêm phòng ban.';
+            }
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
+        if (
+            !this.canEditDepartment
+        ) {
+
+            this.resetForm();
+
+
+            this.errorMessage =
+                'Bạn không có quyền chỉnh sửa phòng ban.';
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
+        if (
+            !this.canViewDepartment
+        ) {
+
+            this.resetForm();
+
+
+            this.errorMessage =
+                'Bạn không có quyền xem phòng ban.';
+
+
+            this.changeDetectorRef
+                .markForCheck();
+
+
+            return;
+        }
+
+
         this.loadDepartment();
     }
+
+
     private loadDepartment():
         void {
 
         if (
+            this.isCreateMode ||
+            !this.canViewDepartment ||
+            !this.canEditDepartment ||
             this.departmentId ===
             null
         ) {
@@ -367,12 +489,6 @@ export class EditDepartmentComponent
                         HttpErrorResponse,
                 ) => {
 
-                    console.error(
-                        'LOAD DEPARTMENT ERROR:',
-                        error,
-                    );
-
-
                     this.resetForm();
 
 
@@ -423,6 +539,7 @@ export class EditDepartmentComponent
 
 
         if (
+            !this.canUseDepartmentForm ||
             this.isSaving ||
             this.isLoading
         ) {
@@ -538,10 +655,24 @@ export class EditDepartmentComponent
                         );
 
 
+                        if (
+                            this.canViewDepartment
+                        ) {
+
+                            void this.router
+                                .navigate([
+                                    '/departments',
+                                    department.maPB,
+                                ]);
+
+
+                            return;
+                        }
+
+
                         void this.router
                             .navigate([
-                                '/departments',
-                                department.maPB,
+                                '/dashboard',
                             ]);
                     },
 
@@ -629,10 +760,24 @@ export class EditDepartmentComponent
                     );
 
 
+                    if (
+                        this.canViewDepartment
+                    ) {
+
+                        void this.router
+                            .navigate([
+                                '/departments',
+                                department.maPB,
+                            ]);
+
+
+                        return;
+                    }
+
+
                     void this.router
                         .navigate([
-                            '/departments',
-                            department.maPB,
+                            '/dashboard',
                         ]);
                 },
 
@@ -652,12 +797,6 @@ export class EditDepartmentComponent
         error:
             HttpErrorResponse,
     ): void {
-
-        console.error(
-            'SAVE DEPARTMENT ERROR:',
-            error,
-        );
-
 
         if (
             error.status ===
@@ -730,7 +869,7 @@ export class EditDepartmentComponent
         }
 
 
-        this.loadDepartment();
+        this.initializeAccess();
     }
     cancel():
         void {
@@ -744,6 +883,7 @@ export class EditDepartmentComponent
 
 
         if (
+            this.canViewDepartment &&
             !this.isCreateMode &&
             this.departmentId !==
             null
@@ -760,9 +900,23 @@ export class EditDepartmentComponent
         }
 
 
+        if (
+            this.canViewDepartment
+        ) {
+
+            void this.router
+                .navigate([
+                    '/departments',
+                ]);
+
+
+            return;
+        }
+
+
         void this.router
             .navigate([
-                '/departments',
+                '/dashboard',
             ]);
     }
 
@@ -790,6 +944,19 @@ export class EditDepartmentComponent
         this.submitted =
             false;
     }
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+
+        return resolveUserRole(
+            currentUser,
+        );
+    }
+
+
     private showToast(
         message:
             string,

@@ -6,7 +6,11 @@ import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
 import { HOP_DONG_TRANG_THAI } from '../../../core/constants/status.constants';
 import { HopDong } from '../models/hop-dong.model';
-import { LoaiHopDong } from '../models/loai-hop-dong.model';
+import {
+    CreateLoaiHopDongRequest,
+    LoaiHopDong,
+    UpdateLoaiHopDongRequest,
+} from '../models/loai-hop-dong.model';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -155,6 +159,65 @@ export class HopDongService {
                     }
 
                     return contractType;
+                }),
+            );
+    }
+
+
+    createContractType(
+        payload: CreateLoaiHopDongRequest,
+    ): Observable<LoaiHopDong> {
+        return this.http
+            .post<ApiResponse<LoaiHopDong> | LoaiHopDong>(
+                this.contractTypeApiUrl,
+                payload,
+            )
+            .pipe(
+                map((response) => {
+                    const contractType = this.unwrapItem(response);
+
+                    if (!contractType) {
+                        throw new Error('Không nhận được loại hợp đồng vừa tạo.');
+                    }
+
+                    return contractType;
+                }),
+            );
+    }
+
+    updateContractType(
+        maLoaiHD: number,
+        payload: UpdateLoaiHopDongRequest,
+    ): Observable<LoaiHopDong> {
+        const request: LoaiHopDong = {
+            maLoaiHD,
+            tenLoaiHD: payload.tenLoaiHD,
+            moTa: payload.moTa,
+        };
+
+        return this.http
+            .put<ApiResponse<LoaiHopDong | null> | LoaiHopDong | null>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiHopDongById(maLoaiHD)}`,
+                request,
+            )
+            .pipe(
+                map((response) => {
+                    const contractType = this.unwrapItem(response);
+
+                    return contractType ?? request;
+                }),
+            );
+    }
+
+    deleteContractType(maLoaiHD: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiHopDongById(maLoaiHD)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
                 }),
             );
     }

@@ -10,15 +10,32 @@
             <strong>Chấm công</strong>
         </nav>
 
+        @if (isSelfServiceView) {
+        <h1>Chấm công của tôi</h1>
+
+        <p>
+            Theo dõi lịch sử chấm công, giờ làm và
+            trạng thái chấm công của chính bạn.
+        </p>
+        } @else if (isManagerView) {
+        <h1>Chấm công phòng ban</h1>
+
+        <p>
+            Theo dõi ngày công, giờ làm và trạng
+            thái chấm công của nhân viên trong phòng.
+        </p>
+        } @else {
         <h1>Bảng chấm công chi tiết</h1>
 
         <p>
             Theo dõi ngày công, giờ làm và trạng
             thái chấm công của nhân viên.
         </p>
+        }
     </div>
 
     <div class="attendance-heading__actions">
+        @if (canViewAttendanceOverview) {
         <button class="secondary-button" type="button" (click)="viewAttendanceOverview()">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -28,7 +45,24 @@
 
             Tổng quan chấm công
         </button>
+        }
 
+        @if (canManageShiftTypes) {
+        <button class="secondary-button" type="button" (click)="openShiftTypeManager()"
+            [disabled]="isLoading || isSavingShiftType || deletingShiftTypeId !== null">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path
+                    d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.14.37.35.7.6 1 .3.3.68.45 1.1.4H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.6Z">
+                </path>
+            </svg>
+
+            Quản lý loại ca
+        </button>
+        }
+
+        @if (isSelfServiceView || canViewAttendance) {
         <button class="primary-button" type="button" (click)="exportExcel()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -39,6 +73,7 @@
 
             Xuất Excel
         </button>
+        }
     </div>
 </section>
 
@@ -55,13 +90,36 @@
 }
 
 <section class="attendance-toolbar" aria-label="Bộ lọc chấm công">
+    <div class="attendance-heading__actions" aria-label="Phạm vi chấm công">
+        @if (canViewSelfAttendance) {
+        <button type="button" [class.primary-button]="isSelfServiceView" [class.secondary-button]="!isSelfServiceView"
+            (click)="showSelfAttendance()" [disabled]="isLoading || isSavingAttendance">
+            Chấm công của tôi
+        </button>
+        }
+
+        @if (canViewDepartmentAttendance) {
+        <button type="button" [class.primary-button]="isManagerView" [class.secondary-button]="!isManagerView"
+            (click)="showDepartmentAttendance()" [disabled]="isLoading || isSavingAttendance">
+            Phòng ban
+        </button>
+        }
+
+        @if (canViewAllAttendance) {
+        <button type="button" [class.primary-button]="!isSelfServiceView && !isManagerView"
+            [class.secondary-button]="isSelfServiceView || isManagerView" (click)="showAllAttendance()"
+            [disabled]="isLoading || isSavingAttendance">
+            Toàn hệ thống
+        </button>
+        }
+    </div>
     <label class="attendance-filter">
         <span>Thời gian</span>
 
         <input type="month" [(ngModel)]="selectedMonth" (change)="applyFilters()" [disabled]="isLoading" />
     </label>
 
-    @if (!isSelfServiceView && !isManagerView) {
+    @if (canViewAllAttendance && !isSelfServiceView && !isManagerView) {
     <label class="attendance-filter">
         <span>Phòng ban</span>
 
@@ -82,6 +140,88 @@
     </label>
     }
 </section>
+
+@if (canViewShiftTypes) {
+<section class="attendance-table-card" aria-label="Danh sách loại ca">
+    <div class="attendance-table-card__header">
+        <div>
+            <h2>Loại ca làm việc</h2>
+            <p>Danh sách ca đang được sử dụng cho dữ liệu chấm công.</p>
+        </div>
+
+        <div class="attendance-heading__actions">
+            <span class="attendance-table-card__total">
+                {{ shifts.length }} loại ca
+            </span>
+
+            @if (canManageShiftTypes) {
+            <button type="button" class="primary-button" (click)="openShiftTypeManager()"
+                [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                Thêm loại ca
+            </button>
+            }
+        </div>
+    </div>
+
+    <div class="attendance-table-wrapper">
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th>Tên ca</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
+                    <th>Số giờ quy định</th>
+                    @if (canManageShiftTypes) {
+                    <th>Thao tác</th>
+                    }
+                </tr>
+            </thead>
+
+            <tbody>
+                @for (shift of shifts; track shift.maCa) {
+                <tr>
+                    <td>
+                        <strong>{{ shift.tenCa }}</strong>
+                    </td>
+                    <td>{{ shift.gioBatDau.slice(0, 5) }}</td>
+                    <td>{{ shift.gioKetThuc.slice(0, 5) }}</td>
+                    <td>{{ shift.soGioQuyDinh | number: '1.0-2' }} giờ</td>
+
+                    @if (canManageShiftTypes) {
+                    <td>
+                        <div class="attendance-heading__actions">
+                            <button type="button" class="secondary-button" (click)="startEditShiftType(shift)"
+                                [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                                Sửa
+                            </button>
+
+                            <button type="button" class="attendance-danger-button" (click)="deleteShiftType(shift)"
+                                [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                                @if (deletingShiftTypeId === shift.maCa) {
+                                Đang xóa...
+                                } @else {
+                                Xóa
+                                }
+                            </button>
+                        </div>
+                    </td>
+                    }
+                </tr>
+                } @empty {
+                <tr>
+                    <td class="attendance-empty-state" [attr.colspan]="canManageShiftTypes ? 5 : 4">
+                        <div class="empty-state">
+                            <strong>Chưa có loại ca</strong>
+                            <p>Danh sách loại ca sẽ hiển thị tại đây khi có dữ liệu.</p>
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+}
 
 <section class="attendance-legend" aria-label="Chú thích trạng thái">
     @for (
@@ -107,16 +247,30 @@
 <section class="attendance-table-card">
     <div class="attendance-table-card__header">
         <div>
+            @if (isSelfServiceView) {
+            <h2>Lịch sử chấm công của tôi</h2>
+            } @else if (isManagerView) {
+            <h2>Bảng công phòng ban</h2>
+            } @else {
             <h2>Bảng công nhân viên</h2>
+            }
 
             <p>
                 Dữ liệu chấm công trong tháng
                 {{ selectedMonth }}
             </p>
 
-            @if (canManageAttendance) {
+            @if (canCreateAttendance && canEditAttendance && canDeleteAttendance) {
             <small class="attendance-edit-hint">
-                Nhấp vào từng ô ngày để thêm, cập nhật hoặc xóa chấm công.
+                Nhấp vào ô ngày để thêm, cập nhật hoặc xóa chấm công.
+            </small>
+            } @else if (canCreateAttendance && !canEditAttendance && !canDeleteAttendance) {
+            <small class="attendance-edit-hint">
+                Nhấp vào ô trống để thêm chấm công.
+            </small>
+            } @else if (canEditAttendance || canDeleteAttendance) {
+            <small class="attendance-edit-hint">
+                Nhấp vào bản ghi hiện có để thao tác theo quyền được cấp.
             </small>
             } @else {
             <small class="attendance-edit-hint">
@@ -215,7 +369,14 @@
                     ) {
 
                     <td class="attendance-table__day-column">
-                        @if (canManageAttendance) {
+                        @if (
+                        canInteractWithAttendanceCell(
+                        findCell(
+                        row,
+                        day
+                        )
+                        )
+                        ) {
                         <button type="button" class="attendance-cell attendance-cell--interactive" [ngClass]="
                             'attendance-cell--' +
                             getStatusClass(
@@ -441,6 +602,97 @@
     </article>
 </section>
 
+@if (isShiftManagerOpen && canManageShiftTypes) {
+<div class="attendance-modal-backdrop" role="presentation" (click)="closeShiftTypeManager()">
+    <section class="attendance-modal" role="dialog" aria-modal="true" aria-labelledby="shift-type-manager-title"
+        (click)="$event.stopPropagation()">
+        <header class="attendance-modal__header">
+            <div>
+                <span class="attendance-modal__eyebrow">Quản lý danh mục</span>
+
+                <h2 id="shift-type-manager-title">
+                    {{ editingShiftTypeId === null ? 'Thêm loại ca' : 'Cập nhật loại ca' }}
+                </h2>
+
+                <p>Thiết lập tên ca, thời gian và số giờ làm việc quy định.</p>
+            </div>
+
+            <button type="button" class="attendance-modal__close" aria-label="Đóng"
+                [disabled]="isSavingShiftType || deletingShiftTypeId !== null" (click)="closeShiftTypeManager()">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+        </header>
+
+        <form class="attendance-editor-form" (ngSubmit)="saveShiftType()">
+            <div class="attendance-editor-grid">
+                <label class="attendance-editor-field attendance-editor-field--full">
+                    <span>Tên loại ca <b>*</b></span>
+
+                    <input type="text" name="tenCa" [(ngModel)]="shiftTypeForm.tenCa" maxlength="100"
+                        placeholder="Ví dụ: Ca hành chính" [disabled]="isSavingShiftType" required />
+
+                    @if (shiftTypeSubmitted && !shiftTypeForm.tenCa.trim()) {
+                    <small>Vui lòng nhập tên loại ca.</small>
+                    } @else if (shiftTypeSubmitted && shiftTypeNameDuplicate) {
+                    <small>Tên loại ca đã tồn tại.</small>
+                    }
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Giờ bắt đầu <b>*</b></span>
+                    <input type="time" name="gioBatDau" [(ngModel)]="shiftTypeForm.gioBatDau"
+                        (change)="onShiftTypeTimeChange()" [disabled]="isSavingShiftType" required />
+                </label>
+
+                <label class="attendance-editor-field">
+                    <span>Giờ kết thúc <b>*</b></span>
+                    <input type="time" name="gioKetThuc" [(ngModel)]="shiftTypeForm.gioKetThuc"
+                        (change)="onShiftTypeTimeChange()" [disabled]="isSavingShiftType" required />
+                </label>
+
+                <label class="attendance-editor-field attendance-editor-field--full">
+                    <span>Số giờ quy định <b>*</b></span>
+                    <input type="number" name="soGioQuyDinh" [(ngModel)]="shiftTypeForm.soGioQuyDinh" min="0.25"
+                        max="24" step="0.25" [disabled]="isSavingShiftType" required />
+                    <small>Hệ thống tự tính lại khi bạn thay đổi giờ bắt đầu hoặc giờ kết thúc.</small>
+                </label>
+            </div>
+
+            <footer class="attendance-modal__footer">
+                <div>
+                    @if (editingShiftTypeId !== null) {
+                    <button type="button" class="secondary-button" (click)="startCreateShiftType()"
+                        [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                        Thêm mới
+                    </button>
+                    }
+                </div>
+
+                <div class="attendance-modal__footer-actions">
+                    <button type="button" class="secondary-button" (click)="closeShiftTypeManager()"
+                        [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                        Hủy
+                    </button>
+
+                    <button type="submit" class="primary-button"
+                        [disabled]="isSavingShiftType || deletingShiftTypeId !== null">
+                        @if (isSavingShiftType) {
+                        Đang lưu...
+                        } @else {
+                        {{ editingShiftTypeId === null ? 'Thêm loại ca' : 'Lưu thay đổi' }}
+                        }
+                    </button>
+                </div>
+            </footer>
+        </form>
+    </section>
+</div>
+}
+
 @if (
 isAttendanceEditorOpen &&
 editingRow &&
@@ -456,7 +708,11 @@ editingDay !== null
                 </span>
 
                 <h2 id="attendance-editor-title">
-                    {{ editorTitle }}
+                    {{
+                    editingCell
+                    ? (canEditAttendance ? 'Cập nhật chấm công' : 'Chi tiết chấm công')
+                    : 'Thêm chấm công'
+                    }}
                 </h2>
 
                 <p>
@@ -491,8 +747,10 @@ editingDay !== null
                 <label class="attendance-editor-field">
                     <span>Ca làm việc <b>*</b></span>
 
-                    <select name="maCa" [(ngModel)]="attendanceForm.maCa" (change)="onShiftChange()"
-                        [disabled]="isSavingAttendance" required>
+                    <select name="maCa" [(ngModel)]="attendanceForm.maCa" (change)="onShiftChange()" [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        " required>
                         <option [ngValue]="null">
                             Chọn ca làm việc
                         </option>
@@ -513,7 +771,10 @@ editingDay !== null
                     <span>Trạng thái <b>*</b></span>
 
                     <select name="trangThai" [(ngModel)]="attendanceForm.trangThai" (change)="onStatusChange()"
-                        [disabled]="isSavingAttendance" required>
+                        [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        " required>
                         @for (
                         option of statusOptions;
                         track option.value
@@ -528,35 +789,45 @@ editingDay !== null
                 <label class="attendance-editor-field">
                     <span>Giờ vào</span>
 
-                    <input type="time" name="gioVao" [(ngModel)]="attendanceForm.gioVao"
-                        [disabled]="isSavingAttendance" />
+                    <input type="time" name="gioVao" [(ngModel)]="attendanceForm.gioVao" [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        " />
                 </label>
 
                 <label class="attendance-editor-field">
                     <span>Giờ ra</span>
 
-                    <input type="time" name="gioRa" [(ngModel)]="attendanceForm.gioRa"
-                        [disabled]="isSavingAttendance" />
+                    <input type="time" name="gioRa" [(ngModel)]="attendanceForm.gioRa" [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        " />
                 </label>
 
                 <label class="attendance-editor-field">
                     <span>Số giờ làm</span>
 
                     <input type="number" name="soGioLam" [(ngModel)]="attendanceForm.soGioLam" min="0" step="0.25"
-                        [disabled]="isSavingAttendance" />
+                        [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        " />
                 </label>
 
                 <label class="attendance-editor-field attendance-editor-field--full">
                     <span>Ghi chú</span>
 
-                    <textarea name="ghiChu" [(ngModel)]="attendanceForm.ghiChu" rows="3"
-                        placeholder="Nhập ghi chú nếu có..." [disabled]="isSavingAttendance"></textarea>
+                    <textarea name="ghiChu" [(ngModel)]="attendanceForm.ghiChu" rows="3" maxlength="255"
+                        placeholder="Nhập ghi chú nếu có..." [disabled]="
+                            isSavingAttendance ||
+                            (editingCell ? !canEditAttendance : !canCreateAttendance)
+                        "></textarea>
                 </label>
             </div>
 
             <footer class="attendance-modal__footer">
                 <div>
-                    @if (editingCell?.maCC) {
+                    @if (editingCell?.maCC && canDeleteAttendance) {
                     <button type="button" class="attendance-danger-button" [disabled]="isSavingAttendance"
                         (click)="deleteAttendance()">
                         Xóa chấm công
@@ -570,6 +841,10 @@ editingDay !== null
                         Hủy
                     </button>
 
+                    @if (
+                    (editingCell && canEditAttendance) ||
+                    (!editingCell && canCreateAttendance)
+                    ) {
                     <button type="submit" class="primary-button" [disabled]="isSavingAttendance || !shifts.length">
                         @if (isSavingAttendance) {
                         Đang lưu...
@@ -577,6 +852,7 @@ editingDay !== null
                         {{ editingCell ? 'Lưu thay đổi' : 'Thêm chấm công' }}
                         }
                     </button>
+                    }
                 </div>
             </footer>
         </form>

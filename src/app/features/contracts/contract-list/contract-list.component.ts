@@ -14,6 +14,8 @@ import {
 import {
     finalize,
     forkJoin,
+    map,
+    of,
 } from 'rxjs';
 
 import {
@@ -22,9 +24,14 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
-    ExcelExportService,
-} from '../../../core/services/excel-export.service';
+    canManageContracts,
+    canViewContracts,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
 
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     NhanVienService,
@@ -33,6 +40,12 @@ import {
 import {
     HopDongService,
 } from '../services/hop-dong.service';
+
+import {
+    CreateLoaiHopDongRequest,
+    LoaiHopDong,
+    UpdateLoaiHopDongRequest,
+} from '../models/loai-hop-dong.model';
 
 import {
     ContractListItem,
@@ -65,6 +78,7 @@ export class ContractListComponent
         HopDongTrangThai | '' = '';
 
     currentPage = 1;
+
     pageSize = 10;
 
     toastMessage = '';
@@ -80,9 +94,38 @@ export class ContractListComponent
     contractTypes:
         ContractTypeOption[] = [];
 
+    managedContractTypes:
+        LoaiHopDong[] = [];
+
+    isContractTypeEditorOpen =
+        false;
+
+    editingContractTypeId:
+        number | null =
+        null;
+
+    contractTypeForm:
+        CreateLoaiHopDongRequest = {
+            tenLoaiHD: '',
+            moTa: null,
+        };
+
+    contractTypeSubmitted =
+        false;
+
+    isSavingContractType =
+        false;
+
+    deletingContractTypeId:
+        number | null =
+        null;
+
     constructor(
         private readonly router:
             Router,
+
+        private readonly storageService:
+            StorageService,
 
         private readonly hopDongService:
             HopDongService,
@@ -90,40 +133,172 @@ export class ContractListComponent
         private readonly nhanVienService:
             NhanVienService,
 
-        private readonly excelExportService:
-            ExcelExportService,
-
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
-    ngOnInit(): void {
+    ngOnInit():
+        void {
+
         this.loadContracts();
     }
-    loadContracts(): void {
-        this.isLoading = true;
+
+    /*
+     * =========================================
+     * PERMISSION
+     * =========================================
+     */
+
+    get canViewContractList():
+        boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        return canViewContracts(
+            role,
+        );
+    }
+
+    get canManageContractList():
+        boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        return canManageContracts(
+            role,
+        );
+    }
+
+    get canCreateContracts():
+        boolean {
+
+        return this.canManageContractList;
+    }
+
+    get canEditContracts():
+        boolean {
+
+        return this.canManageContractList;
+    }
+
+    get canDeleteContracts():
+        boolean {
+
+        return this.canManageContractList;
+    }
+
+    get canManageContractTypes():
+        boolean {
+
+        return this.canManageContractList;
+    }
+
+    get contractTypeEditorTitle():
+        string {
+
+        return this.editingContractTypeId ===
+            null
+            ? 'Thêm loại hợp đồng'
+            : 'Chỉnh sửa loại hợp đồng';
+    }
+
+    get contractTypeNameInvalid():
+        boolean {
+
+        if (
+            !this.contractTypeSubmitted
+        ) {
+            return false;
+        }
+
+        const name =
+            this.contractTypeForm
+                .tenLoaiHD
+                .trim();
+
+        return (
+            name.length <
+            2 ||
+            name.length >
+            100
+        );
+    }
+
+    /*
+     * =========================================
+     * LOAD DATA
+     * =========================================
+     */
+
+    loadContracts():
+        void {
+
+        if (
+            !this.canViewContractList
+        ) {
+            this.contracts = [];
+
+            this.contractTypes = [];
+
+            this.managedContractTypes =
+                [];
+
+            this.showToast(
+                'Bạn không có quyền xem danh sách hợp đồng.',
+            );
+
+            return;
+        }
+
+        const role =
+            this.getCurrentRole();
+
+        const isEmployee =
+            role ===
+            'employee';
+
+        this.isLoading =
+            true;
 
         forkJoin({
             contracts:
-                this.hopDongService
-                    .getAll(),
+                isEmployee
+                    ? this.hopDongService
+                        .getMe()
+                    : this.hopDongService
+                        .getAll(),
 
             contractTypes:
-                this.hopDongService
-                    .getContractTypes(),
+                isEmployee
+                    ? of([])
+                    : this.hopDongService
+                        .getContractTypes(),
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                isEmployee
+                    ? this.nhanVienService
+                        .getMe()
+                        .pipe(
+                            map(
+                                employee =>
+                                    [employee],
+                            ),
+                        )
+                    : this.nhanVienService
+                        .getAll(),
         })
             .pipe(
-                finalize(() => {
-                    this.isLoading =
-                        false;
+                finalize(
+                    () => {
+                        this.isLoading =
+                            false;
 
-                    this.changeDetectorRef
-                        .markForCheck();
-                }),
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
             )
             .subscribe({
                 next: ({
@@ -132,96 +307,112 @@ export class ContractListComponent
                     employees,
                 }) => {
 
-                    this.contractTypes =
-                        contractTypes.map(
-                            (
-                                item,
-                            ) => ({
-                                maLoaiHD:
-                                    item.maLoaiHD,
+                    const scopedEmployees =
+                        employees;
 
-                                tenLoaiHD:
-                                    item.tenLoaiHD,
-                            }),
-                        );
+                    const scopedContracts =
+                        contracts;
 
-                    this.contracts =
-                        contracts.map(
-                            (
-                                contract,
-                            ) => {
-
-                                const employee =
-                                    employees.find(
-                                        (
-                                            item,
-                                        ) =>
-                                            item.maNV ===
-                                            contract.maNV,
-                                    );
-
-                                const contractType =
-                                    contractTypes.find(
-                                        (
-                                            item,
-                                        ) =>
-                                            item.maLoaiHD ===
-                                            contract.maLoaiHD,
-                                    );
-
-                                return {
-                                    maHD:
-                                        contract.maHD,
-
-                                    maNV:
-                                        contract.maNV,
-
-                                    tenNV:
-                                        employee
-                                            ?.hoTen ??
-                                        `Nhân viên #${contract.maNV}`,
-
+                    const displayContractTypes:
+                        ContractTypeOption[] =
+                        contractTypes.length >
+                            0
+                            ? contractTypes.map(
+                                (
+                                    item,
+                                ) => ({
                                     maLoaiHD:
-                                        contract.maLoaiHD,
+                                        item.maLoaiHD,
 
                                     tenLoaiHD:
-                                        contractType
-                                            ?.tenLoaiHD ??
-                                        `Loại hợp đồng #${contract.maLoaiHD}`,
+                                        item.tenLoaiHD,
+                                }),
+                            )
+                            : [
+                                ...new Set(
+                                    scopedContracts.map(
+                                        contract =>
+                                            contract.maLoaiHD,
+                                    ),
+                                ),
+                            ].map(
+                                maLoaiHD => ({
+                                    maLoaiHD,
 
-                                    ngayBatDau:
-                                        contract.ngayBatDau,
+                                    tenLoaiHD:
+                                        `Loại hợp đồng #${maLoaiHD}`,
+                                }),
+                            );
 
-                                    ngayKetThuc:
-                                        contract.ngayKetThuc,
+                    this.contractTypes =
+                        displayContractTypes;
 
-                                    luongCoBan:
-                                        contract.luongCoBan,
+                    this.managedContractTypes =
+                        contractTypes;
 
-                                    trangThai:
-                                        contract.trangThai as
-                                        HopDongTrangThai,
-                                };
-                            },
-                        );
+                    this.contracts =
+                        scopedContracts
+                            .map(
+                                (
+                                    contract,
+                                ) => {
+
+                                    const employee =
+                                        scopedEmployees.find(
+                                            (
+                                                item,
+                                            ) =>
+                                                item.maNV ===
+                                                contract.maNV,
+                                        );
+
+                                    const contractType =
+                                        displayContractTypes.find(
+                                            (
+                                                item,
+                                            ) =>
+                                                item.maLoaiHD ===
+                                                contract.maLoaiHD,
+                                        );
+
+                                    return {
+                                        maHD:
+                                            contract.maHD,
+
+                                        maNV:
+                                            contract.maNV,
+
+                                        tenNV:
+                                            employee
+                                                ?.hoTen ??
+                                            `Nhân viên #${contract.maNV}`,
+
+                                        maLoaiHD:
+                                            contract.maLoaiHD,
+
+                                        tenLoaiHD:
+                                            contractType
+                                                ?.tenLoaiHD ??
+                                            `Loại hợp đồng #${contract.maLoaiHD}`,
+
+                                        ngayBatDau:
+                                            contract.ngayBatDau,
+
+                                        ngayKetThuc:
+                                            contract.ngayKetThuc,
+
+                                        luongCoBan:
+                                            contract.luongCoBan,
+
+                                        trangThai:
+                                            contract.trangThai as
+                                            HopDongTrangThai,
+                                    };
+                                },
+                            );
 
                     this.currentPage =
                         1;
-
-                    console.log(
-                        'HOP DONG API:',
-                        contracts,
-                    );
-
-                    console.log(
-                        'LOAI HOP DONG API:',
-                        contractTypes,
-                    );
-
-                    console.log(
-                        'HOP DONG SAU KHI GHEP:',
-                        this.contracts,
-                    );
 
                     this.changeDetectorRef
                         .markForCheck();
@@ -243,6 +434,9 @@ export class ContractListComponent
                     this.contractTypes =
                         [];
 
+                    this.managedContractTypes =
+                        [];
+
                     if (
                         error.status ===
                         401
@@ -250,7 +444,6 @@ export class ContractListComponent
                         this.showToast(
                             'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
                         );
-
                     } else if (
                         error.status ===
                         403
@@ -258,7 +451,6 @@ export class ContractListComponent
                         this.showToast(
                             'Bạn không có quyền xem danh sách hợp đồng.',
                         );
-
                     } else if (
                         error.status ===
                         0
@@ -266,15 +458,24 @@ export class ContractListComponent
                         this.showToast(
                             'Không thể kết nối đến API hợp đồng.',
                         );
-
                     } else {
                         this.showToast(
+                            error.error?.message ??
                             `Không thể tải danh sách hợp đồng (${error.status}).`,
                         );
                     }
+
+                    this.changeDetectorRef
+                        .markForCheck();
                 },
             });
     }
+
+    /*
+     * =========================================
+     * FILTER
+     * =========================================
+     */
 
     get filteredContracts():
         ContractListItem[] {
@@ -293,10 +494,9 @@ export class ContractListComponent
                 ) => {
 
                     const code =
-                        this
-                            .formatContractCode(
-                                contract.maHD,
-                            )
+                        this.formatContractCode(
+                            contract.maHD,
+                        )
                             .toLocaleLowerCase(
                                 'vi',
                             );
@@ -321,21 +521,23 @@ export class ContractListComponent
 
                     const matchesKeyword =
                         !keyword ||
+
                         code.includes(
                             keyword,
                         ) ||
-                        employeeName
-                            .includes(
-                                keyword,
-                            ) ||
-                        contractType
-                            .includes(
-                                keyword,
-                            );
+
+                        employeeName.includes(
+                            keyword,
+                        ) ||
+
+                        contractType.includes(
+                            keyword,
+                        );
 
                     const matchesType =
                         !this
                             .selectedContractType ||
+
                         contract.maLoaiHD ===
                         Number(
                             this
@@ -345,6 +547,7 @@ export class ContractListComponent
                     const matchesStatus =
                         !this
                             .selectedStatus ||
+
                         contract.trangThai ===
                         this
                             .selectedStatus;
@@ -403,7 +606,8 @@ export class ContractListComponent
                 _,
                 index,
             ) =>
-                index + 1,
+                index +
+                1,
         );
     }
 
@@ -413,7 +617,8 @@ export class ContractListComponent
         if (
             this
                 .filteredContracts
-                .length === 0
+                .length ===
+            0
         ) {
             return 0;
         }
@@ -440,6 +645,13 @@ export class ContractListComponent
                 .length,
         );
     }
+
+    /*
+     * =========================================
+     * STATISTICS
+     * =========================================
+     */
+
     get expiringSoonCount():
         number {
 
@@ -448,10 +660,9 @@ export class ContractListComponent
                 (
                     contract,
                 ) =>
-                    this
-                        .isExpiringSoon(
-                            contract,
-                        ),
+                    this.isExpiringSoon(
+                        contract,
+                    ),
             )
             .length;
     }
@@ -472,12 +683,24 @@ export class ContractListComponent
             .length;
     }
 
-    applyFilters(): void {
-        this.currentPage = 1;
+    /*
+     * =========================================
+     * FILTER ACTIONS
+     * =========================================
+     */
+
+    applyFilters():
+        void {
+
+        this.currentPage =
+            1;
     }
 
-    resetFilters(): void {
-        this.searchTerm = '';
+    resetFilters():
+        void {
+
+        this.searchTerm =
+            '';
 
         this.selectedContractType =
             '';
@@ -485,15 +708,25 @@ export class ContractListComponent
         this.selectedStatus =
             '';
 
-        this.currentPage = 1;
+        this.currentPage =
+            1;
     }
 
+    /*
+     * =========================================
+     * PAGINATION
+     * =========================================
+     */
+
     goToPage(
-        page: number,
+        page:
+            number,
     ): void {
 
         if (
-            page < 1 ||
+            page <
+            1 ||
+
             page >
             this.totalPages
         ) {
@@ -504,8 +737,401 @@ export class ContractListComponent
             page;
     }
 
+    /*
+     * =========================================
+     * ADD CONTRACT
+     * =========================================
+     */
+
+    addContract():
+        void {
+
+        if (
+            !this.canCreateContracts
+        ) {
+            this.showToast(
+                'Bạn không có quyền thêm hợp đồng.',
+            );
+
+            return;
+        }
+
+        if (
+            this.isLoading
+        ) {
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/contracts/add',
+            ]);
+    }
+
+    /*
+     * =========================================
+     * CONTRACT TYPE MANAGEMENT
+     * =========================================
+     */
+
+    openCreateContractType():
+        void {
+
+        if (
+            !this.canManageContractTypes ||
+            this.isLoading
+        ) {
+            if (
+                !this.canManageContractTypes
+            ) {
+                this.showToast(
+                    'Bạn không có quyền quản lý loại hợp đồng.',
+                );
+            }
+
+            return;
+        }
+
+        this.editingContractTypeId =
+            null;
+
+        this.contractTypeForm = {
+            tenLoaiHD: '',
+            moTa: null,
+        };
+
+        this.contractTypeSubmitted =
+            false;
+
+        this.isContractTypeEditorOpen =
+            true;
+    }
+
+    openEditContractType(
+        contractType:
+            LoaiHopDong,
+    ): void {
+
+        if (
+            !this.canManageContractTypes ||
+            this.isLoading
+        ) {
+            if (
+                !this.canManageContractTypes
+            ) {
+                this.showToast(
+                    'Bạn không có quyền chỉnh sửa loại hợp đồng.',
+                );
+            }
+
+            return;
+        }
+
+        this.editingContractTypeId =
+            contractType.maLoaiHD;
+
+        this.contractTypeForm = {
+            tenLoaiHD:
+                contractType.tenLoaiHD,
+            moTa:
+                contractType.moTa,
+        };
+
+        this.contractTypeSubmitted =
+            false;
+
+        this.isContractTypeEditorOpen =
+            true;
+    }
+
+    closeContractTypeEditor():
+        void {
+
+        if (
+            this.isSavingContractType
+        ) {
+            return;
+        }
+
+        this.isContractTypeEditorOpen =
+            false;
+
+        this.editingContractTypeId =
+            null;
+
+        this.contractTypeSubmitted =
+            false;
+
+        this.contractTypeForm = {
+            tenLoaiHD: '',
+            moTa: null,
+        };
+    }
+
+    saveContractType():
+        void {
+
+        if (
+            !this.canManageContractTypes ||
+            this.isSavingContractType
+        ) {
+            if (
+                !this.canManageContractTypes
+            ) {
+                this.showToast(
+                    'Bạn không có quyền quản lý loại hợp đồng.',
+                );
+            }
+
+            return;
+        }
+
+        this.contractTypeSubmitted =
+            true;
+
+        const name =
+            this.contractTypeForm
+                .tenLoaiHD
+                .trim();
+
+        if (
+            name.length <
+            2 ||
+            name.length >
+            100
+        ) {
+            this.showToast(
+                'Tên loại hợp đồng phải từ 2 đến 100 ký tự.',
+            );
+
+            return;
+        }
+
+        const duplicate =
+            this.managedContractTypes
+                .some(
+                    item =>
+                        item.maLoaiHD !==
+                        this.editingContractTypeId &&
+                        item.tenLoaiHD
+                            .trim()
+                            .toLocaleLowerCase(
+                                'vi',
+                            ) ===
+                        name
+                            .toLocaleLowerCase(
+                                'vi',
+                            ),
+                );
+
+        if (
+            duplicate
+        ) {
+            this.showToast(
+                'Tên loại hợp đồng đã tồn tại.',
+            );
+
+            return;
+        }
+
+        const description =
+            this.contractTypeForm
+                .moTa
+                ?.trim() ??
+            '';
+
+        if (
+            description.length >
+            255
+        ) {
+            this.showToast(
+                'Mô tả loại hợp đồng không được vượt quá 255 ký tự.',
+            );
+
+            return;
+        }
+
+        const payload:
+            UpdateLoaiHopDongRequest = {
+            tenLoaiHD:
+                name,
+            moTa:
+                description ||
+                null,
+        };
+
+        const editingId =
+            this.editingContractTypeId;
+
+        const request$ =
+            editingId ===
+                null
+                ? this.hopDongService
+                    .createContractType(
+                        payload,
+                    )
+                : this.hopDongService
+                    .updateContractType(
+                        editingId,
+                        payload,
+                    );
+
+        this.isSavingContractType =
+            true;
+
+        request$
+            .pipe(
+                finalize(
+                    () => {
+                        this.isSavingContractType =
+                            false;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: () => {
+                    const message =
+                        editingId ===
+                            null
+                            ? 'Thêm loại hợp đồng thành công.'
+                            : 'Cập nhật loại hợp đồng thành công.';
+
+                    this.isContractTypeEditorOpen =
+                        false;
+
+                    this.editingContractTypeId =
+                        null;
+
+                    this.contractTypeSubmitted =
+                        false;
+
+                    this.contractTypeForm = {
+                        tenLoaiHD: '',
+                        moTa: null,
+                    };
+
+                    this.showToast(
+                        message,
+                    );
+
+                    this.loadContracts();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    console.error(
+                        'SAVE CONTRACT TYPE ERROR:',
+                        error,
+                    );
+
+                    this.showToast(
+                        this.getContractTypeErrorMessage(
+                            error,
+                            editingId ===
+                                null
+                                ? 'Không thể thêm loại hợp đồng.'
+                                : 'Không thể cập nhật loại hợp đồng.',
+                        ),
+                    );
+                },
+            });
+    }
+
+    deleteContractType(
+        contractType:
+            LoaiHopDong,
+    ): void {
+
+        if (
+            !this.canManageContractTypes ||
+            this.deletingContractTypeId !==
+            null
+        ) {
+            if (
+                !this.canManageContractTypes
+            ) {
+                this.showToast(
+                    'Bạn không có quyền xóa loại hợp đồng.',
+                );
+            }
+
+            return;
+        }
+
+        const confirmed =
+            typeof window ===
+                'undefined'
+                ? true
+                : window.confirm(
+                    `Bạn có chắc muốn xóa loại hợp đồng "${contractType.tenLoaiHD}"?`,
+                );
+
+        if (
+            !confirmed
+        ) {
+            return;
+        }
+
+        this.deletingContractTypeId =
+            contractType.maLoaiHD;
+
+        this.hopDongService
+            .deleteContractType(
+                contractType.maLoaiHD,
+            )
+            .pipe(
+                finalize(
+                    () => {
+                        this.deletingContractTypeId =
+                            null;
+
+                        this.changeDetectorRef
+                            .markForCheck();
+                    },
+                ),
+            )
+            .subscribe({
+                next: () => {
+                    this.showToast(
+                        'Xóa loại hợp đồng thành công.',
+                    );
+
+                    this.loadContracts();
+                },
+
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    console.error(
+                        'DELETE CONTRACT TYPE ERROR:',
+                        error,
+                    );
+
+                    this.showToast(
+                        this.getContractTypeErrorMessage(
+                            error,
+                            'Không thể xóa loại hợp đồng.',
+                        ),
+                    );
+                },
+            });
+    }
+
+    /*
+     * =========================================
+     * FORMAT
+     * =========================================
+     */
+
     formatContractCode(
-        maHD: number,
+        maHD:
+            number,
     ): string {
 
         return `HD-${maHD
@@ -524,6 +1150,7 @@ export class ContractListComponent
         if (
             !contract
                 .ngayKetThuc ||
+
             contract
                 .trangThai !==
             HOP_DONG_TRANG_THAI
@@ -575,15 +1202,32 @@ export class ContractListComponent
         return (
             remainingDays >=
             0 &&
+
             remainingDays <=
             30
         );
     }
 
+    /*
+     * =========================================
+     * VIEW
+     * =========================================
+     */
+
     viewContract(
         contract:
             ContractListItem,
     ): void {
+
+        if (
+            !this.canViewContractList
+        ) {
+            this.showToast(
+                'Bạn không có quyền xem hợp đồng.',
+            );
+
+            return;
+        }
 
         void this.router
             .navigate(
@@ -599,10 +1243,26 @@ export class ContractListComponent
             );
     }
 
+    /*
+     * =========================================
+     * EDIT
+     * =========================================
+     */
+
     editContract(
         contract:
             ContractListItem,
     ): void {
+
+        if (
+            !this.canEditContracts
+        ) {
+            this.showToast(
+                'Bạn chỉ có quyền xem hợp đồng.',
+            );
+
+            return;
+        }
 
         void this.router
             .navigate(
@@ -618,19 +1278,41 @@ export class ContractListComponent
                 },
             );
     }
+
+    /*
+     * =========================================
+     * DELETE
+     * =========================================
+     */
+
     deleteContract(
         contract:
             ContractListItem,
     ): void {
 
-        const confirmed =
-            window.confirm(
-                `Bạn có chắc muốn xóa ${this.formatContractCode(
-                    contract.maHD,
-                )}?`,
+        if (
+            !this.canDeleteContracts
+        ) {
+            this.showToast(
+                'Bạn không có quyền xóa hợp đồng.',
             );
 
-        if (!confirmed) {
+            return;
+        }
+
+        const confirmed =
+            typeof window ===
+                'undefined'
+                ? true
+                : window.confirm(
+                    `Bạn có chắc muốn xóa ${this.formatContractCode(
+                        contract.maHD,
+                    )}?`,
+                );
+
+        if (
+            !confirmed
+        ) {
             return;
         }
 
@@ -684,7 +1366,6 @@ export class ContractListComponent
                         this.showToast(
                             'Phiên đăng nhập đã hết hạn.',
                         );
-
                     } else if (
                         error.status ===
                         403
@@ -692,7 +1373,6 @@ export class ContractListComponent
                         this.showToast(
                             'Bạn không có quyền xóa hợp đồng.',
                         );
-
                     } else if (
                         error.status ===
                         404
@@ -700,7 +1380,6 @@ export class ContractListComponent
                         this.showToast(
                             'Không tìm thấy hợp đồng.',
                         );
-
                     } else if (
                         error.status ===
                         409
@@ -710,7 +1389,6 @@ export class ContractListComponent
                                 ?.message ??
                             'Không thể xóa hợp đồng vì đang có dữ liệu liên quan.',
                         );
-
                     } else {
                         this.showToast(
                             error.error
@@ -725,170 +1403,256 @@ export class ContractListComponent
             });
     }
 
+    /*
+     * =========================================
+     * EXPORT
+     * =========================================
+     */
+
     exportContracts():
         void {
 
         if (
-            this.isLoading
+            !this.canViewContractList
         ) {
+            this.showToast(
+                'Bạn không có quyền xuất danh sách hợp đồng.',
+            );
 
             return;
         }
 
-
-        const data =
-            this.filteredContracts
-                .map(
-                    (
-                        contract,
-                    ) => ({
-                        'Mã hợp đồng':
-                            this.formatContractCode(
-                                contract.maHD,
-                            ),
-
-                        'Mã nhân viên':
-                            `NV-${String(
-                                contract.maNV,
-                            ).padStart(
-                                4,
-                                '0',
-                            )}`,
-
-                        'Nhân viên':
-                            contract.tenNV,
-
-                        'Loại hợp đồng':
-                            contract.tenLoaiHD,
-
-                        'Ngày bắt đầu':
-                            this.formatExportDate(
-                                contract.ngayBatDau,
-                            ),
-
-                        'Ngày kết thúc':
-                            contract.ngayKetThuc
-                                ? this.formatExportDate(
-                                    contract.ngayKetThuc,
-                                )
-                                : '',
-
-                        'Lương cơ bản':
-                            Number(
-                                contract.luongCoBan ??
-                                0,
-                            ),
-
-                        'Trạng thái':
-                            contract.trangThai,
-                    }),
-                );
-
+        if (
+            this.isLoading
+        ) {
+            return;
+        }
 
         if (
-            data.length ===
+            this.filteredContracts
+                .length ===
             0
         ) {
-
             this.showToast(
                 'Không có dữ liệu hợp đồng để xuất.',
             );
 
-
             return;
         }
 
+        if (
+            typeof window ===
+            'undefined' ||
 
-        this.excelExportService
-            .exportToExcel(
-                data,
-                `danh-sach-hop-dong-${this.getTodayFileName()}`,
-                'Hợp đồng',
+            typeof document ===
+            'undefined'
+        ) {
+            return;
+        }
+
+        const rows:
+            Array<
+                Array<
+                    string | number
+                >
+            > = [
+                [
+                    'Mã hợp đồng',
+                    'Mã nhân viên',
+                    'Nhân viên',
+                    'Loại hợp đồng',
+                    'Ngày bắt đầu',
+                    'Ngày kết thúc',
+                    'Lương cơ bản',
+                    'Trạng thái',
+                ],
+
+                ...this.filteredContracts
+                    .map(
+                        (
+                            contract,
+                        ) => [
+                                this.formatContractCode(
+                                    contract.maHD,
+                                ),
+
+                                contract.maNV,
+
+                                contract.tenNV,
+
+                                contract.tenLoaiHD,
+
+                                contract.ngayBatDau,
+
+                                contract.ngayKetThuc ??
+                                '',
+
+                                contract.luongCoBan,
+
+                                contract.trangThai,
+                            ],
+                    ),
+            ];
+
+        const csv =
+            rows
+                .map(
+                    (
+                        row,
+                    ) =>
+                        row
+                            .map(
+                                (
+                                    value,
+                                ) =>
+                                    this.escapeCsvValue(
+                                        value,
+                                    ),
+                            )
+                            .join(
+                                ',',
+                            ),
+                )
+                .join(
+                    '\r\n',
+                );
+
+        const blob =
+            new Blob(
+                [
+                    '\uFEFF',
+                    csv,
+                ],
+                {
+                    type:
+                        'text/csv;charset=utf-8;',
+                },
             );
 
+        const url =
+            URL.createObjectURL(
+                blob,
+            );
+
+        const link =
+            document.createElement(
+                'a',
+            );
+
+        link.href =
+            url;
+
+        link.download =
+            'danh-sach-hop-dong.csv';
+
+        document.body
+            .appendChild(
+                link,
+            );
+
+        link.click();
+
+        link.remove();
+
+        URL.revokeObjectURL(
+            url,
+        );
 
         this.showToast(
             'Đã xuất danh sách hợp đồng.',
         );
     }
 
+    /*
+     * =========================================
+     * PRIVATE
+     * =========================================
+     */
 
-    private formatExportDate(
-        value:
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+        return resolveUserRole(
+            currentUser,
+        );
+    }
+
+    private getContractTypeErrorMessage(
+        error:
+            HttpErrorResponse,
+        fallback:
             string,
     ): string {
 
-        const normalized =
-            value
-                ?.slice(
-                    0,
-                    10,
-                ) ??
-            '';
+        if (
+            error.status ===
+            401
+        ) {
+            return 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.';
+        }
 
+        if (
+            error.status ===
+            403
+        ) {
+            return 'Bạn không có quyền quản lý loại hợp đồng.';
+        }
 
-        const [
-            year,
-            month,
-            day,
-        ] =
-            normalized
-                .split(
-                    '-',
-                );
+        if (
+            error.status ===
+            404
+        ) {
+            return 'Không tìm thấy loại hợp đồng.';
+        }
 
+        if (
+            error.status ===
+            409
+        ) {
+            return (
+                error.error
+                    ?.message ??
+                'Không thể xóa loại hợp đồng vì đang được sử dụng.'
+            );
+        }
+
+        if (
+            error.status ===
+            0
+        ) {
+            return 'Không thể kết nối đến API loại hợp đồng.';
+        }
 
         return (
-            year &&
-            month &&
-            day
-        )
-            ? `${day}/${month}/${year}`
-            : value;
+            error.error
+                ?.message ??
+            fallback
+        );
     }
 
+    private escapeCsvValue(
+        value:
+            string | number,
+    ): string {
 
-    private getTodayFileName():
-        string {
-
-        const today =
-            new Date();
-
-
-        const year =
-            today
-                .getFullYear();
-
-
-        const month =
+        const text =
             String(
-                today
-                    .getMonth() +
-                1,
-            )
-                .padStart(
-                    2,
-                    '0',
-                );
+                value ??
+                '',
+            );
 
-
-        const day =
-            String(
-                today
-                    .getDate(),
-            )
-                .padStart(
-                    2,
-                    '0',
-                );
-
-
-        return `${year}-${month}-${day}`;
+        return `"${text.replace(
+            /"/g,
+            '""',
+        )}"`;
     }
-
 
     private showToast(
-        message: string,
+        message:
+            string,
     ): void {
 
         this.toastMessage =
@@ -899,6 +1663,7 @@ export class ContractListComponent
 
         window.setTimeout(
             () => {
+
                 this.toastMessage =
                     '';
 

@@ -23,14 +23,28 @@ import {
 } from '@angular/router';
 
 import {
+    catchError,
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
+
+import {
+    canViewAttendance as canViewAttendanceForRole,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
 
 import {
     CHAM_CONG_TRANG_THAI,
     ChamCongTrangThai,
 } from '../../../core/constants/status.constants';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     PhongBan,
@@ -106,6 +120,14 @@ export class AttendanceOverviewComponent
 
     isLoading = false;
 
+    currentRole:
+        RoleKey | null =
+        null;
+
+    currentEmployeeId:
+        number | null =
+        null;
+
     private attendanceData:
         ChamCong[] = [];
 
@@ -154,6 +176,9 @@ export class AttendanceOverviewComponent
         private readonly router:
             Router,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly chamCongService:
             ChamCongService,
 
@@ -171,23 +196,136 @@ export class AttendanceOverviewComponent
     ) { }
 
     ngOnInit(): void {
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+        this.currentRole =
+            resolveUserRole(
+                currentUser,
+            );
+
+        this.currentEmployeeId =
+            this.storageService
+                .getCurrentEmployeeId();
+
+        this.loadPermissions();
+    }
+
+    get canViewAttendance(): boolean {
+        return canViewAttendanceForRole(
+            this.currentRole,
+        );
+    }
+
+    get canViewAllAttendance(): boolean {
+        /*
+         * Getter này chỉ quyết định hiển thị nút
+         * mở bảng chấm công. Scope thật được
+         * truyền theo role trong viewAttendanceTable().
+         */
+        return this.canViewAttendance;
+    }
+
+    get canViewEmployees(): boolean {
+        /*
+         * Nhóm quản lý được xem danh bạ nhân viên.
+         * Employee không có quyền xem danh bạ,
+         * nhưng vẫn được xem chính dữ liệu cá nhân
+         * đã tải bằng /me trên trang tổng quan.
+         */
+        return (
+            canViewEmployeeDirectory(
+                this.currentRole,
+            ) ||
+            this.currentRole === 'employee'
+        );
+    }
+
+    get canViewDepartments(): boolean {
+        return canViewOrganization(
+            this.currentRole,
+        );
+    }
+
+    private loadPermissions(): void {
+        this.errorMessage = '';
+
+        if (
+            !this.canViewAttendance
+        ) {
+            this.resetOverviewData();
+            this.isLoading = false;
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu chấm công.';
+            this.changeDetectorRef
+                .markForCheck();
+            return;
+        }
+
         this.loadOverviewData();
     }
 
     loadOverviewData(): void {
+        if (
+            this.isLoading ||
+            !this.canViewAttendance
+        ) {
+            return;
+        }
+
         this.isLoading = true;
         this.errorMessage = '';
 
+        if (
+            this.currentRole ===
+            'employee'
+        ) {
+            this.loadSelfOverviewData();
+            return;
+        }
+
+        if (
+            this.currentRole ===
+            'manager'
+        ) {
+            this.loadManagerOverviewData();
+            return;
+        }
+
+        if (
+            this.hasGlobalAttendanceScope()
+        ) {
+            this.loadFullOverviewData();
+            return;
+        }
+
+        this.resetOverviewData();
+        this.isLoading = false;
+        this.errorMessage =
+            'Bạn không có quyền xem tổng quan chấm công.';
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    private loadFullOverviewData(): void {
         forkJoin({
             attendance:
                 this.chamCongService
                     .getAll(),
             employees:
-                this.nhanVienService
-                    .getAll(),
+                this.canViewEmployees
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([] as NhanVienChiTiet[]),
             departments:
-                this.phongBanService
-                    .getAll(),
+                (
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? this.phongBanService
+                        .getAll()
+                    : of([] as PhongBan[]),
             shifts:
                 this.chamCongService
                     .getShiftTypes(),
@@ -221,14 +359,27 @@ export class AttendanceOverviewComponent
                         shifts;
 
                     this.departments =
-                        departments.map(
-                            (department) => ({
-                                maPB:
-                                    department.maPB,
-                                tenPB:
-                                    department.tenPB,
-                            }),
-                        );
+                        (
+                            this.canViewEmployees &&
+                            this.canViewDepartments
+                        )
+                            ? departments.map(
+                                (department) => ({
+                                    maPB:
+                                        department.maPB,
+                                    tenPB:
+                                        department.tenPB,
+                                }),
+                            )
+                            : [];
+
+                    if (
+                        !this.canViewEmployees ||
+                        !this.canViewDepartments
+                    ) {
+                        this.selectedDepartment =
+                            '';
+                    }
 
                     this.buildOverview();
 
@@ -239,19 +390,236 @@ export class AttendanceOverviewComponent
                     error:
                         HttpErrorResponse,
                 ) => {
-                    this.errorMessage =
-                        this.getLoadErrorMessage(
-                            error,
+                    this.handleOverviewLoadError(
+                        error,
+                    );
+                },
+            });
+    }
+
+    private loadManagerOverviewData(): void {
+        forkJoin({
+            attendance:
+                this.chamCongService
+                    .getAll(),
+            employees:
+                this.nhanVienService
+                    .getAll(),
+            manager:
+                this.nhanVienService
+                    .getMe(),
+            departments:
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of([] as PhongBan[]),
+            shifts:
+                this.chamCongService
+                    .getShiftTypes()
+                    .pipe(
+                        catchError(() =>
+                            of([] as LoaiCa[]),
+                        ),
+                    ),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    attendance,
+                    employees,
+                    manager,
+                    departments,
+                    shifts,
+                }) => {
+                    if (
+                        manager.maPB ===
+                        null
+                    ) {
+                        this.resetOverviewData();
+                        this.errorMessage =
+                            'Không xác định được phòng ban của trưởng phòng.';
+                        this.changeDetectorRef
+                            .markForCheck();
+                        return;
+                    }
+
+                    this.currentEmployeeId =
+                        manager.maNV;
+
+                    const scopedEmployees =
+                        employees.filter(
+                            (employee) =>
+                                employee.maPB ===
+                                manager.maPB,
                         );
 
-                    this.showToast(
-                        this.errorMessage,
-                    );
+                    const employeeIds =
+                        new Set(
+                            scopedEmployees.map(
+                                (employee) =>
+                                    employee.maNV,
+                            ),
+                        );
+
+                    this.attendanceData =
+                        attendance.filter(
+                            (record) =>
+                                employeeIds.has(
+                                    record.maNV,
+                                ),
+                        );
+
+                    this.employeeData =
+                        scopedEmployees;
+
+                    this.departmentData =
+                        departments.filter(
+                            (department) =>
+                                department.maPB ===
+                                manager.maPB,
+                        );
+
+                    this.shiftData =
+                        shifts;
+
+                    this.departments =
+                        this.departmentData.map(
+                            (department) => ({
+                                maPB:
+                                    department.maPB,
+                                tenPB:
+                                    department.tenPB,
+                            }),
+                        );
+
+                    this.selectedDepartment =
+                        '';
+
+                    this.buildOverview();
 
                     this.changeDetectorRef
                         .markForCheck();
                 },
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.handleOverviewLoadError(
+                        error,
+                    );
+                },
             });
+    }
+
+    private loadSelfOverviewData(): void {
+        /*
+         * Nhân viên chỉ được xem chấm công cá nhân.
+         * Theo ma trận phân quyền, nhân viên không có
+         * quyền xem danh mục Loại ca, vì vậy tuyệt đối
+         * không gọi GET /api/loai-cas trong luồng này.
+         */
+        forkJoin({
+            attendance:
+                this.chamCongService
+                    .getMe(),
+            employee:
+                this.nhanVienService
+                    .getMe(),
+        })
+            .pipe(
+                finalize(() => {
+                    this.isLoading =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({
+                    attendance,
+                    employee,
+                }) => {
+                    const employeeDetail:
+                        NhanVienChiTiet = {
+                        ...employee,
+                        tenPB: null,
+                        tenCV: null,
+                        tenTD: null,
+                    };
+
+                    this.currentEmployeeId =
+                        employee.maNV;
+
+                    this.attendanceData =
+                        attendance.filter(
+                            (record) =>
+                                record.maNV ===
+                                employee.maNV,
+                        );
+
+                    this.employeeData = [
+                        employeeDetail,
+                    ];
+
+                    this.departmentData = [];
+                    this.departments = [];
+                    this.selectedDepartment = '';
+
+                    // Employee không được phép tải dữ liệu Loại ca.
+                    this.shiftData = [];
+
+                    this.buildOverview();
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                },
+                error: (
+                    error:
+                        HttpErrorResponse,
+                ) => {
+                    this.handleOverviewLoadError(
+                        error,
+                    );
+                },
+            });
+    }
+
+    private hasGlobalAttendanceScope(): boolean {
+        return (
+            canViewAttendanceForRole(
+                this.currentRole,
+            ) &&
+            this.currentRole !== 'manager' &&
+            this.currentRole !== 'employee'
+        );
+    }
+
+    private handleOverviewLoadError(
+        error:
+            HttpErrorResponse,
+    ): void {
+        this.resetOverviewData();
+
+        this.errorMessage =
+            this.getLoadErrorMessage(
+                error,
+            );
+
+        this.showToast(
+            this.errorMessage,
+        );
+
+        this.changeDetectorRef
+            .markForCheck();
     }
 
     retryLoad(): void {
@@ -259,7 +627,7 @@ export class AttendanceOverviewComponent
             return;
         }
 
-        this.loadOverviewData();
+        this.loadPermissions();
     }
 
     private buildOverview(): void {
@@ -297,6 +665,18 @@ export class AttendanceOverviewComponent
 
     private getFilteredEmployeeIds():
         Set<number> {
+
+        if (
+            !this.canViewEmployees
+        ) {
+            return new Set(
+                this.attendanceData
+                    .map(
+                        (record) =>
+                            record.maNV,
+                    ),
+            );
+        }
 
         return new Set(
             this.getFilteredEmployees()
@@ -440,7 +820,11 @@ export class AttendanceOverviewComponent
 
         this.stats = {
             tongNhanVien:
-                employees.length,
+                employees.length > 0
+                    ? employees.length
+                    : this.countUniqueEmployees(
+                        records,
+                    ),
             coMat:
                 presentCount,
             diMuon:
@@ -650,11 +1034,19 @@ export class AttendanceOverviewComponent
                     maNV:
                         record.maNV,
                     hoTen:
-                        employee?.hoTen ??
-                        `Nhân viên #${record.maNV}`,
+                        this.canViewEmployees
+                            ? (
+                                employee?.hoTen ??
+                                `Nhân viên #${record.maNV}`
+                            )
+                            : `Nhân viên #${record.maNV}`,
                     tenPB:
-                        department?.tenPB ??
-                        null,
+                        (
+                            this.canViewEmployees &&
+                            this.canViewDepartments
+                        )
+                            ? department?.tenPB ?? null
+                            : null,
                     ngayChamCong:
                         record.ngayChamCong,
                     gioVao:
@@ -725,13 +1117,41 @@ export class AttendanceOverviewComponent
     viewAttendanceTable():
         void {
 
+        if (
+            !this.canViewAttendance
+        ) {
+            return;
+        }
+
+        const scope =
+            this.currentRole ===
+                'employee'
+                ? 'self'
+                : this.currentRole ===
+                    'manager'
+                    ? 'department'
+                    : 'all';
+
         void this.router
-            .navigate([
-                '/attendance',
-            ]);
+            .navigate(
+                [
+                    '/attendance',
+                ],
+                {
+                    queryParams: {
+                        scope,
+                    },
+                },
+            );
     }
 
     exportReport(): void {
+        if (
+            !this.canViewAttendance
+        ) {
+            return;
+        }
+
         const records =
             this.getSelectedDayAttendance();
 
@@ -774,14 +1194,28 @@ export class AttendanceOverviewComponent
                         'Mã nhân viên':
                             `NV-${String(record.maNV).padStart(4, '0')}`,
                         'Họ tên':
-                            employee?.hoTen ??
-                            `Nhân viên #${record.maNV}`,
+                            this.canViewEmployees
+                                ? (
+                                    employee?.hoTen ??
+                                    `Nhân viên #${record.maNV}`
+                                )
+                                : `Nhân viên #${record.maNV}`,
                         'Phòng ban':
-                            department?.tenPB ??
-                            'Chưa phân phòng',
+                            (
+                                this.canViewEmployees &&
+                                this.canViewDepartments
+                            )
+                                ? (
+                                    department?.tenPB ??
+                                    'Chưa phân phòng'
+                                )
+                                : 'Không có quyền xem',
                         'Ca làm':
-                            shift?.tenCa ??
-                            'Chưa xác định',
+                            this.currentRole ===
+                                'employee'
+                                ? 'Không có quyền xem loại ca'
+                                : shift?.tenCa ??
+                                'Chưa xác định',
                         'Giờ vào':
                             this.formatTime(
                                 record.gioVao,
@@ -891,6 +1325,27 @@ export class AttendanceOverviewComponent
             0,
             5,
         );
+    }
+
+    private resetOverviewData(): void {
+        this.attendanceData = [];
+        this.employeeData = [];
+        this.departmentData = [];
+        this.shiftData = [];
+        this.departments = [];
+        this.trendItems = [];
+        this.attentionEmployees = [];
+        this.selectedDepartment = '';
+
+        this.stats = {
+            tongNhanVien: 0,
+            coMat: 0,
+            diMuon: 0,
+            vangKhongPhep: 0,
+            lamThemGio: 0,
+            tyLeDungGio: 0,
+            tongGioLamThem: 0,
+        };
     }
 
     private countUniqueEmployees(

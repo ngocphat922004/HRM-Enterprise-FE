@@ -3,11 +3,3 @@ export interface Quyen {
     tenQuyen: string;
     moTa: string | null;
 }
-
-export interface CreateQuyenRequest {
-    tenQuyen: string;
-    moTa: string | null;
-}
-
-export type UpdateQuyenRequest =
-    CreateQuyenRequest;

@@ -16,6 +16,7 @@
             </div>
 
             <div class="page-actions">
+                @if (canCreateQualifications) {
                 <a class="header-add-button" routerLink="/qualifications/add">
                     <span aria-hidden="true">
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -27,7 +28,9 @@
 
                     Thêm mới
                 </a>
+                }
 
+                @if (canViewQualifications) {
                 <button class="export-button" type="button" (click)="exportExcel()" [disabled]="
                         isLoading ||
                         qualifications.length === 0 ||
@@ -42,6 +45,7 @@
 
                     Xuất Excel
                 </button>
+                }
             </div>
         </section>
 
@@ -72,7 +76,7 @@
 
                 <div>
                     <small>Trình độ đang sử dụng</small>
-                    <strong>{{ usedQualificationCount }}</strong>
+                    <strong>{{ canViewEmployees ? usedQualificationCount : '—' }}</strong>
                 </div>
             </article>
 
@@ -88,7 +92,7 @@
 
                 <div>
                     <small>Nhân viên có trình độ</small>
-                    <strong>{{ assignedEmployeeCount }}</strong>
+                    <strong>{{ canViewEmployees ? assignedEmployeeCount : '—' }}</strong>
                 </div>
             </article>
         </section>
@@ -107,7 +111,7 @@
             </div>
 
             <select [(ngModel)]="selectedUsage" (ngModelChange)="applyFilters()" aria-label="Lọc tình trạng sử dụng"
-                [disabled]="isLoading">
+                [disabled]="isLoading || !canViewEmployees">
                 <option value="">Tất cả tình trạng</option>
                 <option value="used">Đang sử dụng</option>
                 <option value="unused">Chưa sử dụng</option>
@@ -180,7 +184,11 @@
                             <td>
                                 <span class="qualification-usage-badge"
                                     [class.qualification-usage-badge--empty]="qualification.employeeCount === 0">
-                                    {{ qualification.employeeCount > 0 ? 'Đang sử dụng' : 'Chưa sử dụng' }}
+                                    {{
+                                    canViewEmployees
+                                    ? (qualification.employeeCount > 0 ? 'Đang sử dụng' : 'Chưa sử dụng')
+                                    : 'Không xác định'
+                                    }}
                                 </span>
                             </td>
 
@@ -195,6 +203,7 @@
                                         </svg>
                                     </button>
 
+                                    @if (canEditQualifications) {
                                     <button type="button" (click)="editQualification(qualification)"
                                         [disabled]="deletingQualificationId !== null" aria-label="Chỉnh sửa trình độ">
                                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -203,13 +212,21 @@
                                             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
                                         </svg>
                                     </button>
+                                    }
 
+                                    @if (canDeleteQualifications) {
                                     <button type="button" class="delete-action"
-                                        [class.delete-action--locked]="qualification.employeeCount > 0"
-                                        [disabled]="qualification.employeeCount > 0 || deletingQualificationId !== null"
-                                        (click)="deleteQualification(qualification)"
+                                        [class.delete-action--locked]="canViewEmployees && qualification.employeeCount > 0"
+                                        [disabled]="
+                                            (canViewEmployees && qualification.employeeCount > 0) ||
+                                            deletingQualificationId !== null
+                                        " (click)="deleteQualification(qualification)"
                                         [attr.aria-label]="deletingQualificationId === qualification.maTD ? 'Đang xóa trình độ' : 'Xóa trình độ'"
-                                        [title]="qualification.employeeCount > 0 ? 'Không thể xóa vì đang có nhân viên sử dụng' : 'Xóa trình độ'">
+                                        [title]="
+                                            canViewEmployees && qualification.employeeCount > 0
+                                            ? 'Không thể xóa vì đang có nhân viên sử dụng'
+                                            : 'Xóa trình độ'
+                                        ">
                                         @if (deletingQualificationId === qualification.maTD) {
                                         <span aria-hidden="true">…</span>
                                         } @else {
@@ -221,6 +238,7 @@
                                         </svg>
                                         }
                                     </button>
+                                    }
                                 </div>
                             </td>
                         </tr>

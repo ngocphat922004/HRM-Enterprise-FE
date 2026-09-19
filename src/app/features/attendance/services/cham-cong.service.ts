@@ -13,14 +13,22 @@ import {
     CreateChamCongRequest,
     UpdateChamCongRequest,
 } from '../models/cham-cong.model';
-import { LoaiCa } from '../models/loai-ca.model';
+import {
+    CreateLoaiCaRequest,
+    LoaiCa,
+    UpdateLoaiCaRequest,
+} from '../models/loai-ca.model';
 
 export type {
     ChamCong,
     CreateChamCongRequest,
     UpdateChamCongRequest,
 } from '../models/cham-cong.model';
-export type { LoaiCa } from '../models/loai-ca.model';
+export type {
+    CreateLoaiCaRequest,
+    LoaiCa,
+    UpdateLoaiCaRequest,
+} from '../models/loai-ca.model';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -161,6 +169,63 @@ export class ChamCongService {
                     }
 
                     return shift;
+                }),
+            );
+    }
+
+    createShiftType(payload: CreateLoaiCaRequest): Observable<LoaiCa> {
+        return this.http
+            .post<ApiResponse<LoaiCa> | LoaiCa>(
+                this.loaiCaApiUrl,
+                payload,
+            )
+            .pipe(
+                map((response) => {
+                    const shift = this.unwrapItem(response);
+
+                    if (!shift) {
+                        throw new Error('Không nhận được loại ca vừa tạo.');
+                    }
+
+                    return shift;
+                }),
+            );
+    }
+
+    updateShiftType(
+        maCa: number,
+        payload: UpdateLoaiCaRequest,
+    ): Observable<LoaiCa> {
+        const request: LoaiCa = {
+            maCa,
+            tenCa: payload.tenCa,
+            gioBatDau: payload.gioBatDau,
+            gioKetThuc: payload.gioKetThuc,
+            soGioQuyDinh: payload.soGioQuyDinh,
+        };
+
+        return this.http
+            .put<ApiResponse<LoaiCa | null> | LoaiCa | null>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiCaById(maCa)}`,
+                request,
+            )
+            .pipe(
+                map((response) => {
+                    const shift = this.unwrapItem(response);
+                    return shift ?? request;
+                }),
+            );
+    }
+
+    deleteShiftType(maCa: number): Observable<void> {
+        return this.http
+            .delete<ApiResponse<unknown> | unknown>(
+                `${environment.apiBaseUrl}${API_ENDPOINTS.loaiCaById(maCa)}`,
+            )
+            .pipe(
+                map((response) => {
+                    this.assertSuccess(response);
+                    return void 0;
                 }),
             );
     }

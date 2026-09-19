@@ -8,9 +8,7 @@
     </div>
 
     <p class="empty-state">
-      Đang lấy dữ liệu nhân viên,
-      phòng ban, chức vụ, nghỉ phép,
-      chấm công và hợp đồng...
+      Đang kiểm tra quyền và tải các dữ liệu tổng quan được phép xem...
     </p>
   </section>
 
@@ -31,8 +29,22 @@
     </button>
   </section>
 
+  } @else if (!hasDashboardDataAccess) {
+  <section class="dashboard-card">
+    <div class="card-heading">
+      <h2>
+        Tổng quan
+      </h2>
+    </div>
+
+    <p class="empty-state">
+      Tài khoản hiện không có quyền xem các nguồn dữ liệu dùng trên Dashboard.
+    </p>
+  </section>
+
   } @else {
 
+  @if (canViewContracts) {
   @if (expiringContractCount > 0) {
   <section class="alert-banner" aria-label="Cảnh báo hợp đồng">
     <span class="alert-banner__icon" aria-hidden="true">
@@ -93,7 +105,9 @@
     </a>
   </section>
   }
+  }
 
+  @if (stats.length > 0) {
   <section class="stats-grid" aria-label="Thống kê tổng quan">
     @for (
     stat of stats;
@@ -182,9 +196,18 @@
     </article>
     }
   </section>
+  }
 
+  @if (
+  canViewEmployees ||
+  (
+  canViewEmployees &&
+  canViewDepartments
+  )
+  ) {
   <section class="charts-grid">
 
+    @if (canViewEmployees) {
     <article class="dashboard-card chart-card">
       <div class="card-heading">
         <h2>
@@ -229,7 +252,12 @@
       </p>
       }
     </article>
+    }
 
+    @if (
+    canViewEmployees &&
+    canViewDepartments
+    ) {
     <article class="
               dashboard-card
               department-card
@@ -285,10 +313,18 @@
       </p>
       }
     </article>
+    }
   </section>
+  }
 
+  @if (
+  canViewEmployees ||
+  canViewLeave ||
+  canViewContracts
+  ) {
   <section class="lists-grid">
 
+    @if (canViewEmployees) {
     <article class="
               dashboard-card
               list-card
@@ -302,6 +338,7 @@
           Nhân viên mới nhất
         </h2>
 
+        @if (canCreateEmployee) {
         <a routerLink="/employees/add" class="heading-action" aria-label="Thêm nhân viên" title="Thêm nhân viên">
           <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -314,6 +351,7 @@
             <path d="M22 11h-6"></path>
           </svg>
         </a>
+        }
       </div>
 
       <div class="
@@ -376,7 +414,9 @@
         Xem tất cả nhân viên
       </a>
     </article>
+    }
 
+    @if (canViewLeave) {
     <article class="
               dashboard-card
               list-card
@@ -450,7 +490,8 @@
 
           @if (
           request.status ===
-          'pending'
+          'pending' &&
+          canApproveLeave
           ) {
           <div class="
                         leave-actions
@@ -475,7 +516,10 @@
             </button>
           </div>
 
-          } @else {
+          } @else if (
+          request.status !==
+          'pending'
+          ) {
           <span class="status-badge" [class.status-badge--rejected]="
                         request.status ===
                         'rejected'
@@ -502,7 +546,9 @@
         Xem tất cả đơn nghỉ phép
       </a>
     </article>
+    }
 
+    @if (canViewContracts) {
     <article class="
               dashboard-card
               list-card
@@ -598,7 +644,9 @@
         Tất cả hợp đồng
       </a>
     </article>
+    }
   </section>
+  }
   }
 </section>
 

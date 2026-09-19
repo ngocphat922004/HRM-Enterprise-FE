@@ -25,7 +25,8 @@
 
             <p>
                 Cập nhật nhân viên liên kết,
-                quyền truy cập và trạng thái tài khoản.
+                quyền truy cập và trạng thái tài khoản
+                theo phạm vi được phép.
             </p>
         </div>
 
@@ -78,8 +79,8 @@ account
     </h2>
 
     <p>
-        Đang lấy chi tiết tài khoản,
-        nhân viên, phòng ban và quyền.
+        Đang lấy tài khoản và các dữ liệu
+        liên kết mà bạn được phép xem.
     </p>
 </section>
 
@@ -110,7 +111,8 @@ errorMessage &&
 
     <div class="account-state-card__actions">
         @if (
-        accountId !== null
+        accountId !== null &&
+        canUseAccountForm
         ) {
         <button class="primary-state-button" type="button" (click)="retry()" [disabled]="isLoading">
             Thử lại
@@ -150,7 +152,8 @@ errorMessage &&
 
     <div class="account-state-card__actions">
         @if (
-        accountId !== null
+        accountId !== null &&
+        canUseAccountForm
         ) {
         <button class="primary-state-button" type="button" (click)="retry()">
             Tải lại
@@ -163,7 +166,7 @@ errorMessage &&
     </div>
 </section>
 
-} @else {
+} @else if (canUseAccountForm) {
 <form class="edit-account-layout" (ngSubmit)="saveAccount()" novalidate>
     <div class="edit-account-main">
         <section class="form-card">
@@ -203,7 +206,10 @@ errorMessage &&
 
                     <select name="maNV" [(ngModel)]="form.maNV" [class.form-control--invalid]="
                                             employeeInvalid
-                                        " [disabled]="isSaving">
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canViewEmployees
+                                        ">
                         <option [ngValue]="null">
                             Chọn nhân viên
                         </option>
@@ -222,11 +228,13 @@ errorMessage &&
                             {{
                             employee.maNV
                             }}
+                            @if (canViewDepartments) {
                             ·
                             {{
                             employee.tenPB ||
                             'Chưa phân phòng'
                             }}
+                            }
                         </option>
                         }
                     </select>
@@ -273,12 +281,14 @@ errorMessage &&
                             selectedEmployee.maNV
                             }}
 
+                            @if (canViewDepartments) {
                             ·
 
                             {{
                             selectedEmployee.tenPB ||
                             'Chưa phân phòng'
                             }}
+                            }
 
                             ·
 
@@ -343,6 +353,7 @@ errorMessage &&
                                         " [disabled]="isSaving" placeholder="Ví dụ: nguyenvana" />
 
                     @if (
+                    canViewAccounts &&
                     usernameDuplicate
                     ) {
                     <small class="field-error">
@@ -379,7 +390,10 @@ errorMessage &&
                                             form.maQuyen
                                         " [class.form-control--invalid]="
                                             roleInvalid
-                                        " [disabled]="isSaving">
+                                        " [disabled]="
+                                            isSaving ||
+                                            !canViewRoles
+                                        ">
                         <option [ngValue]="null">
                             Chọn quyền
                         </option>
@@ -474,6 +488,7 @@ errorMessage &&
             </button>
 
             <button class="submit-button" type="submit" [disabled]="
+                                    !canUseAccountForm ||
                                     isSaving ||
                                     isLoading ||
                                     roles.length === 0 ||
@@ -614,6 +629,38 @@ errorMessage &&
 
     </aside>
 </form>
+} @else {
+<section class="account-state-card account-state-card--error" role="alert">
+    <span class="account-state-card__icon">
+        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 8v4M12 16h.01"></path>
+        </svg>
+    </span>
+
+    <h2>
+        Không thể chỉnh sửa tài khoản
+    </h2>
+
+    <p>
+        @if (!canEditAccounts) {
+        Bạn không có quyền chỉnh sửa tài khoản.
+        } @else if (!canViewAccounts) {
+        Bạn cần quyền xem tài khoản để tải dữ liệu cần chỉnh sửa.
+        } @else if (!canViewEmployees && !canViewRoles) {
+        Bạn cần quyền xem nhân viên và quyền để chỉnh sửa tài khoản.
+        } @else if (!canViewEmployees) {
+        Bạn cần quyền xem nhân viên để chỉnh sửa tài khoản.
+        } @else if (!canViewRoles) {
+        Bạn cần quyền xem quyền để chỉnh sửa tài khoản.
+        }
+    </p>
+
+    <button class="secondary-state-button" type="button" (click)="cancel()">
+        Quay lại
+    </button>
+</section>
 }
 
 @if (toastMessage) {

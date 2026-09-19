@@ -3,9 +3,13 @@
         <section class="qualification-form-heading">
             <div>
                 <p class="breadcrumb">
-                    <a routerLink="/employees">Nhân sự</a>
+                    <span>Nhân sự</span>
                     <span>/</span>
+                    @if (canViewQualification) {
                     <a routerLink="/qualifications">Trình độ</a>
+                    } @else {
+                    <span>Trình độ</span>
+                    }
                     <span>/</span>
                     Chỉnh sửa
                 </p>
@@ -22,8 +26,13 @@
                     Hủy bỏ
                 </button>
 
-                <button class="save-button" type="submit" form="edit-qualification-form"
-                    [disabled]="isLoading || isSaving || qualificationId <= 0 || !!errorMessage">
+                <button class="save-button" type="submit" form="edit-qualification-form" [disabled]="
+                        !canUseQualificationForm ||
+                        isLoading ||
+                        isSaving ||
+                        qualificationId <= 0 ||
+                        !!errorMessage
+                    ">
                     @if (isSaving) {
                     <span class="spinner" aria-hidden="true"></span>
                     Đang lưu...
@@ -60,14 +69,19 @@
                 <strong>Không thể tải trình độ</strong>
                 <p>{{ errorMessage }}</p>
 
-                @if (qualificationId > 0) {
+                @if (
+                qualificationId > 0 &&
+                canUseQualificationForm
+                ) {
                 <button type="button" class="save-button retry-button" (click)="retry()">Thử lại</button>
-                } @else {
+                } @else if (canViewQualification) {
                 <a class="cancel-button back-link" routerLink="/qualifications">Về danh sách trình độ</a>
+                } @else {
+                <button type="button" class="cancel-button back-link" (click)="cancel()">Quay lại</button>
                 }
             </div>
         </section>
-        } @else {
+        } @else if (canUseQualificationForm) {
         <div class="qualification-form-layout">
             <form id="edit-qualification-form" class="qualification-form-card" (ngSubmit)="save()" novalidate>
                 <section class="form-section">
@@ -96,7 +110,10 @@
                             </span>
 
                             <input type="text" [(ngModel)]="form.tenTD" name="tenTD" [class.input-invalid]="nameInvalid"
-                                maxlength="100" autocomplete="off" />
+                                maxlength="100" autocomplete="off" [disabled]="
+                                    !canUseQualificationForm ||
+                                    isSaving
+                                " />
 
                             @if (nameInvalid) {
                             <p class="field-error">Vui lòng nhập tên trình độ.</p>
@@ -126,6 +143,31 @@
                 </ul>
             </aside>
         </div>
+        } @else {
+        <section class="qualification-form-card">
+            <div class="empty-state" role="alert">
+                <svg class="lucide-icon empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 8v4"></path>
+                    <path d="M12 16h.01"></path>
+                </svg>
+
+                <strong>Không thể chỉnh sửa trình độ</strong>
+
+                <p>
+                    @if (!canEditQualification) {
+                    Bạn không có quyền chỉnh sửa trình độ.
+                    } @else if (!canViewQualification) {
+                    Bạn cần quyền xem trình độ để tải dữ liệu cần chỉnh sửa.
+                    }
+                </p>
+
+                <button type="button" class="cancel-button back-link" (click)="cancel()">
+                    Quay lại
+                </button>
+            </div>
+        </section>
         }
     </main>
 

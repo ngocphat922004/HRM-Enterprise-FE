@@ -1,15 +1,27 @@
 <section class="department-detail-heading">
     <div>
         <p class="breadcrumb">
+            @if (canViewEmployees) {
             <a routerLink="/employees">
                 Nhân sự
             </a>
+            } @else {
+            <span>
+                Nhân sự
+            </span>
+            }
 
             <span>/</span>
 
+            @if (canViewDepartment) {
             <a routerLink="/departments">
                 Phòng ban
             </a>
+            } @else {
+            <span>
+                Phòng ban
+            </span>
+            }
 
             <span>/</span>
 
@@ -27,6 +39,7 @@
     </div>
 
     @if (
+    canEditDepartment &&
     !isLoading &&
     !errorMessage &&
     departmentId !== null
@@ -67,14 +80,17 @@
             {{ errorMessage }}
         </p>
 
-        @if (departmentId !== null) {
+        @if (
+        departmentId !== null &&
+        canViewDepartment
+        ) {
         <button type="button" class="outline-button" (click)="retry()">
             Thử lại
         </button>
         }
     </div>
 </article>
-} @else {
+} @else if (canViewDepartment) {
 <section class="department-detail-layout">
     <div class="department-detail-main">
         <article class="
@@ -140,6 +156,12 @@
                             }}
                         </strong>
                     </div>
+
+                    @if (!canViewEmployees) {
+                    <small>
+                        Cần quyền xem nhân viên để xác định trưởng bộ phận.
+                    </small>
+                    }
                 </div>
 
                 <div>
@@ -148,9 +170,19 @@
                     </small>
 
                     <strong>
+                        @if (canViewEmployees) {
                         {{ totalEmployees }}
                         nhân viên
+                        } @else {
+                        —
+                        }
                     </strong>
+
+                    @if (!canViewEmployees) {
+                    <small>
+                        Không tải dữ liệu nhân viên do thiếu quyền xem.
+                    </small>
+                    }
                 </div>
 
                 <div class="
@@ -182,19 +214,20 @@
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-
                             <circle cx="9" cy="7" r="4"></circle>
-
                             <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                         </svg>
                     </span>
 
                     <h2>
                         Danh sách nhân sự
+                        @if (canViewEmployees) {
                         ({{ totalEmployees }})
+                        }
                     </h2>
                 </div>
 
+                @if (canViewEmployees) {
                 <div class="card-tools">
                     <button type="button" aria-label="Xuất Excel" (click)="exportEmployees()" [disabled]="
                             isLoading ||
@@ -203,24 +236,35 @@
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 3v12"></path>
-
                             <path d="m7 10 5 5 5-5"></path>
-
                             <path d="M5 21h14"></path>
                         </svg>
                     </button>
                 </div>
+                }
             </header>
 
+            @if (!canViewEmployees) {
+            <div style="
+                        padding: 32px 16px;
+                        text-align: center;
+                    ">
+                <strong>
+                    Bạn không có quyền xem danh sách nhân viên.
+                </strong>
+
+                <p>
+                    Hệ thống không gọi API nhân viên cho trang này.
+                </p>
+            </div>
+            } @else {
             <div class="employee-table-wrapper">
                 <table>
                     <thead>
                         <tr>
                             <th>Họ tên</th>
                             <th>Chức vụ</th>
-                            <th>
-                                Ngày vào làm
-                            </th>
+                            <th>Ngày vào làm</th>
                             <th>Trạng thái</th>
                             <th></th>
                         </tr>
@@ -233,52 +277,38 @@
                         ) {
                         <tr>
                             <td>
-                                <div class="
-                                                employee-inline
-                                            ">
-                                    <span class="
-                                                    employee-avatar
-                                                ">
-                                        {{
-                                        employee.initials
-                                        }}
+                                <div class="employee-inline">
+                                    <span class="employee-avatar">
+                                        {{ employee.initials }}
                                     </span>
 
                                     <div>
                                         <strong>
-                                            {{
-                                            employee.fullName
-                                            }}
+                                            {{ employee.fullName }}
                                         </strong>
 
                                         <span>
-                                            {{
-                                            employee.email
-                                            }}
+                                            {{ employee.email }}
                                         </span>
                                     </div>
                                 </div>
                             </td>
 
                             <td>
-                                {{
-                                employee.position
-                                }}
+                                {{ employee.position }}
                             </td>
 
                             <td>
-                                {{
-                                employee.joinDate
-                                }}
+                                {{ employee.joinDate }}
                             </td>
 
                             <td>
                                 <span [class]="
-                                                'status-badge ' +
-                                                getEmployeeStatusClass(
-                                                    employee.status
-                                                )
-                                            ">
+                                    'status-badge ' +
+                                    getEmployeeStatusClass(
+                                        employee.status
+                                    )
+                                ">
                                     {{
                                     getEmployeeStatusLabel(
                                     employee.status
@@ -289,10 +319,10 @@
 
                             <td class="row-action">
                                 <button type="button" (click)="
-                                                viewEmployeeInfo(
-                                                    employee
-                                                )
-                                            " aria-label="Xem nhân viên">
+                                    viewEmployeeInfo(
+                                        employee
+                                    )
+                                " aria-label="Xem nhân viên">
                                     ⋮
                                 </button>
                             </td>
@@ -300,11 +330,10 @@
                         } @empty {
                         <tr>
                             <td colspan="5" style="
-                                            text-align: center;
-                                            padding: 32px 16px;
-                                        ">
-                                Phòng ban hiện chưa có
-                                nhân viên.
+                                text-align: center;
+                                padding: 32px 16px;
+                            ">
+                                Phòng ban hiện chưa có nhân viên.
                             </td>
                         </tr>
                         }
@@ -313,12 +342,11 @@
             </div>
 
             <footer class="employee-card__footer">
-                <button type="button" (click)="
-                            viewAllDepartmentEmployees()
-                        ">
+                <button type="button" (click)="viewAllDepartmentEmployees()">
                     Xem danh sách nhân viên
                 </button>
             </footer>
+            }
         </article>
     </div>
 
@@ -342,11 +370,19 @@
             </small>
 
             <h2>
-                {{ totalEmployees }}
+                {{
+                canViewEmployees
+                ? totalEmployees
+                : '—'
+                }}
             </h2>
 
             <p>
+                @if (canViewEmployees) {
                 Nhân viên thuộc phòng ban
+                } @else {
+                Không có quyền xem dữ liệu nhân viên
+                }
             </p>
         </article>
 
@@ -367,11 +403,19 @@
             </small>
 
             <h2>
-                {{ workingEmployees }}
+                {{
+                canViewEmployees
+                ? workingEmployees
+                : '—'
+                }}
             </h2>
 
             <p>
+                @if (canViewEmployees) {
                 Nhân viên đang hoạt động
+                } @else {
+                Không có quyền xem dữ liệu nhân viên
+                }
             </p>
         </article>
 
@@ -397,11 +441,19 @@
             </small>
 
             <h2>
-                {{ onLeaveEmployees }}
+                {{
+                canViewEmployees
+                ? onLeaveEmployees
+                : '—'
+                }}
             </h2>
 
             <p>
+                @if (canViewEmployees) {
                 Nhân viên đang tạm nghỉ
+                } @else {
+                Không có quyền xem dữ liệu nhân viên
+                }
             </p>
         </article>
 
@@ -487,6 +539,7 @@
                 <span class="organization-line"></span>
 
                 <div class="organization-branches">
+                    @if (canViewEmployees) {
                     <span>
                         {{ totalEmployees }}
                         nhân viên
@@ -501,6 +554,11 @@
                         {{ onLeaveEmployees }}
                         tạm nghỉ
                     </span>
+                    } @else {
+                    <span>
+                        Không có quyền xem dữ liệu nhân viên
+                    </span>
+                    }
                 </div>
             </div>
         </article>
@@ -508,7 +566,23 @@
 
     </aside>
 </section>
+} @else {
+<article class="detail-card" role="alert">
+    <div style="
+                padding: 32px;
+                text-align: center;
+            ">
+        <strong>
+            Không thể hiển thị phòng ban.
+        </strong>
+
+        <p>
+            Bạn không có quyền xem dữ liệu phòng ban.
+        </p>
+    </div>
+</article>
 }
+
 @if (toastMessage) {
 <div class="toast-message" role="status">
     {{ toastMessage }}

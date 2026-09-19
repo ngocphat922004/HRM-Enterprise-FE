@@ -24,6 +24,7 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
@@ -32,8 +33,20 @@ import {
 } from '../../../core/constants/status.constants';
 
 import {
+    canManageSettings as canManageSettingsForRole,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
     ExcelExportService,
 } from '../../../core/services/excel-export.service';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     TaiKhoanService,
@@ -167,13 +180,17 @@ export class SettingsOverviewComponent
     toastMessage =
         '';
 
-
     currentPage =
         1;
 
 
     readonly pageSize =
         10;
+
+
+    private currentRole:
+        RoleKey | null =
+        null;
 
 
     private toastTimer:
@@ -202,6 +219,9 @@ export class SettingsOverviewComponent
         private readonly excelExportService:
             ExcelExportService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -210,7 +230,13 @@ export class SettingsOverviewComponent
     ngOnInit():
         void {
 
-        this.loadSettingsData();
+        this.currentRole =
+            resolveUserRole(
+                this.storageService
+                    .getCurrentUser(),
+            );
+
+        this.loadPermissions();
     }
 
 
@@ -226,6 +252,119 @@ export class SettingsOverviewComponent
             );
         }
     }
+    get canViewAccounts():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canCreateAccounts():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canEditAccounts():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canDeleteAccounts():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canViewRoles():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canCreateRoles():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canEditRoles():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canDeleteRoles():
+        boolean {
+
+        return this.canManageSettings;
+    }
+
+
+    get canViewEmployees():
+        boolean {
+
+        return (
+            this.canManageSettings &&
+            canViewEmployeeDirectory(
+                this.currentRole,
+            )
+        );
+    }
+
+
+    get canViewDepartments():
+        boolean {
+
+        return (
+            this.canManageSettings &&
+            canViewOrganization(
+                this.currentRole,
+            )
+        );
+    }
+
+
+    private get canManageSettings():
+        boolean {
+
+        return canManageSettingsForRole(
+            this.currentRole,
+        );
+    }
+
+
+    get canCreateCurrentItem():
+        boolean {
+
+        return this.activeSection ===
+            'accounts'
+
+            ? this.canCreateAccounts
+
+            : this.canCreateRoles;
+    }
+
+
+    get canViewCurrentList():
+        boolean {
+
+        return this.activeSection ===
+            'accounts'
+
+            ? this.canViewAccounts
+
+            : this.canViewRoles;
+    }
+
+
     get stats():
         SettingsOverviewStats {
 
@@ -543,6 +682,22 @@ export class SettingsOverviewComponent
             SettingsSection,
     ): void {
 
+        if (
+            (
+                section ===
+                'accounts' &&
+                !this.canViewAccounts
+            ) ||
+            (
+                section ===
+                'roles' &&
+                !this.canViewRoles
+            )
+        ) {
+            return;
+        }
+
+
         this.activeSection =
             section;
 
@@ -592,7 +747,11 @@ export class SettingsOverviewComponent
         void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            (
+                !this.canViewAccounts &&
+                !this.canViewRoles
+            )
         ) {
 
             return;
@@ -624,7 +783,8 @@ export class SettingsOverviewComponent
         void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canCreateCurrentItem
         ) {
 
             return;
@@ -651,7 +811,8 @@ export class SettingsOverviewComponent
     ): void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canViewAccounts
         ) {
 
             return;
@@ -670,7 +831,8 @@ export class SettingsOverviewComponent
     ): void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canEditAccounts
         ) {
 
             return;
@@ -690,7 +852,8 @@ export class SettingsOverviewComponent
     ): void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canViewRoles
         ) {
 
             return;
@@ -709,7 +872,8 @@ export class SettingsOverviewComponent
     ): void {
 
         if (
-            this.isLoading
+            this.isLoading ||
+            !this.canEditRoles
         ) {
 
             return;
@@ -728,15 +892,41 @@ export class SettingsOverviewComponent
     exportCurrentList():
         void {
 
+        if (
+            this.isLoading ||
+            !this.canViewCurrentList
+        ) {
+            return;
+        }
+
+
         if (this.activeSection === 'accounts') {
             const data = this.filteredAccounts.map((account) => ({
                 'Mã tài khoản': account.maTK,
                 'Tên đăng nhập': account.tenDangNhap,
                 'Mã nhân viên': `NV-${String(account.maNV).padStart(4, '0')}`,
-                'Nhân viên': account.hoTen,
-                'Email': account.email ?? '',
-                'Phòng ban': account.tenPB ?? 'Chưa phân phòng',
-                'Chức vụ': account.tenCV ?? 'Chưa có chức vụ',
+
+                ...(this.canViewEmployees
+                    ? {
+                        'Nhân viên':
+                            account.hoTen,
+                        'Email':
+                            account.email ?? '',
+                        'Chức vụ':
+                            account.tenCV ??
+                            'Chưa có chức vụ',
+                    }
+                    : {}),
+
+                ...(this.canViewEmployees &&
+                    this.canViewDepartments
+                    ? {
+                        'Phòng ban':
+                            account.tenPB ??
+                            'Chưa phân phòng',
+                    }
+                    : {}),
+
                 'Quyền': account.tenQuyen,
                 'Trạng thái': account.trangThai,
             }));
@@ -760,7 +950,13 @@ export class SettingsOverviewComponent
             'Mã quyền': role.maQuyen,
             'Tên quyền': role.tenQuyen,
             'Mô tả': role.moTa ?? '',
-            'Số tài khoản': role.soTaiKhoan,
+
+            ...(this.canViewAccounts
+                ? {
+                    'Số tài khoản':
+                        role.soTaiKhoan,
+                }
+                : {}),
         }));
 
         if (!data.length) {
@@ -840,8 +1036,52 @@ export class SettingsOverviewComponent
             .toUpperCase();
     }
 
+    private loadPermissions():
+        void {
+
+        if (
+            !this.canManageSettings
+        ) {
+            this.accounts =
+                [];
+
+            this.roles =
+                [];
+
+            this.roleOptions =
+                [];
+
+            this.errorMessage =
+                'Chỉ Quản trị viên được phép truy cập cài đặt tài khoản và quyền.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+
+        this.activeSection =
+            'accounts';
+
+
+        this.loadSettingsData();
+    }
+
+
     private loadSettingsData():
         void {
+
+        if (
+            this.isLoading ||
+            (
+                !this.canViewAccounts &&
+                !this.canViewRoles
+            )
+        ) {
+            return;
+        }
+
 
         this.isLoading =
             true;
@@ -854,23 +1094,38 @@ export class SettingsOverviewComponent
         forkJoin({
 
             accounts:
-                this.taiKhoanService
-                    .getAll(),
+                this.canViewAccounts
+                    ? this.taiKhoanService
+                        .getAll()
+                    : of([]),
 
 
             roles:
-                this.quyenService
-                    .getAll(),
+                this.canViewRoles
+                    ? this.quyenService
+                        .getAll()
+                    : of([]),
 
 
             employees:
-                this.nhanVienService
-                    .getAll(),
+                (
+                    this.canViewAccounts &&
+                    this.canViewEmployees
+                )
+                    ? this.nhanVienService
+                        .getAll()
+                    : of([]),
 
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                (
+                    this.canViewAccounts &&
+                    this.canViewEmployees &&
+                    this.canViewDepartments
+                )
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
         })
             .pipe(
@@ -996,31 +1251,54 @@ export class SettingsOverviewComponent
 
 
                                         hoTen:
-                                            employee
-                                                ?.hoTen ??
-                                            `Nhân viên #${account.maNV}`,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employee
+                                                        ?.hoTen ??
+                                                    `Nhân viên #${account.maNV}`
+                                                )
+                                                : `NV-${String(account.maNV).padStart(4, '0')}`,
 
                                         email:
-                                            employeeExtra
-                                                ?.email ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employeeExtra
+                                                        ?.email ??
+                                                    null
+                                                )
+                                                : null,
 
                                         hinhAnh:
-                                            employeeExtra
-                                                ?.hinhAnh ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employeeExtra
+                                                        ?.hinhAnh ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenPB:
-                                            department
-                                                ?.tenPB ??
-                                            employeeExtra
-                                                ?.tenPB ??
-                                            null,
+                                            (
+                                                this.canViewEmployees &&
+                                                this.canViewDepartments
+                                            )
+                                                ? (
+                                                    department
+                                                        ?.tenPB ??
+                                                    employeeExtra
+                                                        ?.tenPB ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenCV:
-                                            employeeExtra
-                                                ?.tenCV ??
-                                            null,
+                                            this.canViewEmployees
+                                                ? (
+                                                    employeeExtra
+                                                        ?.tenCV ??
+                                                    null
+                                                )
+                                                : null,
 
 
                                         maQuyen:
@@ -1108,6 +1386,14 @@ export class SettingsOverviewComponent
                         HttpErrorResponse,
                 ) => {
 
+                    this.accounts =
+                        [];
+
+                    this.roles =
+                        [];
+
+                    this.roleOptions =
+                        [];
 
 
                     this.errorMessage =

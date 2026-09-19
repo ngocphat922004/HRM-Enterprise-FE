@@ -11,7 +11,17 @@
     <div class="page-actions">
         <input #importFileInput type="file" accept=".xlsx,.xls,.csv" hidden (change)="onImportFileSelected($event)" />
 
-        @if (canManageEmployees) {
+        @if (canCreateEmployees) {
+        <a class="add-button" routerLink="/employees/add">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="M5 12h14"></path>
+            </svg>
+
+            Thêm nhân viên
+        </a>
+
         <button class="import-button" type="button" [disabled]="isPreviewingImport || isImporting"
             (click)="openImportFilePicker(importFileInput)">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -25,6 +35,7 @@
         </button>
         }
 
+        @if (canViewEmployees) {
         <button class="export-button" type="button" (click)="exportExcel()">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -35,6 +46,7 @@
 
             Xuất Excel
         </button>
+        }
     </div>
 </section>
 
@@ -259,7 +271,7 @@
                                     Xem chi tiết
                                 </button>
 
-                                @if (canManageEmployees) {
+                                @if (canEditEmployees) {
                                 <button type="button" (click)="
                             editEmployee(
                                 employee
@@ -267,7 +279,9 @@
                         ">
                                     Chỉnh sửa
                                 </button>
+                                }
 
+                                @if (canDeleteEmployees) {
                                 <button class="delete-action" type="button" (click)="
                             deleteEmployee(
                                 employee
@@ -344,7 +358,7 @@
     </footer>
 </section>
 
-@if (isImportModalOpen) {
+@if (canCreateEmployees && isImportModalOpen) {
 <div class="import-modal-backdrop" (click)="closeImportModal()">
     <section class="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title"
         (click)="$event.stopPropagation()">

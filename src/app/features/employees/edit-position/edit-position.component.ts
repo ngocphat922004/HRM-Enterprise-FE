@@ -29,6 +29,17 @@ import {
 } from 'rxjs';
 
 import {
+    canManageOrganization,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
     ChucVuService,
 } from '../services/chuc-vu.service';
 
@@ -86,43 +97,15 @@ export class EditPositionComponent
         private readonly chucVuService:
             ChucVuService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
-        const id =
-            Number(
-                this.route
-                    .snapshot
-                    .paramMap
-                    .get(
-                        'id',
-                    ),
-            );
-
-        if (
-            !Number.isInteger(
-                id,
-            ) ||
-            id <= 0
-        ) {
-            this.errorMessage =
-                'Mã chức vụ không hợp lệ.';
-
-            this.changeDetectorRef
-                .markForCheck();
-
-            return;
-        }
-
-        this.positionId =
-            id;
-
-        this.form.maCV =
-            id;
-
-        this.loadPosition();
+        this.loadPermissions();
     }
 
     ngOnDestroy(): void {
@@ -141,6 +124,25 @@ export class EditPositionComponent
                 this.redirectTimer,
             );
         }
+    }
+
+    get canViewPosition(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canEditPosition(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canUsePositionForm(): boolean {
+        return (
+            this.canViewPosition &&
+            this.canEditPosition
+        );
     }
 
     get positionCode():
@@ -172,8 +174,8 @@ export class EditPositionComponent
         }
 
         if (
-            this.positionId >
-            0
+            this.canViewPosition &&
+            this.positionId > 0
         ) {
             void this.router
                 .navigate([
@@ -184,9 +186,20 @@ export class EditPositionComponent
             return;
         }
 
+        if (
+            this.canViewPosition
+        ) {
+            void this.router
+                .navigate([
+                    '/positions',
+                ]);
+
+            return;
+        }
+
         void this.router
             .navigate([
-                '/positions',
+                '/dashboard',
             ]);
     }
 
@@ -199,7 +212,7 @@ export class EditPositionComponent
             return;
         }
 
-        this.loadPosition();
+        this.loadPermissions();
     }
 
     saveChanges(): void {
@@ -210,6 +223,7 @@ export class EditPositionComponent
             '';
 
         if (
+            !this.canUsePositionForm ||
             this.isPositionNameInvalid ||
             this.isSaving ||
             this.isLoading ||
@@ -261,10 +275,21 @@ export class EditPositionComponent
                                 this.redirectTimer =
                                     null;
 
+                                if (
+                                    this.canViewPosition
+                                ) {
+                                    void this.router
+                                        .navigate([
+                                            '/positions',
+                                            this.positionId,
+                                        ]);
+
+                                    return;
+                                }
+
                                 void this.router
                                     .navigate([
-                                        '/positions',
-                                        this.positionId,
+                                        '/dashboard',
                                     ]);
                             },
                             700,
@@ -275,11 +300,6 @@ export class EditPositionComponent
                     error:
                         unknown,
                 ) => {
-                    console.error(
-                        'UPDATE POSITION ERROR:',
-                        error,
-                    );
-
                     this.errorMessage =
                         this.getApiErrorMessage(
                             error,
@@ -296,7 +316,101 @@ export class EditPositionComponent
             });
     }
 
+    private loadPermissions(): void {
+        this.isLoading =
+            true;
+
+        this.errorMessage =
+            '';
+
+        if (
+            !this.canEditPosition
+        ) {
+            this.resetForm();
+
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền chỉnh sửa chức vụ.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            !this.canViewPosition
+        ) {
+            this.resetForm();
+
+            this.isLoading =
+                false;
+
+            this.errorMessage =
+                'Bạn cần quyền xem chức vụ để tải dữ liệu cần chỉnh sửa.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.isLoading =
+            false;
+
+        this.readRouteId();
+    }
+
+    private readRouteId(): void {
+        const id =
+            Number(
+                this.route
+                    .snapshot
+                    .paramMap
+                    .get(
+                        'id',
+                    ),
+            );
+
+        if (
+            !Number.isInteger(
+                id,
+            ) ||
+            id <= 0
+        ) {
+            this.positionId =
+                0;
+
+            this.resetForm();
+
+            this.errorMessage =
+                'Mã chức vụ không hợp lệ.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.positionId =
+            id;
+
+        this.form.maCV =
+            id;
+
+        this.loadPosition();
+    }
+
     private loadPosition(): void {
+        if (
+            !this.canUsePositionForm ||
+            this.positionId <= 0
+        ) {
+            return;
+        }
+
         this.isLoading =
             true;
 
@@ -349,11 +463,6 @@ export class EditPositionComponent
                     error:
                         unknown,
                 ) => {
-                    console.error(
-                        'LOAD POSITION ERROR:',
-                        error,
-                    );
-
                     this.errorMessage =
                         this.getApiErrorMessage(
                             error,
@@ -364,6 +473,31 @@ export class EditPositionComponent
                         .markForCheck();
                 },
             });
+    }
+
+    private resetForm(): void {
+        this.form = {
+            maCV:
+                this.positionId,
+
+            tenCV:
+                '',
+
+            moTa:
+                '',
+        };
+
+        this.submitted =
+            false;
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
     }
 
     private getApiErrorMessage(

@@ -7,10 +7,18 @@ import {
     OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
-import { MA_QUYEN } from '../../../core/constants/role.constants';
+import {
+    canManageAttendance as canManageAttendanceForRole,
+    canManageShiftTypes as canManageShiftTypesForRole,
+    canViewAttendance as canViewAttendanceForRole,
+    canViewEmployeeDirectory,
+    canViewShiftTypes as canViewShiftTypesForRole,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
 import {
     CHAM_CONG_TRANG_THAI,
     ChamCongTrangThai,
@@ -28,7 +36,11 @@ import {
     CreateChamCongRequest,
     UpdateChamCongRequest,
 } from '../models/cham-cong.model';
-import { LoaiCa } from '../models/loai-ca.model';
+import {
+    CreateLoaiCaRequest,
+    LoaiCa,
+    UpdateLoaiCaRequest,
+} from '../models/loai-ca.model';
 import { ChamCongService } from '../services/cham-cong.service';
 
 import {
@@ -51,6 +63,18 @@ interface AttendanceStatusOption {
     label: string;
     value: ChamCongTrangThai;
 }
+
+interface ShiftTypeForm {
+    tenCa: string;
+    gioBatDau: string;
+    gioKetThuc: string;
+    soGioQuyDinh: number;
+}
+
+type AttendanceViewScope =
+    | 'self'
+    | 'department'
+    | 'all';
 
 @Component({
     selector: 'app-attendance-list',
@@ -77,8 +101,9 @@ export class AttendanceListComponent implements OnInit {
     isLoading = false;
     isSavingAttendance = false;
 
-    currentRoleId = 0;
+    currentRole: RoleKey | null = null;
     currentEmployeeId: number | null = null;
+    currentScope: AttendanceViewScope = 'self';
 
     attendanceRows: AttendanceEmployeeRow[] = [];
     departments: DepartmentOption[] = [];
@@ -91,6 +116,15 @@ export class AttendanceListComponent implements OnInit {
 
     attendanceForm: AttendanceEditorForm =
         this.createEmptyAttendanceForm();
+
+    isShiftManagerOpen = false;
+    isSavingShiftType = false;
+    deletingShiftTypeId: number | null = null;
+    editingShiftTypeId: number | null = null;
+    shiftTypeSubmitted = false;
+
+    shiftTypeForm: ShiftTypeForm =
+        this.createEmptyShiftTypeForm();
 
     private attendanceRecords: ChamCong[] = [];
     private employeesData: NhanVienChiTiet[] = [];
@@ -163,6 +197,7 @@ export class AttendanceListComponent implements OnInit {
 
     constructor(
         private readonly router: Router,
+        private readonly route: ActivatedRoute,
         private readonly storageService: StorageService,
         private readonly chamCongService: ChamCongService,
         private readonly nhanVienService: NhanVienService,
@@ -171,36 +206,153 @@ export class AttendanceListComponent implements OnInit {
     ) { }
 
     ngOnInit(): void {
-        this.currentRoleId =
-            this.storageService.getCurrentRoleId() ?? 0;
+        const currentUser =
+            this.storageService.getCurrentUser();
+
+        this.currentRole =
+            resolveUserRole(currentUser);
 
         this.currentEmployeeId =
             this.storageService.getCurrentEmployeeId();
 
-        this.loadAttendanceData();
+        this.currentScope =
+            this.resolveInitialScope(
+                this.route.snapshot.queryParamMap.get(
+                    'scope',
+                ),
+            );
+
+        this.loadPermissions();
     }
 
     get isSelfServiceView(): boolean {
-        return (
-            this.currentRoleId ===
-            MA_QUYEN.NHAN_VIEN
-        );
+        return this.currentScope === 'self';
     }
 
     get isManagerView(): boolean {
-        return (
-            this.currentRoleId ===
-            MA_QUYEN.TRUONG_PHONG
+        return this.currentScope === 'department';
+    }
+
+    get canViewAttendance(): boolean {
+        return canViewAttendanceForRole(
+            this.currentRole,
+        );
+    }
+
+    get canCreateAttendance(): boolean {
+        return this.canMutateAttendanceByRole;
+    }
+
+    get canEditAttendance(): boolean {
+        return this.canMutateAttendanceByRole;
+    }
+
+    get canDeleteAttendance(): boolean {
+        return this.canMutateAttendanceByRole;
+    }
+
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.currentRole,
+        );
+    }
+
+    private get canMutateAttendanceByRole(): boolean {
+        return canManageAttendanceForRole(
+            this.currentRole,
         );
     }
 
     get canManageAttendance(): boolean {
         return (
-            this.currentRoleId ===
-            MA_QUYEN.QUAN_TRI_VIEN ||
-            this.currentRoleId ===
-            MA_QUYEN.KE_TOAN
+            this.canCreateAttendance ||
+            this.canEditAttendance ||
+            this.canDeleteAttendance
         );
+    }
+
+    get canViewShiftTypes(): boolean {
+        return canViewShiftTypesForRole(
+            this.currentRole,
+        );
+    }
+
+    get canManageShiftTypes(): boolean {
+        return canManageShiftTypesForRole(
+            this.currentRole,
+        );
+    }
+
+    get shiftTypeNameDuplicate(): boolean {
+        const normalizedName =
+            this.normalizeShiftTypeName(
+                this.shiftTypeForm.tenCa,
+            );
+
+        if (!normalizedName) {
+            return false;
+        }
+
+        return this.shifts.some(
+            (shift) =>
+                shift.maCa !==
+                this.editingShiftTypeId &&
+                this.normalizeShiftTypeName(
+                    shift.tenCa,
+                ) ===
+                normalizedName,
+        );
+    }
+
+    get isShiftTypeFormInvalid(): boolean {
+        const name =
+            this.shiftTypeForm.tenCa.trim();
+
+        return (
+            name.length === 0 ||
+            name.length > 100 ||
+            !this.shiftTypeForm.gioBatDau ||
+            !this.shiftTypeForm.gioKetThuc ||
+            !Number.isFinite(
+                Number(
+                    this.shiftTypeForm
+                        .soGioQuyDinh,
+                ),
+            ) ||
+            Number(
+                this.shiftTypeForm
+                    .soGioQuyDinh,
+            ) <= 0 ||
+            Number(
+                this.shiftTypeForm
+                    .soGioQuyDinh,
+            ) > 24 ||
+            this.shiftTypeNameDuplicate
+        );
+    }
+
+    get canViewSelfAttendance(): boolean {
+        return this.currentEmployeeId !== null;
+    }
+
+    get canViewDepartmentAttendance(): boolean {
+        return (
+            this.canViewAttendance &&
+            this.canViewEmployees &&
+            this.currentRole === 'manager'
+        );
+    }
+
+    get canViewAllAttendance(): boolean {
+        return (
+            this.canViewAttendance &&
+            this.canViewEmployees &&
+            !this.canViewDepartmentAttendance
+        );
+    }
+
+    get canViewAttendanceOverview(): boolean {
+        return this.canViewAttendance;
     }
 
     get editorDate(): string {
@@ -219,8 +371,32 @@ export class AttendanceListComponent implements OnInit {
             : 'Thêm chấm công';
     }
 
+    private loadPermissions(): void {
+        this.errorMessage = '';
+
+        if (
+            !this.canViewAttendance
+        ) {
+            this.resetLoadedData();
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu chấm công.';
+            this.changeDetectorRef
+                .markForCheck();
+            return;
+        }
+
+        this.loadAttendanceData();
+    }
+
     loadAttendanceData(): void {
         if (this.isLoading) {
+            return;
+        }
+
+        if (
+            !this.isSelfServiceView &&
+            !this.canViewAttendance
+        ) {
             return;
         }
 
@@ -228,6 +404,14 @@ export class AttendanceListComponent implements OnInit {
         this.errorMessage = '';
 
         if (this.isSelfServiceView) {
+            this.loadSelfAttendanceData();
+            return;
+        }
+
+        if (
+            !this.canViewEmployees
+        ) {
+            this.currentScope = 'self';
             this.loadSelfAttendanceData();
             return;
         }
@@ -371,7 +555,15 @@ export class AttendanceListComponent implements OnInit {
             employee:
                 this.nhanVienService.getMe(),
             shifts:
-                this.chamCongService.getShiftTypes(),
+                this.canViewShiftTypes
+                    ? this.chamCongService
+                        .getShiftTypes()
+                        .pipe(
+                            catchError(() =>
+                                of([] as LoaiCa[]),
+                            ),
+                        )
+                    : of([] as LoaiCa[]),
         })
             .pipe(
                 finalize(() => {
@@ -423,8 +615,110 @@ export class AttendanceListComponent implements OnInit {
             });
     }
 
+    showSelfAttendance(): void {
+        if (!this.canViewSelfAttendance) {
+            return;
+        }
+
+        this.switchScope('self');
+    }
+
+    showDepartmentAttendance(): void {
+        if (!this.canViewDepartmentAttendance) {
+            return;
+        }
+
+        this.switchScope('department');
+    }
+
+    showAllAttendance(): void {
+        if (!this.canViewAllAttendance) {
+            return;
+        }
+
+        this.switchScope('all');
+    }
+
+    private resolveInitialScope(
+        requestedScope: string | null,
+    ): AttendanceViewScope {
+        if (
+            requestedScope === 'self' &&
+            this.canViewSelfAttendance
+        ) {
+            return 'self';
+        }
+
+        if (
+            requestedScope === 'department' &&
+            this.canViewDepartmentAttendance
+        ) {
+            return 'department';
+        }
+
+        if (
+            requestedScope === 'all' &&
+            this.canViewAllAttendance
+        ) {
+            return 'all';
+        }
+
+        if (this.canViewDepartmentAttendance) {
+            return 'department';
+        }
+
+        if (this.canViewAllAttendance) {
+            return 'all';
+        }
+
+        return 'self';
+    }
+
+    private switchScope(
+        scope: AttendanceViewScope,
+    ): void {
+        if (
+            this.currentScope === scope ||
+            this.isLoading ||
+            this.isSavingAttendance
+        ) {
+            return;
+        }
+
+        this.currentScope = scope;
+        this.selectedDepartment = '';
+        this.currentPage = 1;
+        this.resetLoadedData();
+
+        void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: {
+                scope,
+            },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+        });
+
+        this.loadAttendanceData();
+    }
+
+    private resetLoadedData(): void {
+        this.errorMessage = '';
+        this.attendanceRecords = [];
+        this.employeesData = [];
+        this.attendanceRows = [];
+        this.departments = [];
+        this.shifts = [];
+    }
+
     retryLoad(): void {
-        if (this.isLoading) {
+        if (
+            this.isLoading ||
+            (
+                !this.isSelfServiceView &&
+                !this.canViewAttendance
+            )
+        ) {
             return;
         }
 
@@ -973,7 +1267,7 @@ export class AttendanceListComponent implements OnInit {
             null,
     ): string {
         if (!cell) {
-            return this.canManageAttendance
+            return this.canCreateAttendance
                 ? 'Chưa có dữ liệu chấm công. Nhấp để thêm.'
                 : 'Chưa có dữ liệu chấm công.';
         }
@@ -995,7 +1289,7 @@ export class AttendanceListComponent implements OnInit {
         }
 
         if (
-            this.canManageAttendance
+            this.canEditAttendance
         ) {
             parts.push(
                 'Nhấp để chỉnh sửa.',
@@ -1005,12 +1299,326 @@ export class AttendanceListComponent implements OnInit {
         return parts.join(' · ');
     }
 
+    canInteractWithAttendanceCell(
+        cell: AttendanceCell | null,
+    ): boolean {
+        return cell
+            ? (
+                this.canEditAttendance ||
+                this.canDeleteAttendance
+            )
+            : this.canCreateAttendance;
+    }
+
+    openShiftTypeManager(): void {
+        if (
+            !this.canManageShiftTypes ||
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        this.isShiftManagerOpen = true;
+        this.startCreateShiftType();
+    }
+
+    closeShiftTypeManager(): void {
+        if (
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        this.isShiftManagerOpen = false;
+        this.startCreateShiftType();
+    }
+
+    startCreateShiftType(): void {
+        if (
+            !this.canManageShiftTypes ||
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        this.editingShiftTypeId = null;
+        this.shiftTypeSubmitted = false;
+        this.shiftTypeForm =
+            this.createEmptyShiftTypeForm();
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    startEditShiftType(
+        shift: LoaiCa,
+    ): void {
+        if (
+            !this.canManageShiftTypes ||
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        this.editingShiftTypeId =
+            shift.maCa;
+
+        this.shiftTypeSubmitted =
+            false;
+
+        this.shiftTypeForm = {
+            tenCa:
+                shift.tenCa ?? '',
+            gioBatDau:
+                this.toTimeInputValue(
+                    shift.gioBatDau,
+                ),
+            gioKetThuc:
+                this.toTimeInputValue(
+                    shift.gioKetThuc,
+                ),
+            soGioQuyDinh:
+                Number(
+                    shift.soGioQuyDinh ??
+                    0,
+                ),
+        };
+
+        this.isShiftManagerOpen =
+            true;
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    onShiftTypeTimeChange(): void {
+        const calculatedHours =
+            this.calculateShiftHours(
+                this.shiftTypeForm
+                    .gioBatDau,
+                this.shiftTypeForm
+                    .gioKetThuc,
+            );
+
+        if (calculatedHours > 0) {
+            this.shiftTypeForm
+                .soGioQuyDinh =
+                calculatedHours;
+        }
+    }
+
+    saveShiftType(): void {
+        if (
+            !this.canManageShiftTypes ||
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        this.shiftTypeSubmitted = true;
+
+        if (
+            this.isShiftTypeFormInvalid
+        ) {
+            this.showToast(
+                this.shiftTypeNameDuplicate
+                    ? 'Tên loại ca đã tồn tại.'
+                    : 'Vui lòng kiểm tra lại thông tin loại ca.',
+            );
+            return;
+        }
+
+        const payload:
+            CreateLoaiCaRequest |
+            UpdateLoaiCaRequest = {
+            tenCa:
+                this.shiftTypeForm
+                    .tenCa
+                    .trim(),
+            gioBatDau:
+                this.normalizeTimeForApi(
+                    this.shiftTypeForm
+                        .gioBatDau,
+                ),
+            gioKetThuc:
+                this.normalizeTimeForApi(
+                    this.shiftTypeForm
+                        .gioKetThuc,
+                ),
+            soGioQuyDinh:
+                Number(
+                    this.shiftTypeForm
+                        .soGioQuyDinh,
+                ),
+        };
+
+        this.isSavingShiftType =
+            true;
+
+        const request$ =
+            this.editingShiftTypeId ===
+                null
+                ? this.chamCongService
+                    .createShiftType(
+                        payload,
+                    )
+                : this.chamCongService
+                    .updateShiftType(
+                        this.editingShiftTypeId,
+                        payload,
+                    );
+
+        request$
+            .pipe(
+                finalize(() => {
+                    this.isSavingShiftType =
+                        false;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (savedShift) => {
+                    const existingIndex =
+                        this.shifts.findIndex(
+                            (shift) =>
+                                shift.maCa ===
+                                savedShift.maCa,
+                        );
+
+                    if (
+                        existingIndex >=
+                        0
+                    ) {
+                        this.shifts = [
+                            ...this.shifts.slice(
+                                0,
+                                existingIndex,
+                            ),
+                            savedShift,
+                            ...this.shifts.slice(
+                                existingIndex +
+                                1,
+                            ),
+                        ];
+                    } else {
+                        this.shifts = [
+                            ...this.shifts,
+                            savedShift,
+                        ];
+                    }
+
+                    this.shifts =
+                        this.sortShiftTypes(
+                            this.shifts,
+                        );
+
+                    this.buildAttendanceRows();
+
+                    this.showToast(
+                        this.editingShiftTypeId ===
+                            null
+                            ? 'Thêm loại ca thành công.'
+                            : 'Cập nhật loại ca thành công.',
+                    );
+
+                    this.startCreateShiftType();
+                },
+                error: (error: unknown) => {
+                    this.showToast(
+                        this.getShiftTypeMutationErrorMessage(
+                            error,
+                            this.editingShiftTypeId ===
+                                null
+                                ? 'Không thể thêm loại ca.'
+                                : 'Không thể cập nhật loại ca.',
+                        ),
+                    );
+                },
+            });
+    }
+
+    deleteShiftType(
+        shift: LoaiCa,
+    ): void {
+        if (
+            !this.canManageShiftTypes ||
+            this.isSavingShiftType ||
+            this.deletingShiftTypeId !== null
+        ) {
+            return;
+        }
+
+        if (
+            typeof window !==
+            'undefined' &&
+            !window.confirm(
+                `Bạn có chắc muốn xóa loại ca "${shift.tenCa}"?`,
+            )
+        ) {
+            return;
+        }
+
+        this.deletingShiftTypeId =
+            shift.maCa;
+
+        this.chamCongService
+            .deleteShiftType(
+                shift.maCa,
+            )
+            .pipe(
+                finalize(() => {
+                    this.deletingShiftTypeId =
+                        null;
+
+                    this.changeDetectorRef
+                        .markForCheck();
+                }),
+            )
+            .subscribe({
+                next: () => {
+                    this.shifts =
+                        this.shifts.filter(
+                            (item) =>
+                                item.maCa !==
+                                shift.maCa,
+                        );
+
+                    if (
+                        this.editingShiftTypeId ===
+                        shift.maCa
+                    ) {
+                        this.startCreateShiftType();
+                    }
+
+                    this.buildAttendanceRows();
+
+                    this.showToast(
+                        'Xóa loại ca thành công.',
+                    );
+                },
+                error: (error: unknown) => {
+                    this.showToast(
+                        this.getShiftTypeMutationErrorMessage(
+                            error,
+                            'Không thể xóa loại ca.',
+                        ),
+                    );
+                },
+            });
+    }
+
     openAttendanceEditor(
         row: AttendanceEmployeeRow,
         day: number,
     ): void {
         if (
-            !this.canManageAttendance ||
             this.isLoading ||
             this.isSavingAttendance
         ) {
@@ -1022,6 +1630,17 @@ export class AttendanceListComponent implements OnInit {
                 row,
                 day,
             );
+
+        if (
+            cell
+                ? (
+                    !this.canEditAttendance &&
+                    !this.canDeleteAttendance
+                )
+                : !this.canCreateAttendance
+        ) {
+            return;
+        }
 
         const defaultShift =
             cell?.maCa !== null &&
@@ -1246,8 +1865,16 @@ export class AttendanceListComponent implements OnInit {
     }
 
     saveAttendance(): void {
+        const existingId =
+            this.editingCell?.maCC ??
+            null;
+
         if (
-            !this.canManageAttendance ||
+            (
+                existingId !== null
+                    ? !this.canEditAttendance
+                    : !this.canCreateAttendance
+            ) ||
             !this.editingRow ||
             this.editingDay === null ||
             this.isSavingAttendance
@@ -1283,6 +1910,18 @@ export class AttendanceListComponent implements OnInit {
         ) {
             this.showToast(
                 'Số giờ làm không hợp lệ.',
+            );
+            return;
+        }
+
+        const ghiChu =
+            this.attendanceForm
+                .ghiChu
+                .trim();
+
+        if (ghiChu.length > 255) {
+            this.showToast(
+                'Ghi chú không được vượt quá 255 ký tự.',
             );
             return;
         }
@@ -1326,15 +1965,9 @@ export class AttendanceListComponent implements OnInit {
                     .trangThai,
 
             ghiChu:
-                this.attendanceForm
-                    .ghiChu
-                    .trim() ||
+                ghiChu ||
                 null,
         };
-
-        const existingId =
-            this.editingCell?.maCC ??
-            null;
 
         this.isSavingAttendance =
             true;
@@ -1405,7 +2038,7 @@ export class AttendanceListComponent implements OnInit {
             null;
 
         if (
-            !this.canManageAttendance ||
+            !this.canDeleteAttendance ||
             maCC === null ||
             this.isSavingAttendance
         ) {
@@ -1599,6 +2232,10 @@ export class AttendanceListComponent implements OnInit {
 
     viewAttendanceOverview():
         void {
+        if (!this.canViewAttendance) {
+            return;
+        }
+
         void this.router
             .navigate([
                 '/attendance/overview',
@@ -1606,6 +2243,13 @@ export class AttendanceListComponent implements OnInit {
     }
 
     exportExcel(): void {
+        if (
+            !this.isSelfServiceView &&
+            !this.canViewAttendance
+        ) {
+            return;
+        }
+
         if (
             !this.filteredRows
                 .length
@@ -1688,6 +2332,279 @@ export class AttendanceListComponent implements OnInit {
         this.showToast(
             'Đã xuất dữ liệu chấm công.',
         );
+    }
+
+    private createEmptyShiftTypeForm():
+        ShiftTypeForm {
+        return {
+            tenCa: '',
+            gioBatDau: '',
+            gioKetThuc: '',
+            soGioQuyDinh: 0,
+        };
+    }
+
+    private normalizeShiftTypeName(
+        value: string,
+    ): string {
+        return value
+            .trim()
+            .replace(
+                /\s+/g,
+                ' ',
+            )
+            .toLocaleLowerCase(
+                'vi',
+            );
+    }
+
+    private normalizeTimeForApi(
+        value: string,
+    ): string {
+        const trimmed =
+            value.trim();
+
+        if (!trimmed) {
+            return '';
+        }
+
+        if (
+            /^\d{2}:\d{2}$/.test(
+                trimmed,
+            )
+        ) {
+            return `${trimmed}:00`;
+        }
+
+        return trimmed;
+    }
+
+    private toTimeInputValue(
+        value: string,
+    ): string {
+        const match =
+            value?.match(
+                /(\d{2}):(\d{2})/,
+            );
+
+        if (!match) {
+            return '';
+        }
+
+        return `${match[1]}:${match[2]}`;
+    }
+
+    private calculateShiftHours(
+        startValue: string,
+        endValue: string,
+    ): number {
+        const start =
+            this.timeToMinutes(
+                startValue,
+            );
+
+        const end =
+            this.timeToMinutes(
+                endValue,
+            );
+
+        if (
+            start === null ||
+            end === null
+        ) {
+            return 0;
+        }
+
+        let difference =
+            end - start;
+
+        if (difference <= 0) {
+            difference +=
+                24 * 60;
+        }
+
+        return (
+            Math.round(
+                (
+                    difference /
+                    60
+                ) *
+                100,
+            ) /
+            100
+        );
+    }
+
+    private timeToMinutes(
+        value: string,
+    ): number | null {
+        const match =
+            value?.match(
+                /^(\d{2}):(\d{2})/,
+            );
+
+        if (!match) {
+            return null;
+        }
+
+        const hours =
+            Number(
+                match[1],
+            );
+
+        const minutes =
+            Number(
+                match[2],
+            );
+
+        if (
+            hours < 0 ||
+            hours > 23 ||
+            minutes < 0 ||
+            minutes > 59
+        ) {
+            return null;
+        }
+
+        return (
+            hours * 60 +
+            minutes
+        );
+    }
+
+    private sortShiftTypes(
+        shifts: LoaiCa[],
+    ): LoaiCa[] {
+        return [
+            ...shifts,
+        ]
+            .sort(
+                (first, second) =>
+                    first.gioBatDau
+                        .localeCompare(
+                            second.gioBatDau,
+                        ) ||
+                    first.tenCa
+                        .localeCompare(
+                            second.tenCa,
+                            'vi',
+                        ),
+            );
+    }
+
+    private getShiftTypeMutationErrorMessage(
+        error: unknown,
+        fallback: string,
+    ): string {
+        if (
+            error instanceof
+            HttpErrorResponse
+        ) {
+            const backendMessage =
+                typeof error.error
+                    ?.message ===
+                    'string'
+                    ? error.error
+                        .message
+                    : '';
+
+            if (backendMessage) {
+                return backendMessage;
+            }
+
+            const backendErrors =
+                error.error
+                    ?.errors;
+
+            if (
+                backendErrors &&
+                typeof backendErrors ===
+                'object'
+            ) {
+                const messages =
+                    Object.values(
+                        backendErrors as
+                        Record<
+                            string,
+                            unknown
+                        >,
+                    )
+                        .flatMap(
+                            (value) =>
+                                Array.isArray(
+                                    value,
+                                )
+                                    ? value.map(
+                                        (item) =>
+                                            String(
+                                                item,
+                                            ),
+                                    )
+                                    : [
+                                        String(
+                                            value,
+                                        ),
+                                    ],
+                        )
+                        .filter(Boolean);
+
+                if (
+                    messages.length >
+                    0
+                ) {
+                    return messages.join(
+                        ' ',
+                    );
+                }
+            }
+
+            switch (
+            error.status
+            ) {
+                case 0:
+                    return (
+                        'Không thể kết nối đến Backend.'
+                    );
+
+                case 400:
+                    return (
+                        'Thông tin loại ca không hợp lệ.'
+                    );
+
+                case 401:
+                    return (
+                        'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
+                    );
+
+                case 403:
+                    return (
+                        'Bạn không có quyền quản lý loại ca.'
+                    );
+
+                case 404:
+                    return (
+                        'Không tìm thấy loại ca.'
+                    );
+
+                case 409:
+                    return (
+                        'Loại ca đang được sử dụng hoặc dữ liệu bị xung đột.'
+                    );
+
+                default:
+                    return fallback;
+            }
+        }
+
+        if (
+            error instanceof
+            Error &&
+            error.message.trim()
+        ) {
+            return error.message;
+        }
+
+        return fallback;
     }
 
     private createCurrentMonth():

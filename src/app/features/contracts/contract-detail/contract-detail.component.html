@@ -1,15 +1,27 @@
 <section class="detail-heading">
     <div>
         <p class="breadcrumb">
+            @if (canViewEmployee) {
             <a routerLink="/employees">
                 Nhân sự
             </a>
+            } @else {
+            <span>
+                Nhân sự
+            </span>
+            }
 
             <span>/</span>
 
+            @if (canViewContracts) {
             <a routerLink="/contracts">
                 Hợp đồng
             </a>
+            } @else {
+            <span>
+                Hợp đồng
+            </span>
+            }
 
             <span>/</span>
 
@@ -55,6 +67,7 @@
     </div>
 
     <div class="detail-heading__actions">
+        @if (canViewContracts) {
         <a class="back-button" routerLink="/contracts">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -63,6 +76,7 @@
 
             Quay lại
         </a>
+        }
 
         @if (
         !isLoading &&
@@ -86,6 +100,7 @@
         </button>
         }
 
+        @if (canEditContract) {
         <button class="edit-button" type="button" (click)="editContract()">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -96,6 +111,7 @@
 
             Chỉnh sửa
         </button>
+        }
         }
     </div>
 </section>
@@ -121,14 +137,17 @@
             {{ errorMessage }}
         </p>
 
-        @if (contractId !== null) {
+        @if (
+        contractId !== null &&
+        canViewContracts
+        ) {
         <button type="button" class="edit-button" (click)="retry()" style="margin-top: 16px;">
             Thử lại
         </button>
         }
     </div>
 </section>
-} @else {
+} @else if (canViewContracts) {
 <div class="contract-detail-grid">
     <div class="detail-main-column">
         <section class="detail-card">
@@ -171,6 +190,7 @@
                         }}
                     </strong>
 
+                    @if (canViewEmployee) {
                     <button class="information-link" type="button" [disabled]="
                                 contract.maNV <= 0
                             " (click)="viewEmployee()">
@@ -178,6 +198,12 @@
                         {{ contract.maNV }}
                         · Xem hồ sơ
                     </button>
+                    } @else {
+                    <span>
+                        Mã nhân viên:
+                        {{ contract.maNV }}
+                    </span>
+                    }
                 </div>
 
                 <div class="information-item">
@@ -462,4 +488,15 @@
 
     </aside>
 </div>
+} @else {
+<section class="detail-card" role="alert">
+    <div style="
+                padding: 48px 24px;
+                text-align: center;
+            ">
+        <p>
+            Bạn không có quyền xem thông tin hợp đồng.
+        </p>
+    </div>
+</section>
 }

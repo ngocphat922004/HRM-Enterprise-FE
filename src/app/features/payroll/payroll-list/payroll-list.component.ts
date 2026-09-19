@@ -26,8 +26,11 @@ import {
 } from 'rxjs';
 
 import {
-    MA_QUYEN,
-} from '../../../core/constants/role.constants';
+    canManageAllowances as canManageAllowancesForRole,
+    canManagePayroll,
+    canViewPayroll,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
 
 import {
     ExcelExportService,
@@ -42,8 +45,17 @@ import {
 } from '../../departments/services/phong-ban.service';
 
 import {
+    NhanVien,
+    NhanVienChiTiet,
+} from '../../employees/models/nhan-vien.model';
+
+import {
     NhanVienService,
 } from '../../employees/services/nhan-vien.service';
+
+import {
+    BangLuong,
+} from '../models/bang-luong.model';
 
 import {
     BangLuongService,
@@ -124,12 +136,10 @@ export class PayrollListComponent
                 length:
                     12,
             },
-
             (
                 _,
                 index,
             ) => ({
-
                 value:
                     index + 1,
 
@@ -145,7 +155,6 @@ export class PayrollListComponent
                 length:
                     6,
             },
-
             (
                 _,
                 index,
@@ -163,15 +172,12 @@ export class PayrollListComponent
         PayrollListItem[] =
         [];
 
-    readonly isEmployeeView:
-        boolean;
-
-    readonly canManagePayroll:
-        boolean;
-
     constructor(
         private readonly router:
             Router,
+
+        private readonly storageService:
+            StorageService,
 
         private readonly bangLuongService:
             BangLuongService,
@@ -182,29 +188,12 @@ export class PayrollListComponent
         private readonly phongBanService:
             PhongBanService,
 
-        private readonly storageService:
-            StorageService,
-
         private readonly excelExportService:
             ExcelExportService,
 
         private readonly changeDetectorRef:
             ChangeDetectorRef,
-    ) {
-        const roleId =
-            this.storageService
-                .getCurrentRoleId();
-
-        this.isEmployeeView =
-            roleId ===
-            MA_QUYEN.NHAN_VIEN;
-
-        this.canManagePayroll =
-            roleId ===
-            MA_QUYEN.QUAN_TRI_VIEN ||
-            roleId ===
-            MA_QUYEN.KE_TOAN;
-    }
+    ) { }
 
     ngOnInit():
         void {
@@ -212,8 +201,78 @@ export class PayrollListComponent
         this.loadPayrollData();
     }
 
+    get canViewPayrollList():
+        boolean {
+
+        return canViewPayroll(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canManagePayrollList():
+        boolean {
+
+        return canManagePayroll(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canCreatePayroll():
+        boolean {
+
+        return this.canManagePayrollList;
+    }
+
+    get canEditPayroll():
+        boolean {
+
+        return this.canManagePayrollList;
+    }
+
+    get canDeletePayroll():
+        boolean {
+
+        return this.canManagePayrollList;
+    }
+
+    get canManageAllowances():
+        boolean {
+
+        return canManageAllowancesForRole(
+            this.getCurrentRole(),
+        );
+    }
+
+    get isEmployeeView():
+        boolean {
+
+        return (
+            this.getCurrentRole() ===
+            'employee'
+        );
+    }
+
     loadPayrollData():
         void {
+
+        if (
+            !this.canViewPayrollList
+        ) {
+            this.payrollRecords =
+                [];
+
+            this.departments =
+                [];
+
+            this.errorMessage =
+                'Bạn không có quyền xem bảng lương.';
+
+            this.showToast(
+                this.errorMessage,
+            );
+
+            return;
+        }
 
         if (
             this.isLoading
@@ -224,9 +283,16 @@ export class PayrollListComponent
         if (
             this.isEmployeeView
         ) {
-            this.loadMyPayrollData();
+            this.loadOwnPayrollData();
+
             return;
         }
+
+        this.loadManagementPayrollData();
+    }
+
+    private loadManagementPayrollData():
+        void {
 
         this.isLoading =
             true;
@@ -235,7 +301,6 @@ export class PayrollListComponent
             '';
 
         forkJoin({
-
             payrolls:
                 this.bangLuongService
                     .getAll(),
@@ -247,12 +312,10 @@ export class PayrollListComponent
             departments:
                 this.phongBanService
                     .getAll(),
-
         })
             .pipe(
                 finalize(
                     () => {
-
                         this.isLoading =
                             false;
 
@@ -262,7 +325,6 @@ export class PayrollListComponent
                 ),
             )
             .subscribe({
-
                 next: ({
                     payrolls,
                     employees,
@@ -274,13 +336,11 @@ export class PayrollListComponent
                             (
                                 department,
                             ) => ({
-
                                 maPB:
                                     department.maPB,
 
                                 tenPB:
                                     department.tenPB,
-
                             } as
                                 PayrollDepartmentOption),
                         );
@@ -289,139 +349,15 @@ export class PayrollListComponent
                         payrolls.map(
                             (
                                 payroll,
-                            ) => {
-
-                                const employee =
-                                    employees.find(
-                                        (
-                                            item,
-                                        ) =>
-                                            item.maNV ===
-                                            payroll.maNV,
-                                    );
-
-                                const department =
-                                    employee?.maPB
-                                        ? departments.find(
-                                            (
-                                                item,
-                                            ) =>
-                                                item.maPB ===
-                                                employee.maPB,
-                                        )
-                                        : undefined;
-
-                                return {
-
-                                    maLuong:
-                                        payroll.maLuong,
-
-                                    maNV:
-                                        payroll.maNV,
-
-                                    hoTen:
-                                        employee?.hoTen ??
-                                        `Nhân viên #${payroll.maNV}`,
-
-                                    email:
-                                        employee?.email ??
-                                        null,
-
-                                    tenPB:
-                                        department
-                                            ?.tenPB ??
-                                        employee?.tenPB ??
-                                        'Chưa phân phòng',
-
-                                    tenCV:
-                                        employee?.tenCV ??
-                                        null,
-
-                                    thang:
-                                        payroll.thang,
-
-                                    nam:
-                                        payroll.nam,
-
-                                    luongCoBan:
-                                        Number(
-                                            payroll.luongCoBan ??
-                                            0,
-                                        ),
-
-                                    tongPhuCap:
-                                        Number(
-                                            payroll.tongPhuCap ??
-                                            0,
-                                        ),
-
-                                    tongThuong:
-                                        Number(
-                                            payroll.tongThuong ??
-                                            0,
-                                        ),
-
-                                    tongKhauTru:
-                                        Number(
-                                            payroll.tongKhauTru ??
-                                            0,
-                                        ),
-
-                                    soNgayCong:
-                                        Number(
-                                            payroll.soNgayCong ??
-                                            0,
-                                        ),
-
-                                    tongLuong:
-                                        Number(
-                                            payroll.tongLuong ??
-                                            0,
-                                        ),
-
-                                } as
-                                    PayrollListItem;
-                            },
+                            ) =>
+                                this.mapPayrollRecord(
+                                    payroll,
+                                    employees,
+                                    departments,
+                                ),
                         );
 
-                    this.payrollRecords =
-                        [
-                            ...this.payrollRecords,
-                        ]
-                            .sort(
-                                (
-                                    a,
-                                    b,
-                                ) => {
-
-                                    if (
-                                        a.nam !==
-                                        b.nam
-                                    ) {
-
-                                        return (
-                                            b.nam -
-                                            a.nam
-                                        );
-                                    }
-
-                                    if (
-                                        a.thang !==
-                                        b.thang
-                                    ) {
-
-                                        return (
-                                            b.thang -
-                                            a.thang
-                                        );
-                                    }
-
-                                    return (
-                                        b.maLuong -
-                                        a.maLuong
-                                    );
-                                },
-                            );
+                    this.sortPayrollRecords();
 
                     this.currentPage =
                         1;
@@ -444,7 +380,6 @@ export class PayrollListComponent
                     this.errorMessage =
                         this.getApiErrorMessage(
                             error,
-
                             'Không thể tải dữ liệu bảng lương.',
                         );
 
@@ -455,7 +390,7 @@ export class PayrollListComponent
             });
     }
 
-    private loadMyPayrollData():
+    private loadOwnPayrollData():
         void {
 
         this.isLoading =
@@ -463,6 +398,9 @@ export class PayrollListComponent
 
         this.errorMessage =
             '';
+
+        this.selectedDepartment =
+            null;
 
         forkJoin({
             payrolls:
@@ -489,109 +427,22 @@ export class PayrollListComponent
                     payrolls,
                     employee,
                 }) => {
+
                     this.departments =
                         [];
 
                     this.payrollRecords =
-                        payrolls
-                            .map(
-                                (
+                        payrolls.map(
+                            (
+                                payroll,
+                            ) =>
+                                this.mapOwnPayrollRecord(
                                     payroll,
-                                ) => ({
-                                    maLuong:
-                                        payroll.maLuong,
+                                    employee,
+                                ),
+                        );
 
-                                    maNV:
-                                        payroll.maNV,
-
-                                    hoTen:
-                                        employee.hoTen,
-
-                                    email:
-                                        employee.email ??
-                                        null,
-
-                                    tenPB:
-                                        null,
-
-                                    tenCV:
-                                        null,
-
-                                    thang:
-                                        payroll.thang,
-
-                                    nam:
-                                        payroll.nam,
-
-                                    luongCoBan:
-                                        Number(
-                                            payroll.luongCoBan ??
-                                            0,
-                                        ),
-
-                                    tongPhuCap:
-                                        Number(
-                                            payroll.tongPhuCap ??
-                                            0,
-                                        ),
-
-                                    tongThuong:
-                                        Number(
-                                            payroll.tongThuong ??
-                                            0,
-                                        ),
-
-                                    tongKhauTru:
-                                        Number(
-                                            payroll.tongKhauTru ??
-                                            0,
-                                        ),
-
-                                    soNgayCong:
-                                        Number(
-                                            payroll.soNgayCong ??
-                                            0,
-                                        ),
-
-                                    tongLuong:
-                                        Number(
-                                            payroll.tongLuong ??
-                                            0,
-                                        ),
-                                } as
-                                    PayrollListItem),
-                            )
-                            .sort(
-                                (
-                                    a,
-                                    b,
-                                ) => {
-                                    if (
-                                        a.nam !==
-                                        b.nam
-                                    ) {
-                                        return (
-                                            b.nam -
-                                            a.nam
-                                        );
-                                    }
-
-                                    if (
-                                        a.thang !==
-                                        b.thang
-                                    ) {
-                                        return (
-                                            b.thang -
-                                            a.thang
-                                        );
-                                    }
-
-                                    return (
-                                        b.maLuong -
-                                        a.maLuong
-                                    );
-                                },
-                            );
+                    this.sortPayrollRecords();
 
                     this.currentPage =
                         1;
@@ -604,6 +455,7 @@ export class PayrollListComponent
                     error:
                         HttpErrorResponse,
                 ) => {
+
                     this.payrollRecords =
                         [];
 
@@ -682,6 +534,8 @@ export class PayrollListComponent
                         this.selectedYear;
 
                     const matchesDepartment =
+                        this.isEmployeeView ||
+
                         this.selectedDepartment ===
                         null ||
 
@@ -753,7 +607,7 @@ export class PayrollListComponent
                 ),
             );
 
-        let endPage =
+        const endPage =
             Math.min(
                 this.totalPages,
 
@@ -784,7 +638,6 @@ export class PayrollListComponent
 
             page += 1
         ) {
-
             pages.push(
                 page,
             );
@@ -802,7 +655,6 @@ export class PayrollListComponent
                 .length ===
             0
         ) {
-
             return 0;
         }
 
@@ -832,41 +684,50 @@ export class PayrollListComponent
     get stats():
         PayrollListStats {
 
-        const records =
-            this.filteredPayrollRecords;
-
-        const totals =
-            records.reduce<
-                Omit<
-                    PayrollListStats,
-                    'tongNhanVien'
-                >
+        return this
+            .filteredPayrollRecords
+            .reduce<
+                PayrollListStats
             >(
                 (
                     result,
                     record,
                 ) => ({
+                    tongNhanVien:
+                        result
+                            .tongNhanVien +
+                        1,
+
                     tongLuongCoBan:
-                        result.tongLuongCoBan +
+                        result
+                            .tongLuongCoBan +
                         record.luongCoBan,
 
                     tongPhuCap:
-                        result.tongPhuCap +
+                        result
+                            .tongPhuCap +
                         record.tongPhuCap,
 
                     tongThuong:
-                        result.tongThuong +
+                        result
+                            .tongThuong +
                         record.tongThuong,
 
                     tongKhauTru:
-                        result.tongKhauTru +
+                        result
+                            .tongKhauTru +
                         record.tongKhauTru,
 
                     tongThucLinh:
-                        result.tongThucLinh +
+                        result
+                            .tongThucLinh +
                         record.tongLuong,
                 }),
+
                 {
+                    tongNhanVien:
+                        0,
+
                     tongLuongCoBan:
                         0,
 
@@ -883,20 +744,7 @@ export class PayrollListComponent
                         0,
                 },
             );
-
-        return {
-            tongNhanVien:
-                new Set(
-                    records.map(
-                        record =>
-                            record.maNV,
-                    ),
-                ).size,
-
-            ...totals,
-        };
     }
-
 
     applyFilters():
         void {
@@ -937,7 +785,6 @@ export class PayrollListComponent
             page >
             this.totalPages
         ) {
-
             return;
         }
 
@@ -949,12 +796,20 @@ export class PayrollListComponent
         void {
 
         if (
-            !this.canManagePayroll ||
+            !this.canCreatePayroll
+        ) {
+            this.showToast(
+                'Bạn không có quyền tạo bảng lương.',
+            );
+
+            return;
+        }
+
+        if (
             this.isLoading ||
             this.deletingPayrollId !==
             null
         ) {
-
             return;
         }
 
@@ -971,11 +826,19 @@ export class PayrollListComponent
     ): void {
 
         if (
-            !this.canManagePayroll ||
+            !this.canViewPayrollList
+        ) {
+            this.showToast(
+                'Bạn không có quyền xem bảng lương.',
+            );
+
+            return;
+        }
+
+        if (
             this.deletingPayrollId !==
             null
         ) {
-
             return;
         }
 
@@ -992,11 +855,19 @@ export class PayrollListComponent
     ): void {
 
         if (
-            !this.canManagePayroll ||
+            !this.canManageAllowances
+        ) {
+            this.showToast(
+                'Bạn không có quyền quản lý phụ cấp.',
+            );
+
+            return;
+        }
+
+        if (
             this.deletingPayrollId !==
             null
         ) {
-
             return;
         }
 
@@ -1009,7 +880,8 @@ export class PayrollListComponent
                 ],
                 {
                     queryParams: {
-                        tab: 'allowances',
+                        tab:
+                            'allowances',
                     },
                 },
             );
@@ -1021,11 +893,19 @@ export class PayrollListComponent
     ): void {
 
         if (
-            !this.canManagePayroll ||
+            !this.canEditPayroll
+        ) {
+            this.showToast(
+                'Bạn chỉ có quyền xem bảng lương.',
+            );
+
+            return;
+        }
+
+        if (
             this.deletingPayrollId !==
             null
         ) {
-
             return;
         }
 
@@ -1043,25 +923,35 @@ export class PayrollListComponent
     ): void {
 
         if (
-            !this.canManagePayroll ||
-            this.deletingPayrollId !==
-            null
+            !this.canDeletePayroll
         ) {
+            this.showToast(
+                'Bạn không có quyền xóa bảng lương.',
+            );
 
             return;
         }
 
+        if (
+            this.deletingPayrollId !==
+            null
+        ) {
+            return;
+        }
+
         const confirmed =
-            window.confirm(
-                `Bạn có chắc muốn xóa bảng lương ${this.formatPayrollCode(
-                    record.maLuong,
-                )} của ${record.hoTen}?`,
-            );
+            typeof window ===
+                'undefined'
+                ? true
+                : window.confirm(
+                    `Bạn có chắc muốn xóa bảng lương ${this.formatPayrollCode(
+                        record.maLuong,
+                    )} của ${record.hoTen}?`,
+                );
 
         if (
             !confirmed
         ) {
-
             return;
         }
 
@@ -1075,7 +965,6 @@ export class PayrollListComponent
             .pipe(
                 finalize(
                     () => {
-
                         this.deletingPayrollId =
                             null;
 
@@ -1085,7 +974,6 @@ export class PayrollListComponent
                 ),
             )
             .subscribe({
-
                 next: () => {
 
                     this.payrollRecords =
@@ -1102,7 +990,6 @@ export class PayrollListComponent
                         this.currentPage >
                         this.totalPages
                     ) {
-
                         this.currentPage =
                             this.totalPages;
                     }
@@ -1148,45 +1035,104 @@ export class PayrollListComponent
         void {
 
         if (
-            !this.canManagePayroll
+            !this.canViewPayrollList
         ) {
+            this.showToast(
+                'Bạn không có quyền xuất bảng lương.',
+            );
+
             return;
         }
 
-        const data = this.filteredPayrollRecords.map((record) => ({
-            'Mã bảng lương': this.formatPayrollCode(record.maLuong),
-            'Mã nhân viên': `NV-${String(record.maNV).padStart(4, '0')}`,
-            'Họ tên': record.hoTen,
-            'Phòng ban': record.tenPB ?? 'Chưa phân phòng',
-            'Chức vụ': record.tenCV ?? 'Chưa có chức vụ',
-            'Tháng': record.thang,
-            'Năm': record.nam,
-            'Lương cơ bản': record.luongCoBan,
-            'Số ngày công': record.soNgayCong,
-            'Phụ cấp': record.tongPhuCap,
-            'Thưởng': record.tongThuong,
-            'Khấu trừ': record.tongKhauTru,
-            'Thực lĩnh': record.tongLuong,
-        }));
+        const data =
+            this.filteredPayrollRecords
+                .map(
+                    (
+                        record,
+                    ) => ({
+                        'Mã bảng lương':
+                            this.formatPayrollCode(
+                                record.maLuong,
+                            ),
 
-        if (!data.length) {
-            this.showToast('Không có dữ liệu bảng lương để xuất.');
+                        'Mã nhân viên':
+                            `NV-${String(
+                                record.maNV,
+                            ).padStart(
+                                4,
+                                '0',
+                            )}`,
+
+                        'Họ tên':
+                            record.hoTen,
+
+                        'Phòng ban':
+                            record.tenPB ??
+                            'Chưa phân phòng',
+
+                        'Chức vụ':
+                            record.tenCV ??
+                            'Chưa có chức vụ',
+
+                        'Tháng':
+                            record.thang,
+
+                        'Năm':
+                            record.nam,
+
+                        'Lương cơ bản':
+                            record.luongCoBan,
+
+                        'Số ngày công':
+                            record.soNgayCong,
+
+                        'Phụ cấp':
+                            record.tongPhuCap,
+
+                        'Thưởng':
+                            record.tongThuong,
+
+                        'Khấu trừ':
+                            record.tongKhauTru,
+
+                        'Thực lĩnh':
+                            record.tongLuong,
+                    }),
+                );
+
+        if (
+            !data.length
+        ) {
+            this.showToast(
+                'Không có dữ liệu bảng lương để xuất.',
+            );
+
             return;
         }
 
         const period =
-            this.selectedMonth !== null &&
-                this.selectedYear !== null
-                ? `${this.selectedYear}-${String(this.selectedMonth).padStart(2, '0')}`
+            this.selectedMonth !==
+                null &&
+                this.selectedYear !==
+                null
+                ? `${this.selectedYear}-${String(
+                    this.selectedMonth,
+                ).padStart(
+                    2,
+                    '0',
+                )}`
                 : this.getTodayFileName();
 
-        this.excelExportService.exportToExcel(
-            data,
-            `bang-luong-${period}`,
-            'Bảng lương',
-        );
+        this.excelExportService
+            .exportToExcel(
+                data,
+                `bang-luong-${period}`,
+                'Bảng lương',
+            );
 
-        this.showToast('Đã xuất danh sách bảng lương.');
+        this.showToast(
+            'Đã xuất danh sách bảng lương.',
+        );
     }
 
     printPayroll(
@@ -1195,11 +1141,19 @@ export class PayrollListComponent
     ): void {
 
         if (
-            !this.canManagePayroll ||
+            !this.canViewPayrollList
+        ) {
+            this.showToast(
+                'Bạn không có quyền xem phiếu lương.',
+            );
+
+            return;
+        }
+
+        if (
             this.deletingPayrollId !==
             null
         ) {
-
             return;
         }
 
@@ -1209,7 +1163,6 @@ export class PayrollListComponent
                     '/payroll',
                     record.maLuong,
                 ],
-
                 {
                     queryParams: {
                         print:
@@ -1251,7 +1204,6 @@ export class PayrollListComponent
             words.length ===
             0
         ) {
-
             return 'NV';
         }
 
@@ -1259,7 +1211,6 @@ export class PayrollListComponent
             words.length ===
             1
         ) {
-
             return words[0]
                 .slice(
                     0,
@@ -1281,18 +1232,12 @@ export class PayrollListComponent
         )
             .toUpperCase();
     }
+
     logout():
         void {
 
-        if (
-            typeof window !==
-            'undefined'
-        ) {
-
-            localStorage.clear();
-
-            sessionStorage.clear();
-        }
+        this.storageService
+            .clearAuthSession();
 
         void this.router
             .navigate([
@@ -1300,6 +1245,220 @@ export class PayrollListComponent
             ]);
     }
 
+    private mapPayrollRecord(
+        payroll:
+            BangLuong,
+
+        employees:
+            NhanVienChiTiet[],
+
+        departments:
+            PayrollDepartmentOption[],
+    ): PayrollListItem {
+
+        const employee =
+            employees.find(
+                (
+                    item,
+                ) =>
+                    item.maNV ===
+                    payroll.maNV,
+            );
+
+        const department =
+            employee?.maPB
+                ? departments.find(
+                    (
+                        item,
+                    ) =>
+                        item.maPB ===
+                        employee.maPB,
+                )
+                : undefined;
+
+        return {
+            maLuong:
+                payroll.maLuong,
+
+            maNV:
+                payroll.maNV,
+
+            hoTen:
+                employee?.hoTen ??
+                `Nhân viên #${payroll.maNV}`,
+
+            tenPB:
+                employee?.tenPB ??
+                department?.tenPB ??
+                'Chưa phân phòng',
+
+            tenCV:
+                employee?.tenCV ??
+                null,
+
+            thang:
+                payroll.thang,
+
+            nam:
+                payroll.nam,
+
+            luongCoBan:
+                Number(
+                    payroll.luongCoBan ??
+                    0,
+                ),
+
+            tongPhuCap:
+                Number(
+                    payroll.tongPhuCap ??
+                    0,
+                ),
+
+            tongThuong:
+                Number(
+                    payroll.tongThuong ??
+                    0,
+                ),
+
+            tongKhauTru:
+                Number(
+                    payroll.tongKhauTru ??
+                    0,
+                ),
+
+            soNgayCong:
+                Number(
+                    payroll.soNgayCong ??
+                    0,
+                ),
+
+            tongLuong:
+                Number(
+                    payroll.tongLuong ??
+                    0,
+                ),
+        } as PayrollListItem;
+    }
+
+    private mapOwnPayrollRecord(
+        payroll:
+            BangLuong,
+
+        employee:
+            NhanVien,
+    ): PayrollListItem {
+
+        return {
+            maLuong:
+                payroll.maLuong,
+
+            maNV:
+                payroll.maNV,
+
+            hoTen:
+                employee.hoTen,
+
+            tenPB:
+                null,
+
+            tenCV:
+                null,
+
+            thang:
+                payroll.thang,
+
+            nam:
+                payroll.nam,
+
+            luongCoBan:
+                Number(
+                    payroll.luongCoBan ??
+                    0,
+                ),
+
+            tongPhuCap:
+                Number(
+                    payroll.tongPhuCap ??
+                    0,
+                ),
+
+            tongThuong:
+                Number(
+                    payroll.tongThuong ??
+                    0,
+                ),
+
+            tongKhauTru:
+                Number(
+                    payroll.tongKhauTru ??
+                    0,
+                ),
+
+            soNgayCong:
+                Number(
+                    payroll.soNgayCong ??
+                    0,
+                ),
+
+            tongLuong:
+                Number(
+                    payroll.tongLuong ??
+                    0,
+                ),
+        } as PayrollListItem;
+    }
+
+    private sortPayrollRecords():
+        void {
+
+        this.payrollRecords =
+            [
+                ...this.payrollRecords,
+            ]
+                .sort(
+                    (
+                        a,
+                        b,
+                    ) => {
+
+                        if (
+                            a.nam !==
+                            b.nam
+                        ) {
+                            return (
+                                b.nam -
+                                a.nam
+                            );
+                        }
+
+                        if (
+                            a.thang !==
+                            b.thang
+                        ) {
+                            return (
+                                b.thang -
+                                a.thang
+                            );
+                        }
+
+                        return (
+                            b.maLuong -
+                            a.maLuong
+                        );
+                    },
+                );
+    }
+
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+        return resolveUserRole(
+            currentUser,
+        );
+    }
 
     private getDepartmentId(
         departmentName:
@@ -1309,7 +1468,6 @@ export class PayrollListComponent
         if (
             !departmentName
         ) {
-
             return null;
         }
 
@@ -1339,16 +1497,13 @@ export class PayrollListComponent
             typeof error.error
                 ?.message ===
                 'string'
-
                 ? error.error
                     .message
-
                 : '';
 
         if (
             backendMessage
         ) {
-
             return backendMessage;
         }
 
@@ -1361,7 +1516,6 @@ export class PayrollListComponent
             typeof backendErrors ===
             'object'
         ) {
-
             const messages =
                 Object.values(
                     backendErrors as
@@ -1380,7 +1534,6 @@ export class PayrollListComponent
                                     value,
                                 )
                             ) {
-
                                 return value
                                     .map(
                                         (
@@ -1407,7 +1560,6 @@ export class PayrollListComponent
                 messages.length >
                 0
             ) {
-
                 return messages
                     .join(
                         ' ',
@@ -1418,56 +1570,70 @@ export class PayrollListComponent
         switch (
         error.status
         ) {
-
             case 0:
-
                 return (
                     'Không thể kết nối đến hệ thống.'
                 );
 
             case 400:
-
                 return (
                     'Dữ liệu bảng lương không hợp lệ.'
                 );
 
             case 401:
-
                 return (
                     'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'
                 );
 
             case 403:
-
                 return (
                     'Bạn không có quyền thực hiện thao tác này.'
                 );
 
             case 404:
-
                 return (
                     'Không tìm thấy bảng lương.'
                 );
 
             case 409:
-
                 return (
                     'Bảng lương đang bị xung đột dữ liệu.'
                 );
 
             default:
-
                 return fallback;
         }
     }
 
-    private getTodayFileName(): string {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
+    private getTodayFileName():
+        string {
 
-        return `${year}-${month}-${day}`;
+        const today =
+            new Date();
+
+        const year =
+            today.getFullYear();
+
+        const month =
+            String(
+                today.getMonth() +
+                1,
+            ).padStart(
+                2,
+                '0',
+            );
+
+        const day =
+            String(
+                today.getDate(),
+            ).padStart(
+                2,
+                '0',
+            );
+
+        return (
+            `${year}-${month}-${day}`
+        );
     }
 
     private showToast(
@@ -1488,14 +1654,12 @@ export class PayrollListComponent
                     this.toastMessage ===
                     message
                 ) {
-
                     this.toastMessage =
                         '';
 
                     this.changeDetectorRef
                         .markForCheck();
                 }
-
             },
             3000,
         );

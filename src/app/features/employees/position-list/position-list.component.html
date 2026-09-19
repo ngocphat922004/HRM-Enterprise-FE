@@ -18,6 +18,7 @@
             </div>
 
             <div class="page-actions">
+                @if (canCreatePositions) {
                 <a class="header-add-button" routerLink="/positions/add">
                     <span aria-hidden="true">
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -29,7 +30,9 @@
 
                     Thêm mới
                 </a>
+                }
 
+                @if (canViewPositions) {
                 <button class="export-button" type="button" (click)="exportReport()" [disabled]="
                         isLoading ||
                         positions.length === 0 ||
@@ -44,6 +47,7 @@
 
                     Xuất danh sách
                 </button>
+                }
             </div>
         </section>
 
@@ -307,6 +311,7 @@
                                         </svg>
                                     </button>
 
+                                    @if (canEditPositions) {
                                     <button type="button" (click)="editPosition(position)" [disabled]="
                                                     deletingPositionId !== null
                                                 " aria-label="Chỉnh sửa chức vụ">
@@ -317,17 +322,22 @@
                                             <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
                                         </svg>
                                     </button>
+                                    }
 
+                                    @if (canDeletePositions) {
                                     <button type="button" class="delete-action" [class.delete-action--locked]="
+                                                    canViewEmployees &&
                                                     position.employeeCount > 0
                                                 " [disabled]="
-                                                    position.employeeCount > 0 ||
+                                                    (canViewEmployees &&
+                                                    position.employeeCount > 0) ||
                                                     deletingPositionId !== null
                                                 " (click)="deletePosition(position)" [attr.aria-label]="
                                                     deletingPositionId === position.maCV
                                                         ? 'Đang xóa chức vụ'
                                                         : 'Xóa chức vụ'
                                                 " [title]="
+                                                    canViewEmployees &&
                                                     position.employeeCount > 0
                                                         ? 'Không thể xóa vì đang có nhân viên sử dụng'
                                                         : 'Xóa chức vụ'
@@ -350,6 +360,7 @@
                                         </svg>
                                         }
                                     </button>
+                                    }
                                 </div>
                             </td>
                         </tr>

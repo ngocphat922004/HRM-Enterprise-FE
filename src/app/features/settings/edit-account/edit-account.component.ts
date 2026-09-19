@@ -25,12 +25,22 @@ import {
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
     TAI_KHOAN_TRANG_THAI,
     TaiKhoanTrangThai,
 } from '../../../core/constants/status.constants';
+
+import {
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 
 import {
     UpdateTaiKhoanRequest,
@@ -167,6 +177,10 @@ export class EditAccountComponent
         null =
         null;
 
+    private currentRole:
+        RoleKey | null =
+        null;
+
     private toastTimer:
         ReturnType<
             typeof setTimeout
@@ -192,6 +206,9 @@ export class EditAccountComponent
         private readonly phongBanService:
             PhongBanService,
 
+        private readonly storageService:
+            StorageService,
+
         private readonly changeDetectorRef:
             ChangeDetectorRef,
     ) { }
@@ -199,7 +216,13 @@ export class EditAccountComponent
     ngOnInit():
         void {
 
-        this.readRouteId();
+        this.currentRole =
+            resolveUserRole(
+                this.storageService
+                    .getCurrentUser(),
+            );
+
+        this.loadPermissions();
     }
 
     ngOnDestroy():
@@ -213,6 +236,51 @@ export class EditAccountComponent
                 this.toastTimer,
             );
         }
+    }
+
+    get canViewAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canEditAccounts():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewDepartments():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canViewRoles():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    get canUseAccountForm():
+        boolean {
+
+        return this.isAdmin;
+    }
+
+    private get isAdmin():
+        boolean {
+
+        return (
+            this.currentRole ===
+            'admin'
+        );
     }
 
     get accountCode():
@@ -444,6 +512,8 @@ export class EditAccountComponent
         void {
 
         if (
+            !this.canUseAccountForm ||
+
             this.accountId ===
             null ||
 
@@ -468,6 +538,7 @@ export class EditAccountComponent
             '';
 
         if (
+            !this.canUseAccountForm ||
             this.isSaving ||
             this.isLoading
         ) {
@@ -529,6 +600,9 @@ export class EditAccountComponent
 
         this.preparedPayload = {
 
+            maTK:
+                this.accountId,
+
             tenDangNhap:
                 this.form
                     .tenDangNhap
@@ -589,10 +663,21 @@ export class EditAccountComponent
                     window.setTimeout(
                         () => {
 
+                            if (
+                                this.canViewAccounts
+                            ) {
+                                void this.router
+                                    .navigate([
+                                        '/settings/accounts',
+                                        id,
+                                    ]);
+
+                                return;
+                            }
+
                             void this.router
                                 .navigate([
-                                    '/settings/accounts',
-                                    id,
+                                    '/settings',
                                 ]);
 
                         },
@@ -670,6 +755,39 @@ export class EditAccountComponent
             .toUpperCase();
     }
 
+    private loadPermissions():
+        void {
+
+        if (
+            !this.isAdmin
+        ) {
+            this.accountId =
+                null;
+
+            this.account =
+                null;
+
+            this.employees =
+                [];
+
+            this.roles =
+                [];
+
+            this.existingUsernames =
+                new Map();
+
+            this.errorMessage =
+                'Chỉ Quản trị viên được phép chỉnh sửa tài khoản.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        this.readRouteId();
+    }
+
     private readRouteId():
         void {
 
@@ -721,6 +839,7 @@ export class EditAccountComponent
         void {
 
         if (
+            !this.canUseAccountForm ||
             this.accountId ===
             null
         ) {
@@ -768,8 +887,10 @@ export class EditAccountComponent
                     .getAll(),
 
             departments:
-                this.phongBanService
-                    .getAll(),
+                this.canViewDepartments
+                    ? this.phongBanService
+                        .getAll()
+                    : of([]),
 
             roles:
                 this.quyenService
@@ -875,11 +996,15 @@ export class EditAccountComponent
                                             null,
 
                                         tenPB:
-                                            department
-                                                ?.tenPB ??
-                                            employeeExtra
-                                                ?.tenPB ??
-                                            null,
+                                            this.canViewDepartments
+                                                ? (
+                                                    department
+                                                        ?.tenPB ??
+                                                    employeeExtra
+                                                        ?.tenPB ??
+                                                    null
+                                                )
+                                                : null,
 
                                         tenCV:
                                             employeeExtra
@@ -1025,11 +1150,15 @@ export class EditAccountComponent
                             null,
 
                         tenPB:
-                            department
-                                ?.tenPB ??
-                            employeeExtra
-                                ?.tenPB ??
-                            null,
+                            this.canViewDepartments
+                                ? (
+                                    department
+                                        ?.tenPB ??
+                                    employeeExtra
+                                        ?.tenPB ??
+                                    null
+                                )
+                                : null,
 
                         tenCV:
                             employeeExtra
@@ -1144,6 +1273,8 @@ export class EditAccountComponent
             this.selectedEmployee;
 
         return (
+            this.canUseAccountForm &&
+
             username.length >=
             4 &&
 

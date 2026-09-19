@@ -21,6 +21,7 @@ export interface CreateTaiKhoanRequest {
 }
 
 export interface UpdateTaiKhoanRequest {
+    maTK: number;
     tenDangNhap: string;
     matKhau: string;
     maNV: number;

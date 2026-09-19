@@ -1,13 +1,19 @@
 <section class="profile-page-heading">
     <div>
         <p class="breadcrumb">
-            <a routerLink="/employees">Nhân viên</a>
+            <span>Nhân viên</span>
             <span>/</span>
             Chi tiết hồ sơ
         </p>
     </div>
 
+    @if (
+    !isLoading &&
+    !errorMessage &&
+    canViewEmployeeProfile
+    ) {
     <div class="profile-actions">
+        @if (canPrintProfile) {
         <button type="button" class="profile-action-button" (click)="printProfile()">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -19,8 +25,7 @@
 
             In hồ sơ
         </button>
-
-
+        }
 
         @if (canEditEmployeeProfile) {
         <button type="button" class="profile-action-button profile-action-button--primary" (click)="editProfile()">
@@ -34,8 +39,44 @@
         </button>
         }
     </div>
+    }
 </section>
 
+@if (isLoading) {
+<section class="profile-info-card profile-info-card--full" aria-live="polite">
+    <div style="
+        padding: 48px 24px;
+        text-align: center;
+    ">
+        <span class="spinner" aria-hidden="true"></span>
+
+        <p>
+            Đang tải hồ sơ và dữ liệu được phép xem...
+        </p>
+    </div>
+</section>
+} @else if (errorMessage) {
+<section class="profile-info-card profile-info-card--full" role="alert">
+    <div style="
+        padding: 48px 24px;
+        text-align: center;
+    ">
+        <strong>
+            Không thể tải hồ sơ
+        </strong>
+
+        <p>
+            {{ errorMessage }}
+        </p>
+
+        @if (employeeId > 0) {
+        <button type="button" class="profile-action-button" (click)="retry()" [disabled]="isLoading">
+            Thử lại
+        </button>
+        }
+    </div>
+</section>
+} @else if (canViewEmployeeProfile) {
 <section class="profile-summary-card">
     <div class="profile-avatar">
         @if (employee.avatarUrl) {
@@ -197,7 +238,7 @@
     </div>
     } @else if (contracts.length === 0) {
     <div class="contract-history__message">
-        Nhân viên này chưa có hợp đồng.
+        Không có dữ liệu hợp đồng khả dụng để hiển thị.
     </div>
     } @else {
     <div class="contract-history__buttons">
@@ -270,13 +311,16 @@
             </div>
         </div>
 
-        @if (canManageContracts) {
+        @if (canViewContracts) {
         <div class="contract-history-detail__actions">
             <button type="button" class="contract-history-action" (click)="viewSelectedContract()">
                 Xem chi tiết hợp đồng
             </button>
 
-            @if (canRenewContract(contract)) {
+            @if (
+            canCreateContracts &&
+            canRenewContract(contract)
+            ) {
             <button type="button" class="contract-history-action contract-history-action--primary"
                 (click)="renewSelectedContract()">
                 Gia hạn hợp đồng
@@ -297,7 +341,7 @@
 
         <div class="profile-data-grid">
             <div>
-                <small>Số bản ghi chấm công</small>
+                <small>Bản ghi chấm công khả dụng</small>
                 <strong>{{ attendanceRecords.length }}</strong>
             </div>
 
@@ -307,7 +351,7 @@
             </div>
 
             <div>
-                <small>Số đơn nghỉ phép</small>
+                <small>Đơn nghỉ phép khả dụng</small>
                 <strong>{{ leaveRequests.length }}</strong>
             </div>
 
@@ -329,7 +373,7 @@
         </div>
         } @else if (attendanceRecords.length === 0) {
         <div class="profile-record-message">
-            Nhân viên này chưa có dữ liệu chấm công.
+            Không có dữ liệu chấm công khả dụng để hiển thị.
         </div>
         } @else {
         <div class="profile-record-table-wrapper">
@@ -379,7 +423,7 @@
         </div>
         } @else if (leaveRequests.length === 0) {
         <div class="profile-record-message">
-            Nhân viên này chưa có đơn nghỉ phép.
+            Không có dữ liệu nghỉ phép khả dụng để hiển thị.
         </div>
         } @else {
         <div class="profile-record-table-wrapper">
@@ -467,7 +511,7 @@
         </div>
         } @else {
         <div class="profile-record-message">
-            Nhân viên này chưa có dữ liệu bảng lương.
+            Không có dữ liệu bảng lương khả dụng để hiển thị.
         </div>
         }
         }
@@ -484,7 +528,7 @@
         </div>
         } @else if (payrollRecords.length === 0) {
         <div class="profile-record-message">
-            Nhân viên này chưa có lịch sử bảng lương.
+            Không có lịch sử bảng lương khả dụng để hiển thị.
         </div>
         } @else {
         <div class="profile-record-table-wrapper">
@@ -535,7 +579,7 @@
         </div>
         } @else if (allowances.length === 0) {
         <div class="profile-record-message">
-            Nhân viên này chưa được gán phụ cấp.
+            Không có dữ liệu phụ cấp khả dụng để hiển thị.
         </div>
         } @else {
         <div class="profile-record-table-wrapper">
@@ -586,7 +630,7 @@
 
         @if (historyItems.length === 0) {
         <div class="profile-record-message">
-            Chưa có dữ liệu lịch sử để hiển thị.
+            Chưa có dữ liệu lịch sử khả dụng để hiển thị.
         </div>
         } @else {
         <div class="profile-record-table-wrapper">
@@ -635,6 +679,22 @@
         </div>
         }
     </article>
+</section>
+}
+} @else {
+<section class="profile-info-card profile-info-card--full" role="alert">
+    <div style="
+        padding: 48px 24px;
+        text-align: center;
+    ">
+        <strong>
+            Không thể hiển thị hồ sơ
+        </strong>
+
+        <p>
+            Bạn không có quyền xem hồ sơ nhân viên này.
+        </p>
+    </div>
 </section>
 }
 

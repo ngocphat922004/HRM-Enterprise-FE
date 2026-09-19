@@ -27,6 +27,7 @@ import {
   finalize,
   forkJoin,
   map,
+  of,
 } from 'rxjs';
 
 import {
@@ -38,6 +39,10 @@ import {
 } from '../../core/constants/api-endpoints.constants';
 
 import {
+  canManageEmployees,
+  canViewContracts as canViewContractsForRole,
+  canViewEmployeeDirectory,
+  canViewOrganization,
   resolveUserRole,
   RoleKey,
 } from '../../core/guards/role.guard';
@@ -172,6 +177,10 @@ export class DashboardComponent
   private toastTimer:
     ReturnType<typeof setTimeout> | null = null;
 
+  private currentRole:
+    RoleKey | null =
+    null;
+
   private readonly apiBaseUrl =
     environment.apiBaseUrl;
 
@@ -187,10 +196,32 @@ export class DashboardComponent
       StorageService,
   ) { }
 
-  private get currentRole(): RoleKey | null {
-    return resolveUserRole(
-      this.storageService.getCurrentUser(),
+  get canViewEmployees(): boolean {
+    return canViewEmployeeDirectory(
+      this.currentRole,
     );
+  }
+
+  get canCreateEmployee(): boolean {
+    return canManageEmployees(
+      this.currentRole,
+    );
+  }
+
+  get canViewDepartments(): boolean {
+    return canViewOrganization(
+      this.currentRole,
+    );
+  }
+
+  get canViewPositions(): boolean {
+    return canViewOrganization(
+      this.currentRole,
+    );
+  }
+
+  get canViewLeave(): boolean {
+    return this.currentRole !== null;
   }
 
   get canApproveLeave(): boolean {
@@ -201,8 +232,33 @@ export class DashboardComponent
     );
   }
 
+  get canViewAttendance(): boolean {
+    return this.currentRole !== null;
+  }
+
+  get canViewContracts(): boolean {
+    return canViewContractsForRole(
+      this.currentRole,
+    );
+  }
+
+  get hasDashboardDataAccess(): boolean {
+    return (
+      this.canViewEmployees ||
+      this.canViewLeave ||
+      this.canViewAttendance ||
+      this.canViewContracts
+    );
+  }
+
   ngOnInit(): void {
-    this.loadDashboard();
+    this.currentRole =
+      resolveUserRole(
+        this.storageService
+          .getCurrentUser(),
+      );
+
+    this.loadPermissions();
   }
 
   ngOnDestroy(): void {
@@ -276,7 +332,7 @@ export class DashboardComponent
       return;
     }
 
-    this.loadDashboard();
+    this.loadPermissions();
   }
 
   updateLeaveStatus(
@@ -374,6 +430,7 @@ export class DashboardComponent
     maHD: number,
   ): void {
     if (
+      !this.canViewContracts ||
       !Number.isInteger(maHD) ||
       maHD <= 0
     ) {
@@ -390,46 +447,109 @@ export class DashboardComponent
     ]);
   }
 
+  private loadPermissions(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    if (
+      this.currentRole ===
+      null
+    ) {
+      this.resetDashboard();
+      this.isLoading = false;
+      this.errorMessage =
+        'Không xác định được vai trò của tài khoản.';
+
+      this.changeDetectorRef
+        .markForCheck();
+
+      return;
+    }
+
+    this.loadDashboard();
+  }
+
   private loadDashboard(): void {
     this.isLoading = true;
 
     this.errorMessage = '';
 
     forkJoin({
+      currentEmployee:
+        (
+          this.currentRole ===
+          'manager' ||
+          this.currentRole ===
+          'employee'
+        )
+          ? this.getItem<DashboardNhanVien>(
+            API_ENDPOINTS.nhanVienMe,
+          )
+          : of(null as DashboardNhanVien | null),
+
       employees:
-        this.getList<DashboardNhanVien>(
-          API_ENDPOINTS.nhanVien,
-        ),
+        this.canViewEmployees
+          ? this.getList<DashboardNhanVien>(
+            API_ENDPOINTS.nhanVien,
+          )
+          : of([] as DashboardNhanVien[]),
 
       departments:
-        this.getList<DashboardPhongBan>(
-          API_ENDPOINTS.phongBan,
-        ),
+        (
+          this.canViewEmployees &&
+          this.canViewDepartments
+        )
+          ? this.getList<DashboardPhongBan>(
+            API_ENDPOINTS.phongBan,
+          )
+          : of([] as DashboardPhongBan[]),
 
       positions:
-        this.getList<DashboardChucVu>(
-          API_ENDPOINTS.chucVu,
-        ),
+        (
+          this.canViewEmployees &&
+          this.canViewPositions
+        )
+          ? this.getList<DashboardChucVu>(
+            API_ENDPOINTS.chucVu,
+          )
+          : of([] as DashboardChucVu[]),
 
       leaves:
-        this.getList<DashboardNghiPhep>(
-          API_ENDPOINTS.nghiPhep,
-        ),
+        this.canViewLeave
+          ? this.getList<DashboardNghiPhep>(
+            this.currentRole ===
+              'employee'
+              ? API_ENDPOINTS.nghiPhepMe
+              : API_ENDPOINTS.nghiPhep,
+          )
+          : of([] as DashboardNghiPhep[]),
 
       leaveTypes:
-        this.getList<DashboardLoaiNghiPhep>(
-          API_ENDPOINTS.loaiNghiPhep,
-        ),
+        this.canViewLeave
+          ? this.getList<DashboardLoaiNghiPhep>(
+            API_ENDPOINTS.loaiNghiPhep,
+          )
+          : of([] as DashboardLoaiNghiPhep[]),
 
       attendance:
-        this.getList<DashboardChamCong>(
-          API_ENDPOINTS.chamCong,
-        ),
+        this.canViewAttendance
+          ? this.getList<DashboardChamCong>(
+            this.currentRole ===
+              'employee'
+              ? API_ENDPOINTS.chamCongMe
+              : API_ENDPOINTS.chamCong,
+          )
+          : of([] as DashboardChamCong[]),
 
       contracts:
-        this.getList<DashboardHopDong>(
-          API_ENDPOINTS.hopDong,
-        ),
+        this.canViewContracts
+          ? this.getList<DashboardHopDong>(
+            this.currentRole ===
+              'employee'
+              ? API_ENDPOINTS.hopDongMe
+              : API_ENDPOINTS.hopDong,
+          )
+          : of([] as DashboardHopDong[]),
     })
       .pipe(
         finalize(() => {
@@ -440,6 +560,7 @@ export class DashboardComponent
       )
       .subscribe({
         next: ({
+          currentEmployee,
           employees,
           departments,
           positions,
@@ -448,17 +569,116 @@ export class DashboardComponent
           attendance,
           contracts,
         }) => {
+          let scopedEmployees =
+            employees;
+
+          let scopedDepartments =
+            departments;
+
+          let scopedLeaves =
+            leaves;
+
+          let scopedAttendance =
+            attendance;
+
+          let scopedContracts =
+            contracts;
+
+          if (
+            this.currentRole ===
+            'manager'
+          ) {
+            const departmentId =
+              currentEmployee
+                ?.maPB ??
+              null;
+
+            if (
+              departmentId ===
+              null
+            ) {
+              this.resetDashboard();
+
+              this.errorMessage =
+                'Không xác định được phòng ban của Trưởng phòng.';
+
+              this.changeDetectorRef
+                .markForCheck();
+
+              return;
+            }
+
+            scopedEmployees =
+              employees.filter(
+                (employee) =>
+                  employee.maPB ===
+                  departmentId,
+              );
+
+            const employeeIds =
+              new Set(
+                scopedEmployees.map(
+                  (employee) =>
+                    employee.maNV,
+                ),
+              );
+
+            scopedDepartments =
+              departments.filter(
+                (department) =>
+                  department.maPB ===
+                  departmentId,
+              );
+
+            scopedLeaves =
+              leaves.filter(
+                (leave) =>
+                  employeeIds.has(
+                    leave.maNV,
+                  ),
+              );
+
+            scopedAttendance =
+              attendance.filter(
+                (item) =>
+                  employeeIds.has(
+                    item.maNV,
+                  ),
+              );
+
+            scopedContracts =
+              contracts.filter(
+                (contract) =>
+                  employeeIds.has(
+                    contract.maNV,
+                  ),
+              );
+          }
+
+          const employeeLookup =
+            currentEmployee &&
+              !scopedEmployees.some(
+                (employee) =>
+                  employee.maNV ===
+                  currentEmployee.maNV,
+              )
+              ? [
+                ...scopedEmployees,
+                currentEmployee,
+              ]
+              : scopedEmployees;
+
           const today = this.today();
 
           const activeEmployees =
-            employees.filter(
+            scopedEmployees.filter(
               (employee) =>
                 employee.trangThai ===
                 'Đang làm việc',
             );
 
           const newEmployeesThisMonth =
-            employees.filter(
+            scopedEmployees.filter(
               (employee) =>
                 this.isSameMonth(
                   employee.ngayVaoLam,
@@ -467,7 +687,7 @@ export class DashboardComponent
             ).length;
 
           const approvedLeaveToday =
-            leaves.filter(
+            scopedLeaves.filter(
               (leave) =>
                 leave.trangThai ===
                 'Đã duyệt' &&
@@ -479,7 +699,7 @@ export class DashboardComponent
             );
 
           const lateToday =
-            attendance.filter(
+            scopedAttendance.filter(
               (item) =>
                 this.dateOnly(
                   item.ngayChamCong,
@@ -489,61 +709,92 @@ export class DashboardComponent
             );
 
           const pendingLeaves =
-            leaves.filter(
+            scopedLeaves.filter(
               (leave) =>
                 leave.trangThai ===
                 'Chờ duyệt',
             );
 
           const activePercent =
-            employees.length > 0
+            scopedEmployees.length > 0
               ? (
                 activeEmployees.length /
-                employees.length
+                scopedEmployees.length
               ) *
               100
               : 0;
 
-          this.stats = [
-            {
-              title: 'Tổng nhân viên',
-              value: String(
-                employees.length,
-              ),
-              description:
-                `+${newEmployeesThisMonth} tháng này`,
-              icon: 'users',
-              theme: 'primary',
-            },
+          const stats:
+            DashboardStat[] = [];
 
-            {
-              title: 'Đang làm việc',
-              value: String(
-                activeEmployees.length,
-              ),
-              description:
-                `${activePercent.toFixed(1)}% tổng nhân sự`,
-              icon: 'briefcase',
-              theme: 'warning',
-            },
+          if (
+            this.canViewEmployees
+          ) {
+            stats.push(
+              {
+                title: 'Tổng nhân viên',
+                value: String(
+                  scopedEmployees.length,
+                ),
+                description:
+                  `+${newEmployeesThisMonth} tháng này`,
+                icon: 'users',
+                theme: 'primary',
+              },
+              {
+                title: 'Đang làm việc',
+                value: String(
+                  activeEmployees.length,
+                ),
+                description:
+                  `${activePercent.toFixed(1)}% tổng nhân sự`,
+                icon: 'briefcase',
+                theme: 'warning',
+              },
+            );
+          }
 
-            {
-              title: 'Nghỉ phép hôm nay',
-              value: String(
-                approvedLeaveToday.length,
-              ).padStart(
-                2,
-                '0',
-              ),
-              description:
-                approvedLeaveToday.length > 0
-                  ? 'Đơn đã được duyệt'
-                  : 'Không có nhân viên nghỉ',
-              icon: 'calendar',
-              theme: 'info',
-            },
+          if (
+            this.canViewLeave
+          ) {
+            stats.push(
+              {
+                title: 'Nghỉ phép hôm nay',
+                value: String(
+                  approvedLeaveToday.length,
+                ).padStart(
+                  2,
+                  '0',
+                ),
+                description:
+                  approvedLeaveToday.length > 0
+                    ? 'Đơn đã được duyệt'
+                    : 'Không có nhân viên nghỉ',
+                icon: 'calendar',
+                theme: 'info',
+              },
+              {
+                title: 'Đơn chờ duyệt',
+                value: String(
+                  pendingLeaves.length,
+                ).padStart(
+                  2,
+                  '0',
+                ),
+                description:
+                  pendingLeaves.length > 0
+                    ? 'Yêu cầu đang chờ xử lý'
+                    : 'Không có đơn chờ',
+                icon: 'document',
+                theme: 'primary',
+              },
+            );
+          }
 
-            {
+          if (
+            this.canViewAttendance
+          ) {
+            stats.push({
               title: 'Đi muộn',
               value: String(
                 lateToday.length,
@@ -557,221 +808,225 @@ export class DashboardComponent
                   : 'Không ghi nhận đi trễ',
               icon: 'clock',
               theme: 'danger',
-            },
+            });
+          }
 
-            {
-              title: 'Đơn chờ duyệt',
-              value: String(
-                pendingLeaves.length,
-              ).padStart(
-                2,
-                '0',
-              ),
-              description:
-                pendingLeaves.length > 0
-                  ? 'Yêu cầu đang chờ xử lý'
-                  : 'Không có đơn chờ',
-              icon: 'document',
-              theme: 'primary',
-            },
-          ];
+          this.stats =
+            stats;
 
           this.employeeTrend =
-            this.buildEmployeeTrend(
-              employees,
-            );
+            this.canViewEmployees
+              ? this.buildEmployeeTrend(
+                scopedEmployees,
+              )
+              : [];
 
           this.departments =
-            this.buildDepartmentRatio(
-              employees,
-              departments,
-            );
+            (
+              this.canViewEmployees &&
+              this.canViewDepartments
+            )
+              ? this.buildDepartmentRatio(
+                scopedEmployees,
+                scopedDepartments,
+              )
+              : [];
 
           this.employees =
-            employees
-              .slice()
-              .sort(
-                (
-                  a,
-                  b,
-                ) => {
-                  const dateCompare =
-                    this.dateOnly(
-                      b.ngayVaoLam,
-                    ).localeCompare(
+            this.canViewEmployees
+              ? scopedEmployees
+                .slice()
+                .sort(
+                  (
+                    a,
+                    b,
+                  ) => {
+                    const dateCompare =
                       this.dateOnly(
-                        a.ngayVaoLam,
-                      ),
+                        b.ngayVaoLam,
+                      ).localeCompare(
+                        this.dateOnly(
+                          a.ngayVaoLam,
+                        ),
+                      );
+
+                    if (
+                      dateCompare !== 0
+                    ) {
+                      return dateCompare;
+                    }
+
+                    return (
+                      b.maNV -
+                      a.maNV
                     );
+                  },
+                )
+                .slice(
+                  0,
+                  5,
+                )
+                .map(
+                  (employee) => {
+                    const position =
+                      positions.find(
+                        (item) =>
+                          item.maCV ===
+                          employee.maCV,
+                      );
 
-                  if (
-                    dateCompare !== 0
-                  ) {
-                    return dateCompare;
-                  }
-
-                  return (
-                    b.maNV -
-                    a.maNV
-                  );
-                },
-              )
-              .slice(
-                0,
-                5,
-              )
-              .map(
-                (employee) => {
-                  const position =
-                    positions.find(
-                      (item) =>
-                        item.maCV ===
-                        employee.maCV,
-                    );
-
-                  return {
-                    name:
-                      employee.hoTen,
-
-                    position:
-                      position?.tenCV ??
-                      'Chưa có chức vụ',
-
-                    employeeCode:
-                      `NV${String(
-                        employee.maNV,
-                      ).padStart(
-                        5,
-                        '0',
-                      )}`,
-
-                    initials:
-                      this.getInitials(
+                    return {
+                      name:
                         employee.hoTen,
-                      ),
-                  };
-                },
-              );
+
+                      position:
+                        position?.tenCV ??
+                        (
+                          employee.maCV
+                            ? `Chức vụ #${employee.maCV}`
+                            : 'Chưa có chức vụ'
+                        ),
+
+                      employeeCode:
+                        `NV${String(
+                          employee.maNV,
+                        ).padStart(
+                          5,
+                          '0',
+                        )}`,
+
+                      initials:
+                        this.getInitials(
+                          employee.hoTen,
+                        ),
+                    };
+                  },
+                )
+              : [];
 
           this.leaveRequests =
-            pendingLeaves
-              .slice()
-              .sort(
-                (
-                  a,
-                  b,
-                ) =>
-                  b.maNP -
-                  a.maNP,
-              )
-              .slice(
-                0,
-                5,
-              )
-              .map(
-                (leave) => {
-                  const employee =
-                    employees.find(
-                      (item) =>
-                        item.maNV ===
-                        leave.maNV,
-                    );
+            this.canViewLeave
+              ? pendingLeaves
+                .slice()
+                .sort(
+                  (
+                    a,
+                    b,
+                  ) =>
+                    b.maNP -
+                    a.maNP,
+                )
+                .slice(
+                  0,
+                  5,
+                )
+                .map(
+                  (leave) => {
+                    const employee =
+                      employeeLookup.find(
+                        (item) =>
+                          item.maNV ===
+                          leave.maNV,
+                      );
 
-                  const leaveType =
-                    leaveTypes.find(
-                      (item) =>
-                        item.maLoaiNP ===
-                        leave.maLoaiNP,
-                    );
+                    const leaveType =
+                      leaveTypes.find(
+                        (item) =>
+                          item.maLoaiNP ===
+                          leave.maLoaiNP,
+                      );
 
-                  return {
-                    id: leave.maNP,
+                    return {
+                      id: leave.maNP,
 
-                    employeeName:
-                      employee?.hoTen ??
-                      `Nhân viên #${leave.maNV}`,
-
-                    leaveType:
-                      leaveType?.tenLoaiNP ??
-                      'Nghỉ phép',
-
-                    numberOfDays:
-                      this.countDaysInclusive(
-                        leave.tuNgay,
-                        leave.denNgay,
-                      ),
-
-                    initials:
-                      this.getInitials(
+                      employeeName:
                         employee?.hoTen ??
-                        `NV${leave.maNV}`,
-                      ),
+                        `Nhân viên #${leave.maNV}`,
 
-                    status: 'pending',
-                  };
-                },
-              );
+                      leaveType:
+                        leaveType?.tenLoaiNP ??
+                        'Nghỉ phép',
+
+                      numberOfDays:
+                        this.countDaysInclusive(
+                          leave.tuNgay,
+                          leave.denNgay,
+                        ),
+
+                      initials:
+                        this.getInitials(
+                          employee?.hoTen ??
+                          `NV${leave.maNV}`,
+                        ),
+
+                      status: 'pending',
+                    };
+                  },
+                )
+              : [];
 
           const expiringContracts =
-            contracts
-              .filter(
-                (contract) => {
-                  if (
-                    !contract.ngayKetThuc
-                  ) {
-                    return false;
-                  }
+            this.canViewContracts
+              ? scopedContracts
+                .filter(
+                  (contract) => {
+                    if (
+                      !contract.ngayKetThuc
+                    ) {
+                      return false;
+                    }
 
-                  const remainingDays =
-                    this.daysFromToday(
-                      contract.ngayKetThuc,
-                    );
-
-                  return (
-                    remainingDays >= 0 &&
-                    remainingDays <= 30
-                  );
-                },
-              )
-              .map(
-                (contract) => {
-                  const employee =
-                    employees.find(
-                      (item) =>
-                        item.maNV ===
-                        contract.maNV,
-                    );
-
-                  return {
-                    maHD:
-                      contract.maHD,
-
-                    employeeName:
-                      employee?.hoTen ??
-                      `Nhân viên #${contract.maNV}`,
-
-                    expiryDate:
-                      this.formatDate(
-                        contract.ngayKetThuc ??
-                        '',
-                      ),
-
-                    remainingDays:
+                    const remainingDays =
                       this.daysFromToday(
-                        contract.ngayKetThuc ??
-                        '',
-                      ),
-                  };
-                },
-              )
-              .sort(
-                (
-                  a,
-                  b,
-                ) =>
-                  a.remainingDays -
-                  b.remainingDays,
-              );
+                        contract.ngayKetThuc,
+                      );
+
+                    return (
+                      remainingDays >= 0 &&
+                      remainingDays <= 30
+                    );
+                  },
+                )
+                .map(
+                  (contract) => {
+                    const employee =
+                      employeeLookup.find(
+                        (item) =>
+                          item.maNV ===
+                          contract.maNV,
+                      );
+
+                    return {
+                      maHD:
+                        contract.maHD,
+
+                      employeeName:
+                        employee?.hoTen ??
+                        `Nhân viên #${contract.maNV}`,
+
+                      expiryDate:
+                        this.formatDate(
+                          contract.ngayKetThuc ??
+                          '',
+                        ),
+
+                      remainingDays:
+                        this.daysFromToday(
+                          contract.ngayKetThuc ??
+                          '',
+                        ),
+                    };
+                  },
+                )
+                .sort(
+                  (
+                    a,
+                    b,
+                  ) =>
+                    a.remainingDays -
+                    b.remainingDays,
+                )
+              : [];
 
           this.expiringContractCount =
             expiringContracts.length;
@@ -1063,6 +1318,49 @@ export class DashboardComponent
     }
 
     return result;
+  }
+
+  private getItem<T>(
+    endpoint: string,
+  ): Observable<T | null> {
+    return this.http
+      .get<
+        ApiResponse<T> | T
+      >(
+        `${this.apiBaseUrl}${endpoint}`,
+      )
+      .pipe(
+        map(
+          (response) => {
+            if (
+              response &&
+              typeof response ===
+              'object' &&
+              'success' in response
+            ) {
+              const apiResponse =
+                response as ApiResponse<T>;
+
+              if (
+                apiResponse.success ===
+                false
+              ) {
+                throw new Error(
+                  apiResponse.message?.trim() ||
+                  'Không thể tải dữ liệu tổng quan.',
+                );
+              }
+
+              return (
+                apiResponse.data ??
+                null
+              );
+            }
+
+            return response as T;
+          },
+        ),
+      );
   }
 
   private getList<T>(

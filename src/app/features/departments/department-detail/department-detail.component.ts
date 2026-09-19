@@ -12,14 +12,29 @@ import {
     Router,
     RouterLink,
 } from '@angular/router';
-import { finalize, forkJoin } from 'rxjs';
+import {
+    finalize,
+    forkJoin,
+    map,
+    of,
+    switchMap,
+} from 'rxjs';
 
 import {
     NHAN_VIEN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
 import {
+    canManageOrganization,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+import {
     ExcelExportService,
 } from '../../../core/services/excel-export.service';
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 import {
     NhanVienChiTiet,
 } from '../../employees/models/nhan-vien.model';
@@ -58,6 +73,8 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
 
     employees: DepartmentEmployee[] = [];
 
+    private managerDepartmentId: number | null = null;
+
     private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
@@ -66,10 +83,19 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
         private readonly phongBanService: PhongBanService,
         private readonly nhanVienService: NhanVienService,
         private readonly excelExportService: ExcelExportService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
 
     ngOnInit(): void {
+        if (!this.canViewDepartment) {
+            this.resetData();
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu phòng ban.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.readRouteId();
     }
 
@@ -77,6 +103,35 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
         if (this.toastTimer) {
             clearTimeout(this.toastTimer);
         }
+    }
+
+    get canViewDepartment(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canEditDepartment(): boolean {
+        return canManageOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewEmployees(): boolean {
+        const role =
+            this.getCurrentRole();
+
+        if (role === 'manager') {
+            return (
+                this.departmentId !== null &&
+                this.managerDepartmentId !== null &&
+                this.departmentId === this.managerDepartmentId
+            );
+        }
+
+        return canViewEmployeeDirectory(
+            role,
+        );
     }
 
     get totalEmployees(): number {
@@ -119,7 +174,10 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
     }
 
     editDepartment(): void {
-        if (this.departmentId === null) {
+        if (
+            !this.canEditDepartment ||
+            this.departmentId === null
+        ) {
             return;
         }
 
@@ -133,6 +191,13 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
     viewEmployeeInfo(
         employee: DepartmentEmployee,
     ): void {
+        if (!this.canViewEmployees) {
+            this.showToast(
+                'Bạn không có quyền xem nhân viên của phòng ban này.',
+            );
+            return;
+        }
+
         void this.router.navigate([
             '/employees',
             employee.id,
@@ -140,7 +205,13 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
     }
 
     viewAllDepartmentEmployees(): void {
-        if (this.departmentId === null) {
+        if (
+            !this.canViewEmployees ||
+            this.departmentId === null
+        ) {
+            this.showToast(
+                'Bạn không có quyền xem danh sách nhân viên của phòng ban này.',
+            );
             return;
         }
 
@@ -156,6 +227,13 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
     }
 
     exportEmployees(): void {
+        if (!this.canViewEmployees) {
+            this.showToast(
+                'Bạn không có quyền xem danh sách nhân viên để xuất dữ liệu.',
+            );
+            return;
+        }
+
         if (this.employees.length === 0) {
             this.showToast(
                 'Phòng ban chưa có nhân viên để xuất.',
@@ -204,6 +282,13 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
             return;
         }
 
+        if (!this.canViewDepartment) {
+            this.errorMessage =
+                'Bạn không có quyền xem dữ liệu phòng ban.';
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.loadDepartmentDetail();
     }
 
@@ -229,16 +314,30 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
     }
 
     private loadDepartmentDetail(): void {
-        if (this.departmentId === null) {
+        if (
+            !this.canViewDepartment ||
+            this.departmentId === null
+        ) {
             return;
         }
 
         this.isLoading = true;
         this.errorMessage = '';
+        this.managerDepartmentId = null;
+
+        const role =
+            this.getCurrentRole();
+
+        if (role === 'manager') {
+            this.loadDepartmentDetailForManager();
+            return;
+        }
 
         forkJoin({
             departments: this.phongBanService.getAll(),
-            employees: this.nhanVienService.getAll(),
+            employees: this.canViewEmployees
+                ? this.nhanVienService.getAll()
+                : of([] as NhanVienChiTiet[]),
         })
             .pipe(
                 finalize(() => {
@@ -254,13 +353,62 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
                     );
                 },
                 error: (error: HttpErrorResponse) => {
-                    this.resetData();
-                    this.errorMessage =
-                        this.getApiErrorMessage(
-                            error,
-                            'Không thể tải thông tin phòng ban.',
+                    this.handleLoadError(error);
+                },
+            });
+    }
+
+    private loadDepartmentDetailForManager(): void {
+        if (this.departmentId === null) {
+            this.isLoading = false;
+            return;
+        }
+
+        forkJoin({
+            departments: this.phongBanService.getAll(),
+            currentEmployee: this.nhanVienService.getMe(),
+        })
+            .pipe(
+                switchMap(({
+                    departments,
+                    currentEmployee,
+                }) => {
+                    this.managerDepartmentId =
+                        currentEmployee.maPB;
+
+                    if (
+                        this.managerDepartmentId === null ||
+                        this.managerDepartmentId !== this.departmentId
+                    ) {
+                        return of({
+                            departments,
+                            employees: [] as NhanVienChiTiet[],
+                        });
+                    }
+
+                    return this.nhanVienService
+                        .getAll()
+                        .pipe(
+                            map((employees) => ({
+                                departments,
+                                employees,
+                            })),
                         );
-                    this.showToast(this.errorMessage);
+                }),
+                finalize(() => {
+                    this.isLoading = false;
+                    this.changeDetectorRef.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: ({ departments, employees }) => {
+                    this.handleLoadedData(
+                        departments,
+                        employees,
+                    );
+                },
+                error: (error: HttpErrorResponse) => {
+                    this.handleLoadError(error);
                 },
             });
     }
@@ -287,18 +435,22 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
             return;
         }
 
-        const departmentEmployees = allEmployees
-            .filter(
-                (employee) =>
-                    employee.maPB === department.maPB,
-            );
+        const departmentEmployees =
+            this.canViewEmployees
+                ? allEmployees.filter(
+                    (employee) =>
+                        employee.maPB === department.maPB,
+                )
+                : [];
 
-        const visibleEmployees = departmentEmployees
-            .filter(
-                (employee) =>
-                    employee.trangThai !==
-                    NHAN_VIEN_TRANG_THAI.DA_NGHI_VIEC,
-            );
+        const visibleEmployees =
+            this.canViewEmployees
+                ? departmentEmployees.filter(
+                    (employee) =>
+                        employee.trangThai !==
+                        NHAN_VIEN_TRANG_THAI.DA_NGHI_VIEC,
+                )
+                : [];
 
         const manager = visibleEmployees.find(
             (employee) => {
@@ -322,10 +474,14 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
                 department.maPB,
             ),
             managerName:
-                manager?.hoTen ?? 'Chưa phân công',
+                this.canViewEmployees
+                    ? manager?.hoTen ?? 'Chưa phân công'
+                    : 'Không có quyền xem',
             managerInitials:
-                manager
-                    ? this.createInitials(manager.hoTen)
+                this.canViewEmployees
+                    ? manager
+                        ? this.createInitials(manager.hoTen)
+                        : '--'
                     : '--',
             establishedDate: '—',
             description:
@@ -346,6 +502,18 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
 
         this.errorMessage = '';
         this.changeDetectorRef.markForCheck();
+    }
+
+    private handleLoadError(
+        error: HttpErrorResponse,
+    ): void {
+        this.resetData();
+        this.errorMessage =
+            this.getApiErrorMessage(
+                error,
+                'Không thể tải thông tin phòng ban.',
+            );
+        this.showToast(this.errorMessage);
     }
 
     private mapEmployee(
@@ -447,6 +615,12 @@ export class DepartmentDetailComponent implements OnInit, OnDestroy {
         this.department =
             this.createEmptyDepartment();
         this.employees = [];
+    }
+
+    private getCurrentRole() {
+        return resolveUserRole(
+            this.storageService.getCurrentUser(),
+        );
     }
 
     private getApiErrorMessage(

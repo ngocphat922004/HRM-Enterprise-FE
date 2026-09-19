@@ -63,12 +63,19 @@ export const API_ENDPOINTS = {
     khenThuongKyLuatById: (id: number) =>
         `/api/khen-thuong-ky-luats/${id}`,
 
-    // Tài khoản - phân quyền
+    // Tài khoản - quyền - phân quyền
     quyen: '/api/quyens',
     quyenById: (id: number) => `/api/quyens/${id}`,
 
     taiKhoan: '/api/tai-khoans',
     taiKhoanById: (id: number) => `/api/tai-khoans/${id}`,
+
+    phanQuyenMe: '/api/phan-quyens/me',
+
+    // Thông báo
+    thongBaoMe: '/api/thong-baos/me',
+    thongBaoMarkAsRead: (maThongBao: number) =>
+        `/api/thong-baos/${maThongBao}/da-doc`,
 
     // Import nhân viên Excel
     nhanVienImport: {

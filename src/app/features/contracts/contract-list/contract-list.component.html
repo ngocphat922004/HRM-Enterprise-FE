@@ -17,8 +17,22 @@
     </div>
 
     <div class="page-actions">
-        <button class="export-button" type="button" (click)="exportContracts()"
-            [disabled]="isLoading || filteredContracts.length === 0">
+        @if (canCreateContracts) {
+        <button class="export-button" type="button" (click)="addContract()" [disabled]="isLoading">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="M5 12h14"></path>
+            </svg>
+
+            Thêm hợp đồng
+        </button>
+        }
+
+        <button class="export-button" type="button" (click)="exportContracts()" [disabled]="
+                isLoading ||
+                filteredContracts.length === 0
+            ">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3v12"></path>
@@ -32,11 +46,22 @@
 </section>
 
 <section class="contract-stats" aria-label="Thống kê hợp đồng">
-    <article class="contract-stat-card contract-stat-card--primary">
+    <article class="
+            contract-stat-card
+            contract-stat-card--primary
+        ">
         <span class="contract-stat-card__icon" aria-hidden="true">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <path d="
+                        M14 2H6
+                        a2 2 0 0 0-2 2
+                        v16
+                        a2 2 0 0 0 2 2
+                        h12
+                        a2 2 0 0 0 2-2
+                        V8z
+                    "></path>
 
                 <path d="M14 2v6h6"></path>
                 <path d="M8 13h8"></path>
@@ -59,7 +84,10 @@
         </div>
     </article>
 
-    <article class="contract-stat-card contract-stat-card--warning">
+    <article class="
+            contract-stat-card
+            contract-stat-card--warning
+        ">
         <span class="contract-stat-card__icon" aria-hidden="true">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -85,7 +113,10 @@
         </div>
     </article>
 
-    <article class="contract-stat-card contract-stat-card--danger">
+    <article class="
+            contract-stat-card
+            contract-stat-card--danger
+        ">
         <span class="contract-stat-card__icon" aria-hidden="true">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -112,6 +143,182 @@
     </article>
 </section>
 
+@if (canManageContractTypes) {
+<section class="contract-table-card" aria-label="Quản lý loại hợp đồng">
+    <header class="table-footer">
+        <div>
+            <strong>Quản lý loại hợp đồng</strong>
+            <p>
+                Thêm, chỉnh sửa hoặc xóa các loại hợp đồng được sử dụng trong hệ thống.
+            </p>
+        </div>
+
+        <button class="export-button" type="button" (click)="openCreateContractType()" [disabled]="
+                isLoading ||
+                isSavingContractType ||
+                deletingContractTypeId !== null
+            ">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14"></path>
+                <path d="M5 12h14"></path>
+            </svg>
+
+            Thêm loại hợp đồng
+        </button>
+    </header>
+
+    @if (isContractTypeEditorOpen) {
+    <div class="contract-filter-card">
+        <label class="contract-search">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h16"></path>
+                <path d="M4 12h16"></path>
+                <path d="M4 17h10"></path>
+            </svg>
+
+            <input type="text" [(ngModel)]="contractTypeForm.tenLoaiHD" maxlength="100" placeholder="Tên loại hợp đồng"
+                aria-label="Tên loại hợp đồng" [attr.aria-invalid]="contractTypeNameInvalid"
+                [disabled]="isSavingContractType" />
+        </label>
+
+        <label class="contract-search">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 4h16v16H4z"></path>
+                <path d="M8 9h8"></path>
+                <path d="M8 13h6"></path>
+            </svg>
+
+            <input type="text" [(ngModel)]="contractTypeForm.moTa" maxlength="255" placeholder="Mô tả (không bắt buộc)"
+                aria-label="Mô tả loại hợp đồng" [disabled]="isSavingContractType" />
+        </label>
+
+        <button class="export-button" type="button" (click)="saveContractType()" [disabled]="isSavingContractType">
+            @if (isSavingContractType) {
+            Đang lưu...
+            } @else if (editingContractTypeId === null) {
+            Thêm loại
+            } @else {
+            Lưu thay đổi
+            }
+        </button>
+
+        <button class="reset-filter-button" type="button" (click)="closeContractTypeEditor()"
+            [disabled]="isSavingContractType">
+            Hủy
+        </button>
+    </div>
+
+    @if (contractTypeNameInvalid) {
+    <p class="page-breadcrumb">
+        Tên loại hợp đồng phải từ 2 đến 100 ký tự.
+    </p>
+    }
+    }
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã loại</th>
+                    <th>Tên loại hợp đồng</th>
+                    <th>Mô tả</th>
+                    <th class="action-column">Thao tác</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @for (
+                contractType of managedContractTypes;
+                track contractType.maLoaiHD
+                ) {
+                <tr>
+                    <td>
+                        <span class="contract-code">
+                            LHD-{{
+                            contractType.maLoaiHD
+                            .toString()
+                            .padStart(3, '0')
+                            }}
+                        </span>
+                    </td>
+
+                    <td>
+                        <strong>
+                            {{ contractType.tenLoaiHD }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        @if (contractType.moTa) {
+                        {{ contractType.moTa }}
+                        } @else {
+                        <span class="no-end-date">
+                            Chưa có mô tả
+                        </span>
+                        }
+                    </td>
+
+                    <td class="action-column">
+                        <div class="contract-actions">
+                            <button type="button" (click)="openEditContractType(contractType)" [disabled]="
+                                    isSavingContractType ||
+                                    deletingContractTypeId !== null
+                                " aria-label="Chỉnh sửa loại hợp đồng" title="Chỉnh sửa loại hợp đồng">
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                </svg>
+                            </button>
+
+                            <button type="button" class="delete-action" (click)="deleteContractType(contractType)"
+                                [disabled]="
+                                    isSavingContractType ||
+                                    deletingContractTypeId !== null
+                                " aria-label="Xóa loại hợp đồng" title="Xóa loại hợp đồng">
+                                @if (
+                                deletingContractTypeId ===
+                                contractType.maLoaiHD
+                                ) {
+                                <span class="spinner" aria-hidden="true"></span>
+                                } @else {
+                                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4h8v2"></path>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="M10 11v5"></path>
+                                    <path d="M14 11v5"></path>
+                                </svg>
+                                }
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="4" class="empty-table">
+                        <div class="empty-contracts">
+                            <strong>
+                                Chưa có loại hợp đồng
+                            </strong>
+
+                            <p>
+                                Bạn có thể thêm loại hợp đồng mới bằng nút phía trên.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+}
+
 <section class="contract-filter-card" aria-label="Bộ lọc hợp đồng">
     <label class="contract-search">
         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -121,8 +328,9 @@
             <path d="m21 21-4.3-4.3"></path>
         </svg>
 
-        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
-            placeholder="Tìm mã hợp đồng, nhân viên..." aria-label="Tìm kiếm hợp đồng" />
+        <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" placeholder="
+                Tìm mã hợp đồng, nhân viên...
+            " aria-label="Tìm kiếm hợp đồng" />
     </label>
 
     <select [(ngModel)]="selectedContractType" (ngModelChange)="applyFilters()" aria-label="Lọc loại hợp đồng">
@@ -146,14 +354,14 @@
         </option>
 
         <option [value]="
-        contractStatus.CON_HIEU_LUC
-    ">
+                contractStatus.CON_HIEU_LUC
+            ">
             Còn hiệu lực
         </option>
 
         <option [value]="
-        contractStatus.HET_HIEU_LUC
-    ">
+                contractStatus.HET_HIEU_LUC
+            ">
             Hết hiệu lực
         </option>
     </select>
@@ -161,7 +369,11 @@
     <button class="reset-filter-button" type="button" (click)="resetFilters()">
         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+            <path d="
+                    M3 12
+                    a9 9 0 1 0 3-6.7
+                    L3 8
+                "></path>
 
             <path d="M3 3v5h5"></path>
         </svg>
@@ -175,13 +387,33 @@
         <table>
             <thead>
                 <tr>
-                    <th>Mã hợp đồng</th>
-                    <th>Nhân viên</th>
-                    <th>Loại hợp đồng</th>
-                    <th>Ngày bắt đầu</th>
-                    <th>Ngày kết thúc</th>
-                    <th>Lương cơ bản</th>
-                    <th>Trạng thái</th>
+                    <th>
+                        Mã hợp đồng
+                    </th>
+
+                    <th>
+                        Nhân viên
+                    </th>
+
+                    <th>
+                        Loại hợp đồng
+                    </th>
+
+                    <th>
+                        Ngày bắt đầu
+                    </th>
+
+                    <th>
+                        Ngày kết thúc
+                    </th>
+
+                    <th>
+                        Lương cơ bản
+                    </th>
+
+                    <th>
+                        Trạng thái
+                    </th>
 
                     <th class="action-column">
                         Thao tác
@@ -191,23 +423,27 @@
 
             <tbody>
                 @if (isLoading) {
+
                 <tr>
                     <td colspan="8" class="empty-table">
                         <div class="empty-contracts">
                             <span class="spinner" aria-hidden="true"></span>
 
                             <strong>
-                                Đang tải danh sách hợp đồng...
+                                Đang tải danh sách
+                                hợp đồng...
                             </strong>
                         </div>
                     </td>
                 </tr>
+
                 } @else {
 
                 @for (
                 contract of paginatedContracts;
                 track contract.maHD
                 ) {
+
                 <tr>
                     <td>
                         <span class="contract-code">
@@ -250,12 +486,16 @@
                     <td>
                         <div class="contract-type">
                             <strong>
-                                {{ contract.tenLoaiHD }}
+                                {{
+                                contract.tenLoaiHD
+                                }}
                             </strong>
 
                             <span>
                                 MaLoaiHD:
-                                {{ contract.maLoaiHD }}
+                                {{
+                                contract.maLoaiHD
+                                }}
                             </span>
                         </div>
                     </td>
@@ -268,21 +508,27 @@
                     </td>
 
                     <td>
-                        @if (contract.ngayKetThuc) {
+                        @if (
+                        contract.ngayKetThuc
+                        ) {
+
                         <span [class.expiring-date]="
-        isExpiringSoon(
-            contract
-        )
-    ">
+                                isExpiringSoon(
+                                    contract
+                                )
+                            ">
                             {{
                             contract.ngayKetThuc
                             | date:'dd/MM/yyyy'
                             }}
                         </span>
+
                         } @else {
+
                         <span class="no-end-date">
                             Không thời hạn
                         </span>
+
                         }
                     </td>
 
@@ -298,19 +544,21 @@
 
                     <td>
                         <span class="status-badge" [class.status-badge--success]="
-        contract.trangThai ===
-            contractStatus.CON_HIEU_LUC &&
-        !isExpiringSoon(
-            contract
-        )
-    " [class.status-badge--warning]="
-        isExpiringSoon(
-            contract
-        )
-    " [class.status-badge--danger]="
-        contract.trangThai ===
-            contractStatus.HET_HIEU_LUC
-    ">
+                                contract.trangThai ===
+                                    contractStatus
+                                        .CON_HIEU_LUC &&
+                                !isExpiringSoon(
+                                    contract
+                                )
+                            " [class.status-badge--warning]="
+                                isExpiringSoon(
+                                    contract
+                                )
+                            " [class.status-badge--danger]="
+                                contract.trangThai ===
+                                    contractStatus
+                                        .HET_HIEU_LUC
+                            ">
                             @if (
                             isExpiringSoon(
                             contract
@@ -318,7 +566,9 @@
                             ) {
                             Sắp hết hạn
                             } @else {
-                            {{ contract.trangThai }}
+                            {{
+                            contract.trangThai
+                            }}
                             }
                         </span>
                     </td>
@@ -326,41 +576,82 @@
                     <td class="action-column">
                         <div class="contract-actions">
                             <button type="button" (click)="
-            viewContract(
-                contract
-            )
-        " aria-label="Xem hợp đồng" title="Xem chi tiết">
+                                    viewContract(
+                                        contract
+                                    )
+                                " aria-label="
+                                    Xem hợp đồng
+                                " title="
+                                    Xem chi tiết
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12"></path>
+                                    <path d="
+                                            M2 12
+                                            s3.5-7 10-7
+                                            10 7 10 7
+                                            -3.5 7-10 7
+                                            S2 12 2 12
+                                        "></path>
 
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </button>
+
+                            @if (
+                            canEditContracts
+                            ) {
+
                             <button type="button" (click)="
-            editContract(
-                contract
-            )
-        " aria-label="Chỉnh sửa hợp đồng" title="Chỉnh sửa">
+                                    editContract(
+                                        contract
+                                    )
+                                " aria-label="
+                                    Chỉnh sửa hợp đồng
+                                " title="
+                                    Chỉnh sửa
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M12 20h9"></path>
 
-                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+                                    <path d="
+                                            M16.5 3.5
+                                            a2.12 2.12 0 0 1 3 3
+                                            L8 18
+                                            l-4 1
+                                            1-4Z
+                                        "></path>
                                 </svg>
                             </button>
+
+                            }
+
+                            @if (
+                            canDeleteContracts
+                            ) {
+
                             <button type="button" class="delete-action" (click)="
-            deleteContract(
-                contract
-            )
-        " aria-label="Xóa hợp đồng" title="Xóa hợp đồng">
+                                    deleteContract(
+                                        contract
+                                    )
+                                " aria-label="
+                                    Xóa hợp đồng
+                                " title="
+                                    Xóa hợp đồng
+                                ">
                                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3 6h18"></path>
 
                                     <path d="M8 6V4h8v2"></path>
 
-                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="
+                                            M19 6
+                                            l-1 14
+                                            H6
+                                            L5 6
+                                        "></path>
 
                                     <path d="M10 11v5"></path>
 
@@ -368,6 +659,7 @@
                                 </svg>
                             </button>
 
+                            }
                         </div>
                     </td>
                 </tr>
@@ -379,7 +671,15 @@
                         <div class="empty-contracts">
                             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <path d="
+                                        M14 2H6
+                                        a2 2 0 0 0-2 2
+                                        v16
+                                        a2 2 0 0 0 2 2
+                                        h12
+                                        a2 2 0 0 0 2-2
+                                        V8z
+                                    "></path>
 
                                 <path d="M14 2v6h6"></path>
 
@@ -387,7 +687,8 @@
                             </svg>
 
                             <strong>
-                                Không có dữ liệu hợp đồng
+                                Không có dữ liệu
+                                hợp đồng
                             </strong>
 
                             <p>
@@ -418,11 +719,15 @@
         </p>
 
         <div class="pagination">
-            <button type="button" [disabled]="currentPage === 1" (click)="
-            goToPage(
-                currentPage - 1
-            )
-        " aria-label="Trang trước">
+            <button type="button" [disabled]="
+                    currentPage === 1
+                " (click)="
+                    goToPage(
+                        currentPage - 1
+                    )
+                " aria-label="
+                    Trang trước
+                ">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m15 18-6-6 6-6"></path>
@@ -433,20 +738,29 @@
             page of visiblePages;
             track page
             ) {
+
             <button type="button" [class.pagination__active]="
-                currentPage === page
-            " (click)="goToPage(page)">
+                    currentPage === page
+                " (click)="
+                    goToPage(
+                        page
+                    )
+                ">
                 {{ page }}
             </button>
+
             }
 
             <button type="button" [disabled]="
-            currentPage === totalPages
-        " (click)="
-            goToPage(
-                currentPage + 1
-            )
-        " aria-label="Trang sau">
+                    currentPage ===
+                    totalPages
+                " (click)="
+                    goToPage(
+                        currentPage + 1
+                    )
+                " aria-label="
+                    Trang sau
+                ">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m9 18 6-6-6-6"></path>
@@ -455,6 +769,11 @@
         </div>
     </footer>
 </section>
+
 @if (toastMessage) {
-<div class="toast-message" role="status">{{ toastMessage }}</div>
+
+<div class="toast-message" role="status">
+    {{ toastMessage }}
+</div>
+
 }

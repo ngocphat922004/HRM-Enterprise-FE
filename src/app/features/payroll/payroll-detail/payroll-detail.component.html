@@ -30,7 +30,10 @@
 
     @if (payroll) {
     <div class="payroll-detail-actions">
-        @if (canEditPayroll) {
+        @if (
+        canEditPayroll &&
+        !isEmployeeSelfView
+        ) {
         <button class="edit-payroll-button" type="button" (click)="editPayroll()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -72,8 +75,8 @@
     </h2>
 
     <p>
-        Đang lấy thông tin bảng lương
-        và nhân viên.
+        Đang kiểm tra quyền truy cập
+        và tải dữ liệu bảng lương phù hợp.
     </p>
 </section>
 
@@ -153,18 +156,31 @@
 
 <section class="employee-payroll-card">
     <div class="employee-payroll-card__profile">
-        @if (payroll.hinhAnh) {
+        @if (
+        (
+        isEmployeeSelfView ||
+        canViewEmployees
+        ) &&
+        payroll.hinhAnh
+        ) {
 
         <img [src]="payroll.hinhAnh" [alt]="payroll.hoTen" />
 
         } @else {
 
         <span class="employee-avatar">
+            @if (
+            isEmployeeSelfView ||
+            canViewEmployees
+            ) {
             {{
             getInitials(
             payroll.hoTen
             )
             }}
+            } @else {
+            NV
+            }
         </span>
 
         }
@@ -177,13 +193,24 @@
             </span>
 
             <h2>
+                @if (
+                isEmployeeSelfView ||
+                canViewEmployees
+                ) {
                 {{ payroll.hoTen }}
+                } @else {
+                Nhân viên #{{ payroll.maNV }}
+                }
             </h2>
 
             <p>
                 Mã NV
                 {{ payroll.maNV }}
 
+                @if (
+                isEmployeeSelfView ||
+                canViewEmployees
+                ) {
                 ·
 
                 {{
@@ -197,6 +224,7 @@
                 payroll.tenPB ||
                 'Chưa phân phòng'
                 }}
+                }
             </p>
         </div>
     </div>
@@ -488,6 +516,20 @@
             <dl>
                 <div>
                     <dt>
+                        Mã nhân viên
+                    </dt>
+
+                    <dd>
+                        {{ payroll.maNV }}
+                    </dd>
+                </div>
+
+                @if (
+                isEmployeeSelfView ||
+                canViewEmployees
+                ) {
+                <div>
+                    <dt>
                         Họ và tên
                     </dt>
 
@@ -547,10 +589,19 @@
                         }}
                     </dd>
                 </div>
+                }
             </dl>
 
+            @if (
+            isEmployeeSelfView ||
+            canViewEmployees
+            ) {
             <button type="button" (click)="viewEmployee()">
-                Xem hồ sơ nhân viên
+                {{
+                isEmployeeSelfView
+                ? 'Xem hồ sơ của tôi'
+                : 'Xem hồ sơ nhân viên'
+                }}
 
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -559,6 +610,11 @@
                     <path d="m12 5 7 7-7 7"></path>
                 </svg>
             </button>
+            } @else {
+            <p>
+                Bạn không có quyền xem thông tin chi tiết nhân viên.
+            </p>
+            }
         </section>
 
         <section class="calculation-note">
@@ -742,7 +798,11 @@
                     </span>
 
                     <strong>
-                        API
+                        {{
+                        isEmployeeSelfView
+                        ? 'API cá nhân'
+                        : 'API'
+                        }}
                     </strong>
                 </li>
 
@@ -752,7 +812,13 @@
                     </span>
 
                     <strong>
-                        API
+                        {{
+                        isEmployeeSelfView
+                        ? 'API cá nhân'
+                        : canViewEmployees
+                        ? 'API'
+                        : 'Không gọi'
+                        }}
                     </strong>
                 </li>
 

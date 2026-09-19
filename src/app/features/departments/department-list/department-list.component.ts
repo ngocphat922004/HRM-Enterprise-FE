@@ -9,15 +9,28 @@ import {
 import { FormsModule } from '@angular/forms';
 import {
     Router,
+    RouterLink,
 } from '@angular/router';
 import {
     finalize,
     forkJoin,
+    of,
 } from 'rxjs';
 
 import {
-    ExcelExportService,
-} from '../../../core/services/excel-export.service';
+    canManageOrganization,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+} from '../../../core/guards/role.guard';
+
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
+
+import {
+    HeaderUserComponent,
+} from '../../../shared/components/header-user/header-user.component';
 
 import {
     NhanVienChiTiet,
@@ -40,12 +53,20 @@ import {
     DepartmentStatus,
 } from './department-list.model';
 
+interface SidebarItem {
+    label: string;
+    icon: string;
+    route: string;
+}
+
 @Component({
     selector: 'app-department-list',
     standalone: true,
     imports: [
         CommonModule,
         FormsModule,
+        RouterLink,
+        HeaderUserComponent,
     ],
     templateUrl:
         './department-list.component.html',
@@ -56,6 +77,13 @@ import {
 })
 export class DepartmentListComponent
     implements OnInit {
+
+    sidebarOpen = false;
+
+    activeMenu =
+        'Phòng ban';
+
+    globalSearchTerm = '';
 
     searchTerm = '';
 
@@ -69,22 +97,80 @@ export class DepartmentListComponent
 
     isLoading = false;
 
+    managerDepartmentId:
+        number | null = null;
+
     departments:
-        Department[] =
-        [];
+        Department[] = [];
+
+    readonly sidebarItems:
+        SidebarItem[] = [
+            {
+                label: 'Tổng quan',
+                icon: 'dashboard',
+                route: '/dashboard',
+            },
+            {
+                label: 'Nhân viên',
+                icon: 'employees',
+                route: '/employees',
+            },
+            {
+                label: 'Phòng ban',
+                icon: 'department',
+                route: '/departments',
+            },
+            {
+                label: 'Hợp đồng',
+                icon: 'contract',
+                route: '/contracts',
+            },
+            {
+                label: 'Chấm công',
+                icon: 'attendance',
+                route: '/attendance',
+            },
+            {
+                label: 'Nghỉ phép',
+                icon: 'leave',
+                route: '/leave',
+            },
+            {
+                label: 'Bảng lương',
+                icon: 'payroll',
+                route: '/payroll',
+            },
+            {
+                label:
+                    'Khen thưởng, kỷ luật',
+                icon: 'award',
+                route:
+                    '/rewards-discipline',
+            },
+            {
+                label: 'Báo cáo',
+                icon: 'report',
+                route: '/reports',
+            },
+            {
+                label: 'Cài đặt',
+                icon: 'settings',
+                route: '/settings',
+            },
+        ];
 
     constructor(
         private readonly router:
             Router,
+
+        private readonly storageService:
+            StorageService,
 
         private readonly phongBanService:
             PhongBanService,
 
         private readonly nhanVienService:
             NhanVienService,
-
-        private readonly excelExportService:
-            ExcelExportService,
 
         private readonly changeDetectorRef:
             ChangeDetectorRef,
@@ -96,11 +182,77 @@ export class DepartmentListComponent
         this.loadDepartments();
     }
 
+    get canViewDepartments():
+        boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        return canViewOrganization(
+            role,
+        );
+    }
+
+    get canManageDepartments():
+        boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        return canManageOrganization(
+            role,
+        );
+    }
+
+    get canCreateDepartments():
+        boolean {
+
+        return this.canManageDepartments;
+    }
+
+    get canEditDepartments():
+        boolean {
+
+        return this.canManageDepartments;
+    }
+
+    get canDeleteDepartments():
+        boolean {
+
+        return this.canManageDepartments;
+    }
+
+    get canViewEmployees():
+        boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        return canViewEmployeeDirectory(
+            role,
+        );
+    }
+
     loadDepartments():
         void {
 
+        if (
+            !this.canViewDepartments
+        ) {
+            this.departments = [];
+
+            this.showToast(
+                'Bạn không có quyền xem danh sách phòng ban.',
+            );
+
+            return;
+        }
+
         this.isLoading =
             true;
+
+        const role =
+            this.getCurrentRole();
 
         forkJoin({
             departments:
@@ -110,6 +262,13 @@ export class DepartmentListComponent
             employees:
                 this.nhanVienService
                     .getAll(),
+
+            currentEmployee:
+                role ===
+                    'manager'
+                    ? this.nhanVienService
+                        .getMe()
+                    : of(null),
         })
             .pipe(
                 finalize(
@@ -126,7 +285,31 @@ export class DepartmentListComponent
                 next: ({
                     departments,
                     employees,
+                    currentEmployee,
                 }) => {
+
+                    this.managerDepartmentId =
+                        role ===
+                            'manager'
+                            ? currentEmployee
+                                ?.maPB ??
+                            null
+                            : null;
+
+                    const scopedEmployees =
+                        role ===
+                            'manager'
+                            ? employees
+                                .filter(
+                                    (
+                                        employee,
+                                    ) =>
+                                        this.managerDepartmentId !==
+                                        null &&
+                                        employee.maPB ===
+                                        this.managerDepartmentId,
+                                )
+                            : employees;
 
                     this.departments =
                         departments
@@ -137,7 +320,7 @@ export class DepartmentListComponent
                                     this.mapPhongBanToDepartment(
                                         item,
                                         this.countEmployeesByDepartment(
-                                            employees,
+                                            scopedEmployees,
                                             item.maPB,
                                         ),
                                     ),
@@ -150,6 +333,17 @@ export class DepartmentListComponent
                                     a.id -
                                     b.id,
                             );
+
+                    if (
+                        role ===
+                        'manager' &&
+                        this.managerDepartmentId ===
+                        null
+                    ) {
+                        this.showToast(
+                            'Tài khoản trưởng phòng chưa được gán phòng ban.',
+                        );
+                    }
 
                     this.currentPage =
                         1;
@@ -171,26 +365,31 @@ export class DepartmentListComponent
                     this.departments =
                         [];
 
+                    this.managerDepartmentId =
+                        null;
+
                     if (
                         error.status ===
                         401
                     ) {
-
                         this.showToast(
                             'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
                         );
-
+                    } else if (
+                        error.status ===
+                        403
+                    ) {
+                        this.showToast(
+                            'Bạn không có quyền tải dữ liệu phòng ban.',
+                        );
                     } else if (
                         error.status ===
                         0
                     ) {
-
                         this.showToast(
-                            'Không thể kết nối đến API phòng ban hoặc nhân viên.',
+                            'Không thể kết nối đến hệ thống để tải dữ liệu phòng ban hoặc nhân viên.',
                         );
-
                     } else {
-
                         this.showToast(
                             error.error?.message ??
                             `Không thể tải danh sách phòng ban (${error.status}).`,
@@ -201,6 +400,37 @@ export class DepartmentListComponent
                         .markForCheck();
                 },
             });
+    }
+
+    canViewDepartmentEmployeeCount(
+        department:
+            Department,
+    ): boolean {
+
+        const role =
+            this.getCurrentRole();
+
+        if (
+            !canViewEmployeeDirectory(
+                role,
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            role !==
+            'manager'
+        ) {
+            return true;
+        }
+
+        return (
+            this.managerDepartmentId !==
+            null &&
+            department.id ===
+            this.managerDepartmentId
+        );
     }
 
     get filteredDepartments():
@@ -317,7 +547,6 @@ export class DepartmentListComponent
                 .length ===
             0
         ) {
-
             return 0;
         }
 
@@ -386,6 +615,32 @@ export class DepartmentListComponent
             .length;
     }
 
+    toggleSidebar():
+        void {
+
+        this.sidebarOpen =
+            !this.sidebarOpen;
+    }
+
+    closeSidebar():
+        void {
+
+        this.sidebarOpen =
+            false;
+    }
+
+    setActiveMenu(
+        label:
+            string,
+    ): void {
+
+        this.activeMenu =
+            label;
+
+        this.sidebarOpen =
+            false;
+    }
+
     applyFilters():
         void {
 
@@ -405,7 +660,6 @@ export class DepartmentListComponent
             page >
             this.totalPages
         ) {
-
             return;
         }
 
@@ -413,10 +667,39 @@ export class DepartmentListComponent
             page;
     }
 
+    addDepartment():
+        void {
+
+        if (
+            !this.canCreateDepartments
+        ) {
+            this.showToast(
+                'Bạn không có quyền thêm phòng ban.',
+            );
+
+            return;
+        }
+
+        void this.router
+            .navigate([
+                '/departments/add',
+            ]);
+    }
+
     viewDepartment(
         department:
             Department,
     ): void {
+
+        if (
+            !this.canViewDepartments
+        ) {
+            this.showToast(
+                'Bạn không có quyền xem phòng ban.',
+            );
+
+            return;
+        }
 
         void this.router
             .navigate([
@@ -429,6 +712,16 @@ export class DepartmentListComponent
         department:
             Department,
     ): void {
+
+        if (
+            !this.canEditDepartments
+        ) {
+            this.showToast(
+                'Bạn chỉ có quyền xem phòng ban.',
+            );
+
+            return;
+        }
 
         void this.router
             .navigate([
@@ -444,10 +737,19 @@ export class DepartmentListComponent
     ): void {
 
         if (
+            !this.canDeleteDepartments
+        ) {
+            this.showToast(
+                'Bạn không có quyền xóa phòng ban.',
+            );
+
+            return;
+        }
+
+        if (
             department.employeeCount >
             0
         ) {
-
             this.showToast(
                 'Không thể xóa phòng ban đang có nhân viên.',
             );
@@ -458,9 +760,7 @@ export class DepartmentListComponent
         const confirmed =
             typeof window ===
                 'undefined'
-
                 ? true
-
                 : window.confirm(
                     `Bạn có chắc muốn xóa ${department.name}?`,
                 );
@@ -468,7 +768,6 @@ export class DepartmentListComponent
         if (
             !confirmed
         ) {
-
             return;
         }
 
@@ -493,7 +792,6 @@ export class DepartmentListComponent
                         this.currentPage >
                         this.totalPages
                     ) {
-
                         this.currentPage =
                             this.totalPages;
                     }
@@ -518,24 +816,26 @@ export class DepartmentListComponent
 
                     if (
                         error.status ===
+                        403
+                    ) {
+                        this.showToast(
+                            'Bạn không có quyền xóa phòng ban.',
+                        );
+                    } else if (
+                        error.status ===
                         409
                     ) {
-
                         this.showToast(
                             'Không thể xóa phòng ban vì đang có dữ liệu liên quan.',
                         );
-
                     } else if (
                         error.status ===
                         401
                     ) {
-
                         this.showToast(
                             'Phiên đăng nhập đã hết hạn.',
                         );
-
                     } else {
-
                         this.showToast(
                             error.error
                                 ?.message ??
@@ -555,64 +855,145 @@ export class DepartmentListComponent
         if (
             this.isLoading
         ) {
-
             return;
         }
 
-
-        const data =
-            this.filteredDepartments
-                .map(
-                    (
-                        department,
-                    ) => ({
-                        'Mã phòng ban':
-                            department.code,
-
-                        'Tên phòng ban':
-                            department.name,
-
-                        'Mô tả':
-                            department.location,
-
-                        'Trạng thái':
-                            this.getStatusLabel(
-                                department.status,
-                            ),
-
-                        'Số nhân viên':
-                            department.employeeCount,
-                    }),
-                );
-
-
         if (
-            data.length ===
+            this.filteredDepartments
+                .length ===
             0
         ) {
-
             this.showToast(
                 'Không có dữ liệu phòng ban để xuất.',
             );
 
-
             return;
         }
 
+        if (
+            typeof window ===
+            'undefined' ||
 
-        this.excelExportService
-            .exportToExcel(
-                data,
-                `danh-sach-phong-ban-${this.getTodayFileName()}`,
-                'Phòng ban',
+            typeof document ===
+            'undefined'
+        ) {
+            return;
+        }
+
+        const rows:
+            Array<
+                Array<
+                    string | number
+                >
+            > = [
+                [
+                    'Mã phòng ban',
+                    'Tên phòng ban',
+                    'Mô tả',
+                    'Trạng thái',
+                    'Số nhân viên',
+                ],
+
+                ...this.filteredDepartments
+                    .map(
+                        (
+                            department,
+                        ) => [
+                                department.code,
+                                department.name,
+                                department.location,
+                                this.getStatusLabel(
+                                    department.status,
+                                ),
+                                this.canViewDepartmentEmployeeCount(
+                                    department,
+                                )
+                                    ? department.employeeCount
+                                    : '',
+                            ],
+                    ),
+            ];
+
+        const csv =
+            rows
+                .map(
+                    (
+                        row,
+                    ) =>
+                        row
+                            .map(
+                                (
+                                    value,
+                                ) =>
+                                    this.escapeCsvValue(
+                                        value,
+                                    ),
+                            )
+                            .join(
+                                ',',
+                            ),
+                )
+                .join(
+                    '\r\n',
+                );
+
+        const blob =
+            new Blob(
+                [
+                    '\uFEFF',
+                    csv,
+                ],
+                {
+                    type:
+                        'text/csv;charset=utf-8;',
+                },
             );
 
+        const url =
+            URL.createObjectURL(
+                blob,
+            );
+
+        const link =
+            document.createElement(
+                'a',
+            );
+
+        link.href =
+            url;
+
+        link.download =
+            'danh-sach-phong-ban.csv';
+
+        document.body
+            .appendChild(
+                link,
+            );
+
+        link.click();
+
+        link.remove();
+
+        URL.revokeObjectURL(
+            url,
+        );
 
         this.showToast(
             'Đã xuất danh sách phòng ban.',
         );
     }
 
+    logout():
+        void {
+
+        this.storageService
+            .clearAuthSession();
+
+        void this.router
+            .navigate([
+                '/login',
+            ]);
+    }
 
     getStatusLabel(
         status:
@@ -624,7 +1005,6 @@ export class DepartmentListComponent
                 DepartmentStatus,
                 string
             > = {
-
             active:
                 'Đang hoạt động',
 
@@ -647,6 +1027,17 @@ export class DepartmentListComponent
 
         return (
             `status-badge--${status}`
+        );
+    }
+
+    private getCurrentRole() {
+
+        const currentUser =
+            this.storageService
+                .getCurrentUser();
+
+        return resolveUserRole(
+            currentUser,
         );
     }
 
@@ -733,7 +1124,6 @@ export class DepartmentListComponent
             normalized ===
             'tam ngung'
         ) {
-
             return 'paused';
         }
 
@@ -744,7 +1134,6 @@ export class DepartmentListComponent
             normalized ===
             'ngung hoat dong'
         ) {
-
             return 'inactive';
         }
 
@@ -764,44 +1153,22 @@ export class DepartmentListComponent
         )}`;
     }
 
-    private getTodayFileName():
-        string {
+    private escapeCsvValue(
+        value:
+            string | number,
+    ): string {
 
-        const today =
-            new Date();
-
-
-        const year =
-            today
-                .getFullYear();
-
-
-        const month =
+        const text =
             String(
-                today
-                    .getMonth() +
-                1,
-            )
-                .padStart(
-                    2,
-                    '0',
-                );
+                value ??
+                '',
+            );
 
-
-        const day =
-            String(
-                today
-                    .getDate(),
-            )
-                .padStart(
-                    2,
-                    '0',
-                );
-
-
-        return `${year}-${month}-${day}`;
+        return `"${text.replace(
+            /"/g,
+            '""',
+        )}"`;
     }
-
 
     private showToast(
         message:
@@ -816,13 +1183,11 @@ export class DepartmentListComponent
 
         window.setTimeout(
             () => {
-
                 this.toastMessage =
                     '';
 
                 this.changeDetectorRef
                     .markForCheck();
-
             },
             2500,
         );

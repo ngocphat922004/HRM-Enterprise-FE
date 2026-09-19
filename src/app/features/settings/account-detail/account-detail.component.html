@@ -19,8 +19,8 @@
 
             <p>
                 Thông tin đăng nhập,
-                quyền và nhân viên
-                đang được liên kết.
+                quyền và dữ liệu liên kết
+                mà tài khoản được phép xem.
             </p>
         </div>
 
@@ -34,6 +34,7 @@
                 Quay lại
             </button>
 
+            @if (canEditAccounts) {
             <button class="primary-button" type="button" (click)="editAccount()" [disabled]="
                                 isLoading ||
                                 accountId === null ||
@@ -47,7 +48,9 @@
 
                 Chỉnh sửa
             </button>
+            }
 
+            @if (canDeleteAccounts) {
             <button class="danger-button" type="button" (click)="deleteAccount()"
                 [disabled]="isLoading || isDeleting || accountId === null || !account">
                 <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -58,6 +61,7 @@
                 </svg>
                 {{ isDeleting ? 'Đang xóa...' : 'Xóa tài khoản' }}
             </button>
+            }
         </div>
     </div>
 </section>
@@ -71,8 +75,8 @@
     </h2>
 
     <p>
-        Đang lấy thông tin tài khoản,
-        nhân viên, phòng ban và quyền.
+        Đang lấy thông tin tài khoản
+        và các dữ liệu liên kết được phép xem.
     </p>
 </section>
 
@@ -104,7 +108,8 @@
         </button>
 
         @if (
-        accountId !== null
+        accountId !== null &&
+        canViewAccounts
         ) {
         <button class="primary-button" type="button" (click)="retry()" [disabled]="isLoading">
             Thử lại
@@ -144,7 +149,8 @@
         </button>
 
         @if (
-        accountId !== null
+        accountId !== null &&
+        canViewAccounts
         ) {
         <button class="primary-button" type="button" (click)="retry()">
             Tải lại
@@ -170,13 +176,15 @@
 <section class="account-profile-card" [class.account-profile-card--active]="isActive"
     [class.account-profile-card--locked]="isLocked" [class.account-profile-card--inactive]="isInactive">
     <div class="account-profile-card__identity">
-        @if (account.hinhAnh) {
+        @if (canViewEmployees && account.hinhAnh) {
         <img [src]="account.hinhAnh" [alt]="account.hoTen" />
         } @else {
         <span class="account-profile-card__avatar">
             {{
             getInitials(
-            account.hoTen
+            canViewEmployees
+            ? account.hoTen
+            : account.tenDangNhap
             )
             }}
         </span>
@@ -192,8 +200,12 @@
             </h2>
 
             <p>
+                @if (canViewEmployees) {
                 Tài khoản của
                 {{ account.hoTen }}
+                } @else {
+                Liên kết với mã NV {{ account.maNV }}
+                }
             </p>
         </div>
     </div>
@@ -282,6 +294,7 @@
             </dl>
         </article>
 
+        @if (canViewEmployees) {
         <article class="detail-card">
             <header class="detail-card__header">
                 <span class="
@@ -304,8 +317,8 @@
                     </h2>
 
                     <p>
-                        Thông tin được kết hợp
-                        từ hồ sơ nhân viên và phòng ban.
+                        Thông tin hồ sơ nhân viên
+                        mà tài khoản được phép xem.
                     </p>
                 </div>
             </header>
@@ -335,12 +348,14 @@
                         }}
                     </span>
 
+                    @if (canViewDepartments) {
                     <small>
                         {{
                         account.tenPB ||
                         'Chưa phân phòng'
                         }}
                     </small>
+                    }
                 </div>
 
                 <button type="button" (click)="viewEmployee()">
@@ -378,6 +393,7 @@
                     </dd>
                 </div>
 
+                @if (canViewDepartments) {
                 <div>
                     <dt>
                         Phòng ban
@@ -390,6 +406,7 @@
                         }}
                     </dd>
                 </div>
+                }
 
                 <div>
                     <dt>
@@ -405,6 +422,7 @@
                 </div>
             </dl>
         </article>
+        }
 
         <section class="security-note">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -444,7 +462,7 @@
                     </h2>
 
                     <p>
-                        Vai trò đang được cấp
+                        Quyền đang gắn với tài khoản
                     </p>
                 </div>
             </header>
@@ -455,7 +473,10 @@
             </span>
 
             <strong>
-                {{ account.tenQuyen }}
+                {{
+                account.tenQuyen ||
+                ('Quyền #' + account.maQuyen)
+                }}
             </strong>
         </article>
 

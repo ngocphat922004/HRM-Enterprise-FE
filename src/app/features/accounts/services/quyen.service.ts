@@ -3,11 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.constants';
-import {
-    CreateQuyenRequest,
-    Quyen,
-    UpdateQuyenRequest,
-} from '../models/quyen.model';
+import { Quyen } from '../models/quyen.model';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -21,121 +17,45 @@ interface ApiResponse<T> {
 })
 export class QuyenService {
     private readonly http = inject(HttpClient);
-    private readonly baseUrl = `${environment.apiBaseUrl}${API_ENDPOINTS.quyen}`;
+    private readonly baseUrl =
+        `${environment.apiBaseUrl}${API_ENDPOINTS.quyen}`;
 
     getAll(): Observable<Quyen[]> {
         return this.http
-            .get<ApiResponse<Quyen[]> | Quyen[]>(this.baseUrl)
+            .get<ApiResponse<Quyen[]> | Quyen[]>(
+                this.baseUrl,
+            )
             .pipe(
                 map((response) =>
                     Array.isArray(response)
                         ? response
-                        : this.unwrapResponse(response, []),
+                        : this.unwrapResponse(
+                            response,
+                            [],
+                        ),
                 ),
             );
     }
 
-    getById(maQuyen: number): Observable<Quyen> {
+    getById(
+        maQuyen: number,
+    ): Observable<Quyen> {
         return this.http
             .get<ApiResponse<Quyen> | Quyen>(
-                `${environment.apiBaseUrl}${API_ENDPOINTS.quyenById(maQuyen)}`,
+                `${environment.apiBaseUrl}${API_ENDPOINTS.quyenById(
+                    maQuyen,
+                )}`,
             )
             .pipe(
                 map((response) =>
-                    this.isApiResponse<Quyen>(response)
-                        ? this.unwrapResponse(response)
-                        : response,
-                ),
-            );
-    }
-
-    create(
-        payload: CreateQuyenRequest,
-    ): Observable<Quyen> {
-        return this.http
-            .post<ApiResponse<Quyen> | Quyen>(
-                this.baseUrl,
-                payload,
-            )
-            .pipe(
-                map((response) =>
-                    this.isApiResponse<Quyen>(response)
-                        ? this.unwrapResponse(response)
-                        : response,
-                ),
-            );
-    }
-
-    update(
-        maQuyen: number,
-        payload: UpdateQuyenRequest,
-    ): Observable<Quyen> {
-        return this.http
-            .put<
-                ApiResponse<Quyen | null> |
-                Quyen |
-                null
-            >(
-                `${environment.apiBaseUrl}${API_ENDPOINTS.quyenById(maQuyen)}`,
-                payload,
-            )
-            .pipe(
-                map((response) => {
-                    if (
-                        this.isApiResponse<
-                            Quyen | null
-                        >(response)
-                    ) {
-                        const role =
-                            this.unwrapResponse(
-                                response,
-                                null,
-                            );
-
-                        if (role) {
-                            return role;
-                        }
-                    } else if (response) {
-                        return response;
-                    }
-
-                    return {
-                        maQuyen,
-                        tenQuyen:
-                            payload.tenQuyen,
-                        moTa:
-                            payload.moTa ??
-                            null,
-                    };
-                }),
-            );
-    }
-
-    delete(
-        maQuyen: number,
-    ): Observable<void> {
-        return this.http
-            .delete<
-                ApiResponse<unknown> |
-                unknown
-            >(
-                `${environment.apiBaseUrl}${API_ENDPOINTS.quyenById(maQuyen)}`,
-            )
-            .pipe(
-                map((response) => {
-                    if (
-                        this.isApiResponse<
-                            unknown
-                        >(response)
-                    ) {
-                        this.unwrapResponse(
+                    this.isApiResponse<Quyen>(
+                        response,
+                    )
+                        ? this.unwrapResponse(
                             response,
-                            null,
-                        );
-                    }
-
-                    return void 0;
-                }),
+                        )
+                        : response,
+                ),
             );
     }
 
@@ -144,19 +64,26 @@ export class QuyenService {
         fallback?: T,
     ): T {
         if (
-            response.success === false
+            response.success ===
+            false
         ) {
             throw new Error(
                 response.message ||
-                'Thao tác quyền không thành công.',
+                'Không thể tải dữ liệu quyền.',
             );
         }
 
-        if (response.data !== null) {
+        if (
+            response.data !==
+            null
+        ) {
             return response.data;
         }
 
-        if (arguments.length >= 2) {
+        if (
+            arguments.length >=
+            2
+        ) {
             return fallback as T;
         }
 
@@ -179,9 +106,12 @@ export class QuyenService {
             !Array.isArray(
                 response,
             ) &&
-            'success' in response &&
-            'message' in response &&
-            'data' in response,
+            'success' in
+            response &&
+            'message' in
+            response &&
+            'data' in
+            response,
         );
     }
 }

@@ -5,6 +5,16 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { NHAN_VIEN_TRANG_THAI, TAI_KHOAN_TRANG_THAI } from '../../../core/constants/status.constants';
+import {
+    canManageEmployees,
+    canViewEmployeeDirectory,
+    canViewOrganization,
+    resolveUserRole,
+    RoleKey,
+} from '../../../core/guards/role.guard';
+import {
+    StorageService,
+} from '../../../core/services/storage.service';
 import { PhongBan } from '../../departments/models/phong-ban.model';
 import { PhongBanService } from '../../departments/services/phong-ban.service';
 import { PhuCap } from '../../payroll/models/phu-cap.model';
@@ -45,6 +55,8 @@ interface EmployeeSetupResult {
 export class AddEmployeeComponent implements OnInit {
     activeTab: FormTab['id'] = 'personal';
     toastMessage = '';
+    errorMessage = '';
+    isLoadingPermissions = false;
     isSaving = false;
     isLoadingWorkData = false;
     isLoadingSalaryData = false;
@@ -52,6 +64,7 @@ export class AddEmployeeComponent implements OnInit {
     createdEmployeeId: number | null = null;
     private pendingAllowanceIds: number[] = [];
     private accountSetupPending = false;
+
     phongBans: PhongBan[] = [];
     chucVus: ChucVu[] = [];
     trinhDos: TrinhDo[] = [];
@@ -118,19 +131,155 @@ export class AddEmployeeComponent implements OnInit {
         private readonly nhanVienPhuCapService: NhanVienPhuCapService,
         private readonly quyenService: QuyenService,
         private readonly taiKhoanService: TaiKhoanService,
+        private readonly storageService: StorageService,
         private readonly changeDetectorRef: ChangeDetectorRef,
     ) { }
     ngOnInit(): void {
-        this.loadWorkData();
-        this.loadSalaryData();
-        this.loadAccountData();
+        this.loadPermissions();
     }
+    get canViewEmployees(): boolean {
+        return canViewEmployeeDirectory(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canCreateEmployee(): boolean {
+        return canManageEmployees(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewDepartments(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewPositions(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewQualifications(): boolean {
+        return canViewOrganization(
+            this.getCurrentRole(),
+        );
+    }
+
+    get canViewAllowances(): boolean {
+        const role =
+            this.getCurrentRole();
+
+        return (
+            role === 'admin' ||
+            role === 'hr' ||
+            role === 'accountant' ||
+            role === 'manager' ||
+            role === 'director' ||
+            role === 'employee'
+        );
+    }
+
+    get canAssignAllowances(): boolean {
+        const role =
+            this.getCurrentRole();
+
+        return (
+            role === 'admin' ||
+            role === 'hr' ||
+            role === 'accountant'
+        );
+    }
+
+    get canConfigureAllowances(): boolean {
+        return (
+            this.canCreateEmployee &&
+            this.canViewAllowances &&
+            this.canAssignAllowances
+        );
+    }
+
+    get canViewAccounts(): boolean {
+        return (
+            this.getCurrentRole() ===
+            'admin'
+        );
+    }
+
+    get canCreateAccounts(): boolean {
+        return (
+            this.getCurrentRole() ===
+            'admin'
+        );
+    }
+
+    get canViewRoles(): boolean {
+        return (
+            this.getCurrentRole() ===
+            'admin'
+        );
+    }
+
+    get canConfigureAccount(): boolean {
+        return (
+            this.canCreateEmployee &&
+            this.canCreateAccounts &&
+            this.canViewRoles
+        );
+    }
+
+    get canUseEmployeeForm(): boolean {
+        return this.canCreateEmployee;
+    }
+
+    get visibleTabs(): FormTab[] {
+        return this.tabs.filter(
+            (tab) => {
+                if (
+                    tab.id === 'salary'
+                ) {
+                    return this.canConfigureAllowances;
+                }
+
+                if (
+                    tab.id === 'account'
+                ) {
+                    return this.canConfigureAccount;
+                }
+
+                return true;
+            },
+        );
+    }
+
+    retryPermissions(): void {
+        if (
+            this.isLoadingPermissions ||
+            this.isSaving
+        ) {
+            return;
+        }
+
+        this.loadPermissions();
+    }
+
     loadWorkData(): void {
+        if (!this.canCreateEmployee) {
+            return;
+        }
+
         this.isLoadingWorkData = true;
         forkJoin({
-            phongBans: this.phongBanService.getAll(),
-            chucVus: this.chucVuService.getAll(),
-            trinhDos: this.trinhDoService.getAll(),
+            phongBans: this.canViewDepartments
+                ? this.phongBanService.getAll()
+                : of([] as PhongBan[]),
+            chucVus: this.canViewPositions
+                ? this.chucVuService.getAll()
+                : of([] as ChucVu[]),
+            trinhDos: this.canViewQualifications
+                ? this.trinhDoService.getAll()
+                : of([] as TrinhDo[]),
         })
             .pipe(
                 finalize(() => {
@@ -155,6 +304,15 @@ export class AddEmployeeComponent implements OnInit {
             });
     }
     loadSalaryData(): void {
+        if (!this.canConfigureAllowances) {
+            this.phuCaps = [];
+            this.salaryForm.selectedAllowanceIds = [];
+            this.pendingAllowanceIds = [];
+            this.isLoadingSalaryData = false;
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.isLoadingSalaryData = true;
         this.phuCapService
             .getAll()
@@ -179,6 +337,16 @@ export class AddEmployeeComponent implements OnInit {
             });
     }
     loadAccountData(): void {
+        if (!this.canConfigureAccount) {
+            this.quyens = [];
+            this.accountForm.createAccount = false;
+            this.accountForm.maQuyen = null;
+            this.accountSetupPending = false;
+            this.isLoadingAccountData = false;
+            this.changeDetectorRef.markForCheck();
+            return;
+        }
+
         this.isLoadingAccountData = true;
         this.quyenService
             .getAll()
@@ -203,6 +371,13 @@ export class AddEmployeeComponent implements OnInit {
             });
     }
     toggleAllowance(maPC: number, checked: boolean): void {
+        if (
+            !this.canConfigureAllowances ||
+            this.isSaving
+        ) {
+            return;
+        }
+
         if (checked) {
             if (!this.salaryForm.selectedAllowanceIds.includes(maPC)) {
                 this.salaryForm.selectedAllowanceIds = [...this.salaryForm.selectedAllowanceIds, maPC];
@@ -215,6 +390,16 @@ export class AddEmployeeComponent implements OnInit {
         return this.salaryForm.selectedAllowanceIds.includes(maPC);
     }
     changeTab(tab: FormTab['id']): void {
+        if (
+            !this.canCreateEmployee ||
+            !this.visibleTabs.some(
+                (item) =>
+                    item.id === tab,
+            )
+        ) {
+            return;
+        }
+
         if (
             this.createdEmployeeId !== null &&
             (tab === 'personal' || tab === 'work')
@@ -237,29 +422,58 @@ export class AddEmployeeComponent implements OnInit {
     }
 
     continueToNextStep(): void {
+        if (
+            !this.canCreateEmployee ||
+            this.isSaving
+        ) {
+            return;
+        }
+
         if (!this.validatePersonalForm()) {
             return;
         }
         this.activeTab = 'work';
     }
     saveEmployee(): void {
-        if (this.isSaving) {
+        if (
+            !this.canCreateEmployee ||
+            this.isLoadingPermissions ||
+            this.isSaving
+        ) {
             return;
         }
 
         if (this.createdEmployeeId !== null) {
-            if (this.pendingAllowanceIds.length > 0 && !this.validateSalaryForm()) {
-                this.activeTab = 'salary';
-                return;
+            if (
+                this.pendingAllowanceIds.length > 0 &&
+                (
+                    !this.canConfigureAllowances ||
+                    !this.validateSalaryForm()
+                )
+            ) {
+                if (!this.canConfigureAllowances) {
+                    this.pendingAllowanceIds = [];
+                } else {
+                    this.activeTab = 'salary';
+                    return;
+                }
             }
 
             if (
                 this.accountSetupPending &&
                 this.accountForm.createAccount &&
-                !this.validateAccountForm()
+                (
+                    !this.canConfigureAccount ||
+                    !this.validateAccountForm()
+                )
             ) {
-                this.activeTab = 'account';
-                return;
+                if (!this.canConfigureAccount) {
+                    this.accountSetupPending = false;
+                    this.accountForm.createAccount = false;
+                } else {
+                    this.activeTab = 'account';
+                    return;
+                }
             }
 
             if (!this.accountForm.createAccount) {
@@ -280,12 +494,18 @@ export class AddEmployeeComponent implements OnInit {
             return;
         }
 
-        if (!this.validateSalaryForm()) {
+        if (
+            this.canConfigureAllowances &&
+            !this.validateSalaryForm()
+        ) {
             this.activeTab = 'salary';
             return;
         }
 
-        if (!this.validateAccountForm()) {
+        if (
+            this.canConfigureAccount &&
+            !this.validateAccountForm()
+        ) {
             this.activeTab = 'account';
             return;
         }
@@ -299,8 +519,14 @@ export class AddEmployeeComponent implements OnInit {
                 switchMap((employee) => {
                     this.createdEmployeeId = employee.maNV;
                     this.personalForm.employeeCode = this.formatEmployeeCode(employee.maNV);
-                    this.pendingAllowanceIds = [...this.salaryForm.selectedAllowanceIds];
-                    this.accountSetupPending = this.accountForm.createAccount;
+                    this.pendingAllowanceIds =
+                        this.canConfigureAllowances
+                            ? [...this.salaryForm.selectedAllowanceIds]
+                            : [];
+
+                    this.accountSetupPending =
+                        this.canConfigureAccount &&
+                        this.accountForm.createAccount;
                     this.changeDetectorRef.markForCheck();
 
                     return this.completePendingSetup(employee.maNV);
@@ -321,7 +547,10 @@ export class AddEmployeeComponent implements OnInit {
     }
 
     private retryPendingSetup(): void {
-        if (this.createdEmployeeId === null) {
+        if (
+            !this.canCreateEmployee ||
+            this.createdEmployeeId === null
+        ) {
             return;
         }
 
@@ -361,7 +590,10 @@ export class AddEmployeeComponent implements OnInit {
     private completePendingAllowances(employeeId: number): Observable<number[]> {
         const targetIds = [...this.pendingAllowanceIds];
 
-        if (targetIds.length === 0) {
+        if (
+            targetIds.length === 0 ||
+            !this.canConfigureAllowances
+        ) {
             return of([]);
         }
 
@@ -418,8 +650,29 @@ export class AddEmployeeComponent implements OnInit {
     }
 
     private completePendingAccount(employeeId: number): Observable<boolean> {
-        if (!this.accountForm.createAccount) {
+        if (
+            !this.accountForm.createAccount ||
+            !this.canConfigureAccount
+        ) {
             return of(true);
+        }
+
+        const createAccount = (): Observable<boolean> =>
+            this.taiKhoanService
+                .create({
+                    tenDangNhap: this.accountForm.username.trim(),
+                    matKhau: this.accountForm.password,
+                    maNV: employeeId,
+                    maQuyen: this.accountForm.maQuyen!,
+                    trangThai: this.mapAccountStatus(this.accountForm.status),
+                })
+                .pipe(
+                    map(() => true),
+                    catchError(() => of(false)),
+                );
+
+        if (!this.canViewAccounts) {
+            return createAccount();
         }
 
         return this.taiKhoanService
@@ -434,18 +687,7 @@ export class AddEmployeeComponent implements OnInit {
                         return of(true);
                     }
 
-                    return this.taiKhoanService
-                        .create({
-                            tenDangNhap: this.accountForm.username.trim(),
-                            matKhau: this.accountForm.password,
-                            maNV: employeeId,
-                            maQuyen: this.accountForm.maQuyen!,
-                            trangThai: this.mapAccountStatus(this.accountForm.status),
-                        })
-                        .pipe(
-                            map(() => true),
-                            catchError(() => of(false)),
-                        );
+                    return createAccount();
                 }),
                 catchError(() => of(false)),
             );
@@ -462,7 +704,12 @@ export class AddEmployeeComponent implements OnInit {
             this.showToast('Thêm nhân viên thành công.');
 
             window.setTimeout(() => {
-                void this.router.navigate(['/employees']);
+                if (this.canViewEmployees) {
+                    void this.router.navigate(['/employees']);
+                    return;
+                }
+
+                void this.router.navigate(['/dashboard']);
             }, 700);
 
             return;
@@ -517,13 +764,121 @@ export class AddEmployeeComponent implements OnInit {
             return;
         }
 
-        if (this.createdEmployeeId !== null) {
+        if (
+            this.canViewEmployees &&
+            this.createdEmployeeId !== null
+        ) {
             void this.router.navigate(['/employees', this.createdEmployeeId]);
             return;
         }
 
-        void this.router.navigate(['/employees']);
+        if (this.canViewEmployees) {
+            void this.router.navigate(['/employees']);
+            return;
+        }
+
+        void this.router.navigate(['/dashboard']);
     }
+    private loadPermissions(): void {
+        this.isLoadingPermissions =
+            true;
+
+        this.errorMessage =
+            '';
+
+        if (
+            !this.canCreateEmployee
+        ) {
+            this.phongBans = [];
+            this.chucVus = [];
+            this.trinhDos = [];
+            this.phuCaps = [];
+            this.quyens = [];
+
+            this.salaryForm
+                .selectedAllowanceIds = [];
+
+            this.pendingAllowanceIds =
+                [];
+
+            this.accountForm
+                .createAccount = false;
+
+            this.accountForm
+                .maQuyen = null;
+
+            this.accountSetupPending =
+                false;
+
+            this.activeTab =
+                'personal';
+
+            this.isLoadingPermissions =
+                false;
+
+            this.errorMessage =
+                'Bạn không có quyền thêm nhân viên.';
+
+            this.changeDetectorRef
+                .markForCheck();
+
+            return;
+        }
+
+        if (
+            !this.canConfigureAllowances
+        ) {
+            this.salaryForm
+                .selectedAllowanceIds = [];
+
+            this.pendingAllowanceIds =
+                [];
+        }
+
+        if (
+            !this.canConfigureAccount
+        ) {
+            this.accountForm
+                .createAccount = false;
+
+            this.accountForm
+                .maQuyen = null;
+
+            this.accountSetupPending =
+                false;
+        }
+
+        if (
+            !this.visibleTabs.some(
+                (tab) =>
+                    tab.id ===
+                    this.activeTab,
+            )
+        ) {
+            this.activeTab =
+                'personal';
+        }
+
+        this.isLoadingPermissions =
+            false;
+
+        this.loadWorkData();
+        this.loadSalaryData();
+        this.loadAccountData();
+
+        this.changeDetectorRef
+            .markForCheck();
+    }
+
+    private getCurrentRole():
+        RoleKey | null {
+
+        return resolveUserRole(
+            this.storageService
+                .getCurrentUser(),
+        );
+    }
+
     private buildPayload(): CreateNhanVienRequest {
         return {
             hoTen: this.personalForm.fullName.trim(),
@@ -558,6 +913,10 @@ export class AddEmployeeComponent implements OnInit {
         return true;
     }
     private validateSalaryForm(): boolean {
+        if (!this.canConfigureAllowances) {
+            return true;
+        }
+
         if (this.salaryForm.selectedAllowanceIds.length > 0 && !this.salaryForm.allowanceStartDate) {
             this.showToast('Vui lòng chọn ngày áp dụng phụ cấp.');
             return false;
@@ -565,7 +924,10 @@ export class AddEmployeeComponent implements OnInit {
         return true;
     }
     private validateAccountForm(): boolean {
-        if (!this.accountForm.createAccount) {
+        if (
+            !this.canConfigureAccount ||
+            !this.accountForm.createAccount
+        ) {
             return true;
         }
         const username = this.accountForm.username.trim();
