@@ -46,6 +46,7 @@ import {
   canViewEmployeeDirectory,
   canViewPayroll as canViewPayrollForRole,
   canViewRewards as canViewRewardsForRole,
+  canViewOrganization,
   resolveUserRole,
 } from '../../../core/guards/role.guard';
 
@@ -53,6 +54,9 @@ import {
 
 import { StorageService } from '../../../core/services/storage.service';
 
+import {
+  PhongBanService,
+} from '../../departments/services/phong-ban.service';
 
 import {
   HopDong,
@@ -110,6 +114,10 @@ import {
   NhanVien,
   NhanVienChiTiet,
 } from '../models/nhan-vien.model';
+
+import {
+  ChucVuService,
+} from '../services/chuc-vu.service';
 
 import {
   NhanVienService,
@@ -557,6 +565,11 @@ export class EmployeeProfileComponent
     private readonly nhanVienService:
       NhanVienService,
 
+    private readonly phongBanService:
+      PhongBanService,
+
+    private readonly chucVuService:
+      ChucVuService,
 
     private readonly hopDongService:
       HopDongService,
@@ -1260,8 +1273,8 @@ export class EmployeeProfileComponent
           ),
         );
 
-    forkJoin({
-      employee:
+    const employeeRequest =
+      (
         preloadedEmployee
           ? of(
             preloadedEmployee,
@@ -1272,7 +1285,124 @@ export class EmployeeProfileComponent
             : this.nhanVienService
               .getById(
                 this.employeeId,
-              ),
+              )
+      )
+        .pipe(
+          shareReplay({
+            bufferSize: 1,
+            refCount: true,
+          }),
+        );
+
+    const departmentNameRequest =
+      employeeRequest
+        .pipe(
+          switchMap(
+            employee => {
+              const detailedEmployee =
+                employee as Partial<NhanVienChiTiet>;
+
+              const existingName =
+                detailedEmployee.tenPB
+                  ?.trim();
+
+              if (existingName) {
+                return of(existingName);
+              }
+
+              const departmentId =
+                Number(employee.maPB);
+
+              if (
+                !canViewOrganization(
+                  this.currentRole,
+                ) ||
+                !Number.isInteger(
+                  departmentId,
+                ) ||
+                departmentId <= 0
+              ) {
+                return of(null);
+              }
+
+              return this.phongBanService
+                .getById(
+                  departmentId,
+                )
+                .pipe(
+                  map(
+                    department =>
+                      department.tenPB
+                        .trim() ||
+                      null,
+                  ),
+                  catchError(
+                    () => of(null),
+                  ),
+                );
+            },
+          ),
+        );
+
+    const positionNameRequest =
+      employeeRequest
+        .pipe(
+          switchMap(
+            employee => {
+              const detailedEmployee =
+                employee as Partial<NhanVienChiTiet>;
+
+              const existingName =
+                detailedEmployee.tenCV
+                  ?.trim();
+
+              if (existingName) {
+                return of(existingName);
+              }
+
+              const positionId =
+                Number(employee.maCV);
+
+              if (
+                !canViewOrganization(
+                  this.currentRole,
+                ) ||
+                !Number.isInteger(
+                  positionId,
+                ) ||
+                positionId <= 0
+              ) {
+                return of(null);
+              }
+
+              return this.chucVuService
+                .getById(
+                  positionId,
+                )
+                .pipe(
+                  map(
+                    position =>
+                      position.tenCV
+                        .trim() ||
+                      null,
+                  ),
+                  catchError(
+                    () => of(null),
+                  ),
+                );
+            },
+          ),
+        );
+
+    forkJoin({
+      employee:
+        employeeRequest,
+
+      departmentName:
+        departmentNameRequest,
+
+      positionName:
+        positionNameRequest,
 
       contracts:
         (
@@ -1489,6 +1619,8 @@ export class EmployeeProfileComponent
       .subscribe({
         next: ({
           employee,
+          departmentName,
+          positionName,
           contracts,
           contractTypes,
           attendance,
@@ -1503,6 +1635,8 @@ export class EmployeeProfileComponent
           this.employee =
             this.mapEmployee(
               employee,
+              positionName,
+              departmentName,
             );
 
           const contractTypeNames =
@@ -2630,6 +2764,14 @@ export class EmployeeProfileComponent
     employee:
       | NhanVien
       | NhanVienChiTiet,
+
+    positionName:
+      string | null =
+      null,
+
+    departmentName:
+      string | null =
+      null,
   ): EmployeeProfile {
 
     const fullName =
@@ -2669,6 +2811,7 @@ export class EmployeeProfileComponent
         employee.trangThai,
 
       position:
+        positionName ??
         detailedEmployee.tenCV ??
         (
           employee.maCV
@@ -2677,6 +2820,7 @@ export class EmployeeProfileComponent
         ),
 
       department:
+        departmentName ??
         detailedEmployee.tenPB ??
         (
           employee.maPB
