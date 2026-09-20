@@ -287,27 +287,6 @@ export class SettingsOverviewComponent
     }
 
 
-    get canCreateRoles():
-        boolean {
-
-        return this.canManageSettings;
-    }
-
-
-    get canEditRoles():
-        boolean {
-
-        return this.canManageSettings;
-    }
-
-
-    get canDeleteRoles():
-        boolean {
-
-        return this.canManageSettings;
-    }
-
-
     get canViewEmployees():
         boolean {
 
@@ -344,12 +323,11 @@ export class SettingsOverviewComponent
     get canCreateCurrentItem():
         boolean {
 
-        return this.activeSection ===
-            'accounts'
-
-            ? this.canCreateAccounts
-
-            : this.canCreateRoles;
+        return (
+            this.activeSection ===
+            'accounts' &&
+            this.canCreateAccounts
+        );
     }
 
 
@@ -791,18 +769,9 @@ export class SettingsOverviewComponent
         }
 
 
-        const route =
-            this.activeSection ===
-                'accounts'
-
-                ? '/settings/accounts/add'
-
-                : '/settings/roles/add';
-
-
         void this.router
             .navigate([
-                route,
+                '/settings/accounts/add',
             ]);
     }
     viewAccount(
@@ -866,28 +835,6 @@ export class SettingsOverviewComponent
                 role.maQuyen,
             ]);
     }
-    editRole(
-        role:
-            SettingsRoleListItem,
-    ): void {
-
-        if (
-            this.isLoading ||
-            !this.canEditRoles
-        ) {
-
-            return;
-        }
-
-
-        void this.router
-            .navigate([
-                '/settings/roles',
-                role.maQuyen,
-                'edit',
-            ]);
-    }
-
 
     exportCurrentList():
         void {

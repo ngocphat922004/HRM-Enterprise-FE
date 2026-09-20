@@ -18,7 +18,7 @@
 
     <div class="page-actions">
         @if (canCreateContracts) {
-        <button class="export-button" type="button" (click)="addContract()" [disabled]="isLoading">
+        <button class="save-button" type="button" (click)="addContract()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 5v14"></path>
@@ -153,7 +153,7 @@
             </p>
         </div>
 
-        <button class="export-button" type="button" (click)="openCreateContractType()" [disabled]="
+        <button class="save-button" type="button" (click)="openCreateContractType()" [disabled]="
                 isLoading ||
                 isSavingContractType ||
                 deletingContractTypeId !== null
@@ -195,7 +195,7 @@
                 aria-label="Mô tả loại hợp đồng" [disabled]="isSavingContractType" />
         </label>
 
-        <button class="export-button" type="button" (click)="saveContractType()" [disabled]="isSavingContractType">
+        <button class="save-button" type="button" (click)="saveContractType()" [disabled]="isSavingContractType">
             @if (isSavingContractType) {
             Đang lưu...
             } @else if (editingContractTypeId === null) {

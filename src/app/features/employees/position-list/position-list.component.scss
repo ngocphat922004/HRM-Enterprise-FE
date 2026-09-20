@@ -170,8 +170,7 @@
 }
 
 .position-filter-card select,
-.reset-filter-button,
-.export-button {
+.reset-filter-button {
     min-height: 46px;
     border    :
         1px solid var(--color-border);
@@ -181,6 +180,15 @@
     color:
         var(--color-text-primary);
     font-size: 14px;
+}
+
+.export-button {
+    min-height   : 46px;
+    border       : 1px solid var(--color-success);
+    border-radius: 10px;
+    background   : var(--color-success);
+    color        : #ffffff;
+    font-size    : 14px;
 }
 
 .position-filter-card select {
@@ -210,13 +218,23 @@
     cursor         : pointer;
 }
 
-.reset-filter-button:hover,
-.export-button:hover {
+.reset-filter-button:hover:not(:disabled) {
     border-color:
         var(--color-primary);
     color: var(--color-primary);
     background:
         var(--color-primary-light);
+}
+
+.export-button:hover:not(:disabled) {
+    border-color: var(--color-success-hover);
+    color       : #ffffff;
+    background  : var(--color-success-hover);
+}
+
+.export-button:disabled {
+    opacity: 0.6;
+    cursor : not-allowed;
 }
 
 .reset-filter-button .lucide-icon,

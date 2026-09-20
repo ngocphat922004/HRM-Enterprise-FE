@@ -23,25 +23,34 @@
     font-size: var(--font-size-label);
 }
 
-.export-button,
-.filter-export-button {
+.export-button {
     min-height     : 44px;
     display        : inline-flex;
     align-items    : center;
     justify-content: center;
     gap            : 9px;
     padding        : 0 18px;
-    border         : 1px solid #d7d2e5;
+    border         : 1px solid var(--color-success);
     border-radius  : 8px;
-    background     : var(--color-surface);
-    color          : #40394d;
+    background     : var(--color-success);
+    color          : #ffffff;
     font-size      : 13px;
     font-weight    : 600;
     cursor         : pointer;
+    transition     :
+        border-color 150ms ease,
+        background 150ms ease,
+        color 150ms ease,
+        opacity 150ms ease;
 }
 
-.export-button:disabled,
-.filter-export-button:disabled {
+.export-button:hover:not(:disabled) {
+    border-color: var(--color-success-hover);
+    background  : var(--color-success-hover);
+    color       : #ffffff;
+}
+
+.export-button:disabled {
     opacity: .55;
     cursor : not-allowed;
 }
@@ -112,7 +121,7 @@
 
 .department-filter-card {
     display              : grid;
-    grid-template-columns: minmax(260px, 1fr) 220px auto;
+    grid-template-columns: minmax(260px, 1fr) 220px;
     gap                  : 14px;
     margin-top           : 24px;
     padding              : 20px;
@@ -158,12 +167,6 @@
 .department-filter-card select:focus {
     border-color: var(--color-primary);
     box-shadow  : 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
-}
-
-.filter-export-button {
-    border-color: var(--color-primary);
-    background  : var(--color-primary);
-    color       : var(--color-surface);
 }
 
 .department-table-card {
@@ -361,10 +364,6 @@ tbody tr:hover {
     .department-filter-card {
         grid-template-columns: 1fr 1fr;
     }
-
-    .department-search {
-        grid-column: 1 / -1;
-    }
 }
 
 @media (max-width: 680px) {
@@ -376,8 +375,8 @@ tbody tr:hover {
     }
 
     .page-actions,
-    .export-button,
-    .filter-export-button {
+    .save-button,
+    .export-button {
         width: 100%;
     }
 

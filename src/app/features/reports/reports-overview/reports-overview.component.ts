@@ -338,7 +338,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             return;
         }
 
-        const emptyRow = {
+        const baseEmptyRow = {
             Nhóm: '',
             'Chỉ tiêu': '',
             'Giá trị': '',
@@ -347,10 +347,16 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             'Tổng nhân viên': '',
             'Đang làm việc': '',
             'Tổng ngày công': '',
-            'Tổng thực lĩnh': '',
             Tháng: '',
             'Nghỉ phép': '',
         };
+
+        const emptyRow = this.canViewPayroll
+            ? {
+                ...baseEmptyRow,
+                'Tổng thực lĩnh': '',
+            }
+            : baseEmptyRow;
 
         const rows: object[] = [
             {
@@ -395,42 +401,46 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                 'Chỉ tiêu': 'Đơn nghỉ chờ duyệt',
                 'Giá trị': this.stats.donNghiChoDuyet,
             },
-            {
-                ...emptyRow,
-                Nhóm: 'Tổng quan',
-                'Chỉ tiêu': 'Tổng quỹ lương',
-                'Giá trị': this.stats.tongQuyLuong,
-            },
-            {
-                ...emptyRow,
-                Nhóm: 'Quỹ lương',
-                'Chỉ tiêu': 'Lương cơ bản',
-                'Giá trị': this.payrollSummary.tongLuongCoBan,
-            },
-            {
-                ...emptyRow,
-                Nhóm: 'Quỹ lương',
-                'Chỉ tiêu': 'Phụ cấp',
-                'Giá trị': this.payrollSummary.tongPhuCap,
-            },
-            {
-                ...emptyRow,
-                Nhóm: 'Quỹ lương',
-                'Chỉ tiêu': 'Thưởng',
-                'Giá trị': this.payrollSummary.tongThuong,
-            },
-            {
-                ...emptyRow,
-                Nhóm: 'Quỹ lương',
-                'Chỉ tiêu': 'Khấu trừ',
-                'Giá trị': this.payrollSummary.tongKhauTru,
-            },
-            {
-                ...emptyRow,
-                Nhóm: 'Quỹ lương',
-                'Chỉ tiêu': 'Thực lĩnh',
-                'Giá trị': this.payrollSummary.tongThucLinh,
-            },
+            ...(this.canViewPayroll
+                ? [
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Tổng quan',
+                        'Chỉ tiêu': 'Tổng quỹ lương',
+                        'Giá trị': this.stats.tongQuyLuong,
+                    },
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Quỹ lương',
+                        'Chỉ tiêu': 'Lương cơ bản',
+                        'Giá trị': this.payrollSummary.tongLuongCoBan,
+                    },
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Quỹ lương',
+                        'Chỉ tiêu': 'Phụ cấp',
+                        'Giá trị': this.payrollSummary.tongPhuCap,
+                    },
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Quỹ lương',
+                        'Chỉ tiêu': 'Thưởng',
+                        'Giá trị': this.payrollSummary.tongThuong,
+                    },
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Quỹ lương',
+                        'Chỉ tiêu': 'Khấu trừ',
+                        'Giá trị': this.payrollSummary.tongKhauTru,
+                    },
+                    {
+                        ...emptyRow,
+                        Nhóm: 'Quỹ lương',
+                        'Chỉ tiêu': 'Thực lĩnh',
+                        'Giá trị': this.payrollSummary.tongThucLinh,
+                    },
+                ]
+                : []),
             {
                 ...emptyRow,
                 Nhóm: 'Hợp đồng',
@@ -487,7 +497,11 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                 'Tổng nhân viên': department.tongNhanVien,
                 'Đang làm việc': department.nhanVienDangLam,
                 'Tổng ngày công': department.tongNgayCong,
-                'Tổng thực lĩnh': department.tongThucLinh,
+                ...(this.canViewPayroll
+                    ? {
+                        'Tổng thực lĩnh': department.tongThucLinh,
+                    }
+                    : {}),
             })),
             ...this.monthlyPoints.map((point) => ({
                 ...emptyRow,
@@ -495,7 +509,11 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                 Tháng: `${point.thang}/${point.nam}`,
                 'Tổng nhân viên': point.tongNhanVien,
                 'Tổng ngày công': point.tongNgayCong,
-                'Tổng thực lĩnh': point.tongThucLinh,
+                ...(this.canViewPayroll
+                    ? {
+                        'Tổng thực lĩnh': point.tongThucLinh,
+                    }
+                    : {}),
                 'Nghỉ phép': point.tongNghiPhep,
             })),
         ];

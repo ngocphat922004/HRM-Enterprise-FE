@@ -1,9 +1,15 @@
 <section class="payroll-heading">
     <div>
         <nav class="breadcrumb" aria-label="Điều hướng">
+            @if (currentRole === 'employee') {
+            <span>
+                Hồ sơ của tôi
+            </span>
+            } @else {
             <a routerLink="/dashboard">
                 Tổng quan
             </a>
+            }
 
             <span>/</span>
 

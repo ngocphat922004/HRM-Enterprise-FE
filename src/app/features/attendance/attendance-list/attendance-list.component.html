@@ -1,8 +1,10 @@
 <section class="attendance-heading">
     <div>
         <nav class="breadcrumb" aria-label="Điều hướng">
-            <a routerLink="/dashboard">
-                Tổng quan
+            <a [routerLink]="currentRole === 'employee' && currentEmployeeId !== null
+                ? ['/employees', currentEmployeeId]
+                : ['/dashboard']">
+                {{ currentRole === 'employee' ? 'Hồ sơ của tôi' : 'Tổng quan' }}
             </a>
 
             <span>/</span>
@@ -63,7 +65,7 @@
         }
 
         @if (isSelfServiceView || canViewAttendance) {
-        <button class="primary-button" type="button" (click)="exportExcel()" [disabled]="isLoading">
+        <button class="export-button" type="button" (click)="exportExcel()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3v12"></path>

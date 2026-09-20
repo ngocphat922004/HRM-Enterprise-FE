@@ -82,14 +82,15 @@
 }
 
 .export-button {
-    color     : var(--color-text-primary);
-    background: var(--color-surface);
+    border-color: var(--color-success);
+    color       : #ffffff;
+    background  : var(--color-success);
 }
 
 .export-button:hover:not(:disabled) {
-    border-color: var(--color-primary);
-    color       : var(--color-primary);
-    background  : var(--color-primary-light);
+    border-color: var(--color-success-hover);
+    color       : #ffffff;
+    background  : var(--color-success-hover);
 }
 
 .create-button .lucide-icon,

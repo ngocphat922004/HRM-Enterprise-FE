@@ -229,7 +229,8 @@
 
                 @if (canViewEmployees) {
                 <div class="card-tools">
-                    <button type="button" aria-label="Xuất Excel" (click)="exportEmployees()" [disabled]="
+                    <button class="card-export-button" type="button" aria-label="Xuất Excel" (click)="exportEmployees()"
+                        [disabled]="
                             isLoading ||
                             employees.length === 0
                         ">

@@ -1,9 +1,13 @@
 <section class="detail-heading">
     <div>
         <p class="breadcrumb">
-            @if (canViewEmployee) {
+            @if (canViewEmployees) {
             <a routerLink="/employees">
                 Nhân sự
+            </a>
+            } @else if (canViewEmployee) {
+            <a [routerLink]="['/employees', contract.maNV]">
+                Hồ sơ của tôi
             </a>
             } @else {
             <span>

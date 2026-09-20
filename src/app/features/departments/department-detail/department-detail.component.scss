@@ -239,6 +239,23 @@
     background: var(--color-primary-light);
 }
 
+.card-tools .card-export-button {
+    border    : 1px solid var(--color-success);
+    color     : #ffffff;
+    background: var(--color-success);
+}
+
+.card-tools .card-export-button:hover:not(:disabled) {
+    border-color: var(--color-success-hover);
+    color       : #ffffff;
+    background  : var(--color-success-hover);
+}
+
+.card-tools .card-export-button:disabled {
+    opacity: 0.6;
+    cursor : not-allowed;
+}
+
 .card-tools .lucide-icon {
     width : 18px;
     height: 18px;

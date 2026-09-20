@@ -6,7 +6,7 @@
 
     <div class="page-actions">
         @if (canCreateDepartments) {
-        <button class="filter-export-button" type="button" (click)="addDepartment()">
+        <button class="save-button" type="button" (click)="addDepartment()">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 5v14"></path>
@@ -125,19 +125,6 @@
             Ngừng hoạt động
         </option>
     </select>
-
-    @if (canViewDepartments) {
-    <button type="button" class="filter-export-button" (click)="exportReport()"
-        [disabled]="isLoading || filteredDepartments.length === 0">
-        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3v12"></path>
-            <path d="m7 10 5 5 5-5"></path>
-            <path d="M5 21h14"></path>
-        </svg>
-        Xuất báo cáo
-    </button>
-    }
 </section>
 
 <section class="department-table-card">

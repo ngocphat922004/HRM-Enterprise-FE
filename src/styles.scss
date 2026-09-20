@@ -13,6 +13,7 @@
     --color-text-primary  : #171425;
     --color-text-secondary: #625d70;
     --color-success       : #16a34a;
+    --color-success-hover : #15803d;
     --color-warning       : #f59e0b;
     --color-danger        : #c91d1d;
     --color-info          : #2563eb;
@@ -529,37 +530,57 @@ svg {
     transition     :
         background 150ms ease,
         border-color 150ms ease,
-        color 150ms ease;
+        color 150ms ease,
+        opacity 150ms ease;
 }
 
-.cancel-button,
-.export-button {
+/* Hủy / Quay lại */
+.cancel-button {
     border    : 1px solid var(--color-border);
-    color     : var(--color-surface);
-    background: var(--color-danger);
+    color     : var(--color-text-primary);
+    background: var(--color-surface);
 }
 
-.cancel-button:hover,
-.export-button:hover {
+.cancel-button:hover:not(:disabled) {
     border-color: var(--color-primary);
     color       : var(--color-primary);
+    background  : var(--color-primary-light);
 }
 
+/* Xuất Excel */
+.export-button {
+    border    : 1px solid var(--color-success);
+    color     : #ffffff;
+    background: var(--color-success);
+}
+
+.export-button:hover:not(:disabled) {
+    border-color: var(--color-success-hover);
+    color       : #ffffff;
+    background  : var(--color-success-hover);
+}
+
+/* Lưu / Tiếp tục */
 .save-button,
 .continue-button {
     border    : 1px solid var(--color-primary);
-    color     : var(--color-surface);
+    color     : #ffffff;
     background: var(--color-primary);
 }
 
 .save-button:hover:not(:disabled),
-.continue-button:hover {
+.continue-button:hover:not(:disabled) {
     border-color: var(--color-primary-hover);
+    color       : #ffffff;
     background  : var(--color-primary-hover);
 }
 
-.save-button:disabled {
-    opacity: 0.65;
+/* Disabled */
+.cancel-button:disabled,
+.save-button:disabled,
+.export-button:disabled,
+.continue-button:disabled {
+    opacity: 0.6;
     cursor : not-allowed;
 }
 

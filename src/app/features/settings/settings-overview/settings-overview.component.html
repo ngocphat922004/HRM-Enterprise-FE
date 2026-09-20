@@ -16,7 +16,7 @@
 
     <div class="settings-heading__actions">
         @if (canViewCurrentList) {
-        <button class="secondary-action-button" type="button" (click)="exportCurrentList()" [disabled]="isLoading">
+        <button class="export-button" type="button" (click)="exportCurrentList()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path>
@@ -33,11 +33,7 @@
                 <path d="M12 5v14M5 12h14"></path>
             </svg>
 
-            {{
-            activeSection === 'accounts'
-            ? 'Thêm tài khoản'
-            : 'Thêm quyền'
-            }}
+            Thêm tài khoản
         </button>
         }
     </div>
@@ -620,7 +616,7 @@
                 </h2>
 
                 <p>
-                    Quản lý tên quyền,
+                    Xem tên quyền,
                     mô tả và số tài khoản
                     đang được gán.
                 </p>
@@ -665,16 +661,18 @@
                         </svg>
                     </span>
 
-                    @if (canEditRoles) {
                     <button type="button" (click)="
-                                                editRole(role)
-                                            " aria-label="Chỉnh sửa quyền">
+                                                viewRole(role)
+                                            " aria-label="Xem chi tiết quyền">
                         <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                            <path
+                                d="M2.06 12.35a1 1 0 0 1 0-.7C3.5 8.1 7 5.5 12 5.5s8.5 2.6 9.94 6.15a1 1 0 0 1 0 .7C20.5 15.9 17 18.5 12 18.5s-8.5-2.6-9.94-6.15Z">
+                            </path>
+
+                            <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                     </button>
-                    }
                 </header>
 
                 <span class="role-card__code">
@@ -735,16 +733,7 @@
                     nội dung tìm kiếm hiện tại.
                 </span>
 
-                @if (
-                roles.length === 0 &&
-                canCreateRoles
-                ) {
-                <button type="button" (click)="
-                                                createCurrentItem()
-                                            ">
-                    Thêm quyền
-                </button>
-                } @else if (roles.length > 0) {
+                @if (roles.length > 0) {
                 <button type="button" (click)="
                                                 resetFilters()
                                             ">

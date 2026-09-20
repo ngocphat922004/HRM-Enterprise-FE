@@ -65,7 +65,7 @@
         }
 
         @if (canExportLeave) {
-        <button class="secondary-button" type="button" (click)="exportReport()" [disabled]="
+        <button class="export-button" type="button" (click)="exportReport()" [disabled]="
                     isLoading ||
                     processingRequestId !== null
                 ">

@@ -43,7 +43,8 @@
 }
 
 .primary-action-button,
-.secondary-action-button {
+.secondary-action-button,
+.export-button {
     min-height     : 46px;
     padding        : 0 18px;
     border-radius  : 10px;
@@ -84,7 +85,8 @@
 }
 
 .primary-action-button .lucide-icon,
-.secondary-action-button .lucide-icon {
+.secondary-action-button .lucide-icon,
+.export-button .lucide-icon {
     width : 18px;
     height: 18px;
 }

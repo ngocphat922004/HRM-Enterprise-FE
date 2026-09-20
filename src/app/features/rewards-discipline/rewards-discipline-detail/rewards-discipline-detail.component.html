@@ -15,487 +15,6 @@
         <h1>
             Chi tiết quyết định
         </h1>
-        <section class="rewards-discipline-detail-heading">
-            <div>
-                <nav class="breadcrumb" aria-label="Điều hướng">
-                    <a routerLink="/rewards-discipline">
-                        Khen thưởng, kỷ luật
-                    </a>
-
-                    <span>/</span>
-
-                    <strong>
-                        Chi tiết quyết định
-                    </strong>
-                </nav>
-
-                <h1>
-                    Chi tiết quyết định
-                </h1>
-
-                <p>
-                    Mã quyết định:
-                    <strong>
-                        {{ decisionCode }}
-                    </strong>
-                </p>
-            </div>
-
-            @if (decision) {
-            <div class="decision-detail-actions">
-                @if (canEditDecisions) {
-                <button class="edit-decision-button" type="button" (click)="editDecision()" [disabled]="isLoading">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 20h9"></path>
-
-                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                    </svg>
-
-                    Chỉnh sửa
-                </button>
-                }
-
-                @if (canViewDecisions) {
-                <button class="print-button" type="button" (click)="printDecision()" [disabled]="isLoading">
-                    <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-
-                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-
-                        <rect width="12" height="8" x="6" y="14"></rect>
-                    </svg>
-
-                    In quyết định
-                </button>
-                }
-            </div>
-            }
-        </section>
-
-        @if (isLoading) {
-        <section class="state-card state-card--loading" aria-live="polite">
-            <span class="loading-spinner" aria-hidden="true"></span>
-
-            <h2>
-                Đang tải quyết định
-            </h2>
-
-            <p>
-                Đang lấy thông tin quyết định
-                và dữ liệu liên quan được phép xem.
-            </p>
-        </section>
-
-        } @else if (errorMessage) {
-        <section class="state-card state-card--error" role="alert">
-            <span class="state-card__icon">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-
-                    <path d="M12 8v4"></path>
-
-                    <path d="M12 16h.01"></path>
-                </svg>
-            </span>
-
-            <h2>
-                Không thể mở quyết định
-            </h2>
-
-            <p>
-                {{ errorMessage }}
-            </p>
-
-            <div class="state-card__actions">
-                @if (decisionId !== null) {
-                <button type="button" (click)="retry()" [disabled]="isLoading">
-                    Thử lại
-                </button>
-                }
-
-                <button class="state-secondary-button" type="button" (click)="backToList()" [disabled]="isLoading">
-                    Quay lại danh sách
-                </button>
-            </div>
-        </section>
-
-        } @else if (!decision) {
-        <section class="state-card state-card--empty">
-            <span class="state-card__icon">
-                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-
-                    <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path>
-
-                    <path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
-                </svg>
-            </span>
-
-            <h2>
-                Không có dữ liệu quyết định
-            </h2>
-
-            <p>
-                Không tìm thấy thông tin cho quyết định
-                <strong>
-                    {{ decisionCode }}
-                </strong>.
-            </p>
-
-            <button type="button" (click)="backToList()">
-                Quay lại danh sách quyết định
-            </button>
-        </section>
-
-        } @else {
-        <section class="employee-payroll-card decision-employee-card">
-            <div class="employee-payroll-card__profile">
-                @if (
-                canViewEmployees &&
-                decision.hinhAnh
-                ) {
-                <img [src]="decision.hinhAnh" [alt]="decision.hoTen" />
-                } @else {
-                <span class="employee-avatar">
-                    @if (canViewEmployees) {
-                    {{
-                    getInitials(
-                    decision.hoTen
-                    )
-                    }}
-                    } @else {
-                    NV
-                    }
-                </span>
-                }
-
-                <div>
-                    <span>
-                        Nhân viên được áp dụng quyết định
-                    </span>
-
-                    <h2>
-                        @if (canViewEmployees) {
-                        {{ decision.hoTen }}
-                        } @else {
-                        Nhân viên #{{ decision.maNV }}
-                        }
-                    </h2>
-
-                    <p>
-                        Mã NV
-                        {{ decision.maNV }}
-
-                        @if (
-                        canViewEmployees &&
-                        canViewDepartments
-                        ) {
-                        ·
-
-                        {{
-                        decision.tenPB ||
-                        'Chưa phân phòng'
-                        }}
-                        }
-
-                        @if (
-                        canViewEmployees &&
-                        canViewPositions
-                        ) {
-                        ·
-
-                        {{
-                        decision.tenCV ||
-                        'Chưa có chức vụ'
-                        }}
-                        }
-                    </p>
-                </div>
-            </div>
-
-            <span class="decision-type-badge" [class.decision-type-badge--reward]="
-                            isReward
-                        " [class.decision-type-badge--discipline]="
-                            isDiscipline
-                        ">
-                {{ decision.loai }}
-            </span>
-        </section>
-
-        <section class="rewards-discipline-detail-layout">
-            <div class="rewards-discipline-detail-main">
-                <article class="payslip-card decision-content-card" [class.decision-content-card--reward]="
-                                isReward
-                            " [class.decision-content-card--discipline]="
-                                isDiscipline
-                            ">
-                    <header class="payslip-card__header">
-                        <div>
-                            <span class="payslip-card__eyebrow">
-                                QUYẾT ĐỊNH
-                            </span>
-
-                            <h2>
-                                {{ decision.loai }}
-                            </h2>
-
-                            <p>
-                                {{ decisionCode }}
-                            </p>
-                        </div>
-
-                        <span class="decision-main-icon">
-                            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="8" r="6"></circle>
-
-                                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
-                            </svg>
-                        </span>
-                    </header>
-
-                    <div class="decision-information-grid">
-                        <div>
-                            <span>
-                                Ngày quyết định
-                            </span>
-
-                            <strong>
-                                {{
-                                decision.ngayQuyetDinh
-                                | date:'dd/MM/yyyy'
-                                }}
-                            </strong>
-                        </div>
-
-                        <div>
-                            <span>
-                                Số tiền
-                            </span>
-
-                            <strong>
-                                {{
-                                decision.soTien
-                                | number:'1.0-0'
-                                }}
-                                đ
-                            </strong>
-                        </div>
-                    </div>
-
-                    <section class="decision-reason-card">
-                        <span>
-                            Lý do và nội dung
-                        </span>
-
-                        <p>
-                            {{
-                            decision.lyDo ||
-                            'Không có nội dung hoặc lý do bổ sung.'
-                            }}
-                        </p>
-                    </section>
-
-                    <footer class="decision-signature">
-                        <div>
-                            <span>
-                                Người nhận quyết định
-                            </span>
-
-                            <strong>
-                                @if (canViewEmployees) {
-                                {{ decision.hoTen }}
-                                } @else {
-                                Nhân viên #{{ decision.maNV }}
-                                }
-                            </strong>
-                        </div>
-
-                        <div>
-                            <span>
-                                Người ban hành quyết định
-                            </span>
-
-                            <strong>
-                                Ký, ghi rõ họ tên
-                            </strong>
-                        </div>
-                    </footer>
-                </article>
-
-            </div>
-
-            <aside class="rewards-discipline-detail-aside">
-                <section class="employee-information-card">
-                    <header>
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="8" r="4"></circle>
-
-                            <path d="M4 22a8 8 0 0 1 16 0"></path>
-                        </svg>
-
-                        <h2>
-                            Thông tin nhân viên
-                        </h2>
-                    </header>
-
-                    <dl>
-                        <div>
-                            <dt>
-                                Mã nhân viên
-                            </dt>
-
-                            <dd>
-                                {{ decision.maNV }}
-                            </dd>
-                        </div>
-
-                        @if (canViewEmployees) {
-                        <div>
-                            <dt>
-                                Email
-                            </dt>
-
-                            <dd>
-                                {{
-                                decision.email ||
-                                'Chưa có email'
-                                }}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt>
-                                Số điện thoại
-                            </dt>
-
-                            <dd>
-                                {{
-                                decision.sdt ||
-                                'Chưa có số điện thoại'
-                                }}
-                            </dd>
-                        </div>
-                        }
-
-                        @if (
-                        canViewEmployees &&
-                        canViewDepartments
-                        ) {
-                        <div>
-                            <dt>
-                                Phòng ban
-                            </dt>
-
-                            <dd>
-                                {{
-                                decision.tenPB ||
-                                'Chưa phân phòng'
-                                }}
-                            </dd>
-                        </div>
-                        }
-
-                        @if (
-                        canViewEmployees &&
-                        canViewPositions
-                        ) {
-                        <div>
-                            <dt>
-                                Chức vụ
-                            </dt>
-
-                            <dd>
-                                {{
-                                decision.tenCV ||
-                                'Chưa có chức vụ'
-                                }}
-                            </dd>
-                        </div>
-                        }
-                    </dl>
-
-                    @if (canViewEmployees) {
-                    <button type="button" (click)="viewEmployee()">
-                        Xem hồ sơ nhân viên
-
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M5 12h14"></path>
-
-                            <path d="m12 5 7 7-7 7"></path>
-                        </svg>
-                    </button>
-                    } @else {
-                    <p>
-                        Bạn không có quyền xem thông tin chi tiết nhân viên.
-                    </p>
-                    }
-                </section>
-
-                <section class="payroll-meta-card">
-                    <header>
-                        <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-
-                            <path d="M14 2v6h6"></path>
-                        </svg>
-
-                        <h2>
-                            Thông tin quyết định
-                        </h2>
-                    </header>
-
-                    <dl>
-                        <div>
-                            <dt>
-                                Mã quyết định
-                            </dt>
-
-                            <dd>
-                                {{ decisionCode }}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt>
-                                Loại
-                            </dt>
-
-                            <dd>
-                                {{ decision.loai }}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt>
-                                Ngày ban hành
-                            </dt>
-
-                            <dd>
-                                {{
-                                decision.ngayQuyetDinh
-                                | date:'dd/MM/yyyy'
-                                }}
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
-            </aside>
-        </section>
-        }
-
-        @if (toastMessage) {
-        <div class="page-toast" role="status">
-            {{ toastMessage }}
-        </div>
-        }
 
         <p>
             Mã quyết định:
@@ -507,6 +26,7 @@
 
     @if (decision) {
     <div class="decision-detail-actions">
+        @if (canEditDecisions) {
         <button class="edit-decision-button" type="button" (click)="editDecision()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -517,7 +37,9 @@
 
             Chỉnh sửa
         </button>
+        }
 
+        @if (canViewDecisions) {
         <button class="print-button" type="button" (click)="printDecision()" [disabled]="isLoading">
             <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -530,6 +52,7 @@
 
             In quyết định
         </button>
+        }
     </div>
     }
 </section>
@@ -543,8 +66,8 @@
     </h2>
 
     <p>
-        Đang lấy thông tin quyết định,
-        nhân viên và phòng ban từ hệ thống.
+        Đang lấy thông tin quyết định
+        và dữ liệu liên quan được phép xem.
     </p>
 </section>
 
@@ -614,15 +137,22 @@
 } @else {
 <section class="employee-payroll-card decision-employee-card">
     <div class="employee-payroll-card__profile">
-        @if (decision.hinhAnh) {
+        @if (
+        canViewEmployees &&
+        decision.hinhAnh
+        ) {
         <img [src]="decision.hinhAnh" [alt]="decision.hoTen" />
         } @else {
         <span class="employee-avatar">
+            @if (canViewEmployees) {
             {{
             getInitials(
             decision.hoTen
             )
             }}
+            } @else {
+            NV
+            }
         </span>
         }
 
@@ -632,35 +162,49 @@
             </span>
 
             <h2>
+                @if (canViewEmployees) {
                 {{ decision.hoTen }}
+                } @else {
+                Nhân viên #{{ decision.maNV }}
+                }
             </h2>
 
             <p>
                 Mã NV
                 {{ decision.maNV }}
 
+                @if (
+                canViewEmployees &&
+                canViewDepartments
+                ) {
                 ·
 
                 {{
                 decision.tenPB ||
                 'Chưa phân phòng'
                 }}
+                }
 
+                @if (
+                canViewEmployees &&
+                canViewPositions
+                ) {
                 ·
 
                 {{
                 decision.tenCV ||
                 'Chưa có chức vụ'
                 }}
+                }
             </p>
         </div>
     </div>
 
     <span class="decision-type-badge" [class.decision-type-badge--reward]="
-                            isReward
-                        " [class.decision-type-badge--discipline]="
-                            isDiscipline
-                        ">
+                    isReward
+                " [class.decision-type-badge--discipline]="
+                    isDiscipline
+                ">
         {{ decision.loai }}
     </span>
 </section>
@@ -668,10 +212,10 @@
 <section class="rewards-discipline-detail-layout">
     <div class="rewards-discipline-detail-main">
         <article class="payslip-card decision-content-card" [class.decision-content-card--reward]="
-                                isReward
-                            " [class.decision-content-card--discipline]="
-                                isDiscipline
-                            ">
+                        isReward
+                    " [class.decision-content-card--discipline]="
+                        isDiscipline
+                    ">
             <header class="payslip-card__header">
                 <div>
                     <span class="payslip-card__eyebrow">
@@ -746,7 +290,11 @@
                     </span>
 
                     <strong>
+                        @if (canViewEmployees) {
                         {{ decision.hoTen }}
+                        } @else {
+                        Nhân viên #{{ decision.maNV }}
+                        }
                     </strong>
                 </div>
 
@@ -790,6 +338,7 @@
                     </dd>
                 </div>
 
+                @if (canViewEmployees) {
                 <div>
                     <dt>
                         Email
@@ -815,7 +364,12 @@
                         }}
                     </dd>
                 </div>
+                }
 
+                @if (
+                canViewEmployees &&
+                canViewDepartments
+                ) {
                 <div>
                     <dt>
                         Phòng ban
@@ -828,7 +382,12 @@
                         }}
                     </dd>
                 </div>
+                }
 
+                @if (
+                canViewEmployees &&
+                canViewPositions
+                ) {
                 <div>
                     <dt>
                         Chức vụ
@@ -841,8 +400,10 @@
                         }}
                     </dd>
                 </div>
+                }
             </dl>
 
+            @if (canViewEmployees) {
             <button type="button" (click)="viewEmployee()">
                 Xem hồ sơ nhân viên
 
@@ -853,6 +414,11 @@
                     <path d="m12 5 7 7-7 7"></path>
                 </svg>
             </button>
+            } @else {
+            <p>
+                Bạn không có quyền xem thông tin chi tiết nhân viên.
+            </p>
+            }
         </section>
 
         <section class="payroll-meta-card">
