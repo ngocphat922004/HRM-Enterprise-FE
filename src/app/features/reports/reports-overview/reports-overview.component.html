@@ -9,7 +9,7 @@
         </h1>
 
         <p>
-            Theo dõi nhân sự, chấm công,
+            Theo dõi nhân sự, hợp đồng, chấm công,
             nghỉ phép, quỹ lương và quyết định
             trong cùng một kỳ.
         </p>
@@ -420,6 +420,39 @@
 
         </div>
     </article>
+
+    <article class="
+                            report-stat-card
+                            report-stat-card--blue
+                        ">
+        <span class="report-stat-card__icon">
+            <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 2h9l5 5v15H6z"></path>
+                <path d="M14 2v6h6"></path>
+                <path d="M9 13h6"></path>
+                <path d="M9 17h6"></path>
+            </svg>
+        </span>
+
+        <div>
+            <span>
+                Hợp đồng trong kỳ
+            </span>
+
+            <strong>
+                @if (canViewContracts && canViewEmployees) {
+                {{
+                contractSummary
+                .tongHopDong
+                | number
+                }}
+                } @else {
+                —
+                }
+            </strong>
+        </div>
+    </article>
 </section>
 
 @if (!hasReportData) {
@@ -554,6 +587,99 @@
         <div class="panel-empty-state">
             <strong>
                 Không có quyền xem dữ liệu quỹ lương
+            </strong>
+        </div>
+        }
+    </article>
+
+    <article class="report-panel">
+        <header class="report-panel__header">
+            <div>
+                <h2>
+                    Tổng hợp hợp đồng
+                </h2>
+
+                <p>
+                    {{ periodLabel }}
+                </p>
+            </div>
+
+            <span class="
+                                    panel-icon
+                                    panel-icon--blue
+                                ">
+                <svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 2h9l5 5v15H6z"></path>
+                    <path d="M14 2v6h6"></path>
+                    <path d="M9 13h6"></path>
+                    <path d="M9 17h6"></path>
+                </svg>
+            </span>
+        </header>
+
+        @if (canViewContracts && canViewEmployees) {
+        <div class="payroll-summary-list">
+            <div>
+                <span>
+                    Còn hiệu lực
+                </span>
+
+                <strong class="positive-value">
+                    {{
+                    contractSummary
+                    .conHieuLuc
+                    | number
+                    }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Hết hiệu lực
+                </span>
+
+                <strong>
+                    {{
+                    contractSummary
+                    .hetHieuLuc
+                    | number
+                    }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Hết hạn trong kỳ
+                </span>
+
+                <strong class="negative-value">
+                    {{
+                    contractSummary
+                    .hetHanTrongKy
+                    | number
+                    }}
+                </strong>
+            </div>
+        </div>
+
+        <div class="payroll-total">
+            <span>
+                Tổng hợp đồng trong kỳ
+            </span>
+
+            <strong>
+                {{
+                contractSummary
+                .tongHopDong
+                | number
+                }}
+            </strong>
+        </div>
+        } @else {
+        <div class="panel-empty-state">
+            <strong>
+                Không có quyền xem dữ liệu hợp đồng
             </strong>
         </div>
         }

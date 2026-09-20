@@ -45,6 +45,13 @@
     font-size: 14px;
 }
 
+.payroll-heading-actions {
+    display    : flex;
+    align-items: center;
+    flex-wrap  : wrap;
+    gap        : 10px;
+}
+
 .export-button {
     min-height     : 46px;
     display        : inline-flex;
@@ -350,7 +357,7 @@
 }
 
 .payroll-table th:nth-child(10) {
-    width: 100px;
+    width: 210px;
 }
 
 .payroll-table td {
@@ -473,8 +480,10 @@
 }
 
 .table-actions {
+    min-width  : 179px;
     display    : flex;
     align-items: center;
+    flex-wrap  : nowrap;
     gap        : 6px;
 }
 
@@ -930,6 +939,13 @@
     .payroll-heading {
         align-items   : stretch;
         flex-direction: column;
+    }
+
+    .payroll-heading-actions {
+        width                : 100%;
+        display              : grid;
+        grid-template-columns: 1fr;
+        gap                  : 10px;
     }
 
     .payroll-heading h1 {

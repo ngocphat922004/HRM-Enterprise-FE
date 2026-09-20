@@ -120,6 +120,10 @@ import {
 } from '../services/chuc-vu.service';
 
 import {
+  TrinhDoService,
+} from '../services/trinh-do.service';
+
+import {
   NhanVienService,
 } from '../services/nhan-vien.service';
 
@@ -165,6 +169,9 @@ export class EmployeeProfileComponent
 
   employeeId =
     0;
+
+  qualificationName =
+    '';
 
   isSelfServiceView =
     false;
@@ -552,6 +559,12 @@ export class EmployeeProfileComponent
     EmployeeProfileHistoryItem[] =
     [];
 
+  get canViewQualification(): boolean {
+    return canViewOrganization(
+      this.currentRole,
+    );
+  }
+
   constructor(
     private readonly route:
       ActivatedRoute,
@@ -570,6 +583,9 @@ export class EmployeeProfileComponent
 
     private readonly chucVuService:
       ChucVuService,
+
+    private readonly trinhDoService:
+      TrinhDoService,
 
     private readonly hopDongService:
       HopDongService,
@@ -1394,6 +1410,43 @@ export class EmployeeProfileComponent
           ),
         );
 
+    const qualificationNameRequest =
+      employeeRequest
+        .pipe(
+          switchMap(
+            employee => {
+              const qualificationId =
+                Number(employee.maTD);
+
+              if (
+                !this.canViewQualification ||
+                !Number.isInteger(
+                  qualificationId,
+                ) ||
+                qualificationId <= 0
+              ) {
+                return of(null);
+              }
+
+              return this.trinhDoService
+                .getById(
+                  qualificationId,
+                )
+                .pipe(
+                  map(
+                    qualification =>
+                      qualification.tenTD
+                        .trim() ||
+                      null,
+                  ),
+                  catchError(
+                    () => of(null),
+                  ),
+                );
+            },
+          ),
+        );
+
     forkJoin({
       employee:
         employeeRequest,
@@ -1403,6 +1456,9 @@ export class EmployeeProfileComponent
 
       positionName:
         positionNameRequest,
+
+      qualificationName:
+        qualificationNameRequest,
 
       contracts:
         (
@@ -1621,6 +1677,7 @@ export class EmployeeProfileComponent
           employee,
           departmentName,
           positionName,
+          qualificationName,
           contracts,
           contractTypes,
           attendance,
@@ -1637,6 +1694,14 @@ export class EmployeeProfileComponent
               employee,
               positionName,
               departmentName,
+            );
+
+          this.qualificationName =
+            qualificationName ??
+            (
+              employee.maTD
+                ? `Trình độ #${employee.maTD}`
+                : 'Chưa cập nhật'
             );
 
           const contractTypeNames =
@@ -2737,6 +2802,9 @@ export class EmployeeProfileComponent
 
     this.employee.id =
       this.employeeId;
+
+    this.qualificationName =
+      '';
 
     this.contracts =
       [];

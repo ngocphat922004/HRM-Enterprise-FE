@@ -12,12 +12,14 @@ import { finalize, forkJoin, of } from 'rxjs';
 
 import {
     CHAM_CONG_TRANG_THAI,
+    HOP_DONG_TRANG_THAI,
     KHEN_THUONG_KY_LUAT_LOAI,
     NGHI_PHEP_TRANG_THAI,
     NHAN_VIEN_TRANG_THAI,
 } from '../../../core/constants/status.constants';
 import {
     canViewAttendance as canViewAttendanceForRole,
+    canViewContracts as canViewContractsForRole,
     canViewEmployeeDirectory,
     canViewLeave as canViewLeaveForRole,
     canViewOrganization,
@@ -38,6 +40,8 @@ import {
     NhanVienChiTiet,
 } from '../../employees/models/nhan-vien.model';
 import { NhanVienService } from '../../employees/services/nhan-vien.service';
+import { HopDong } from '../../contracts/models/hop-dong.model';
+import { HopDongService } from '../../contracts/services/hop-dong.service';
 import { NghiPhep } from '../../leave/models/nghi-phep.model';
 import { NghiPhepService } from '../../leave/services/nghi-phep.service';
 import { BangLuong } from '../../payroll/models/bang-luong.model';
@@ -54,6 +58,13 @@ import {
     ReportsOverviewStats,
     ReportsPayrollSummary,
 } from './reports-overview.model';
+
+interface ReportsContractSummary {
+    tongHopDong: number;
+    conHieuLuc: number;
+    hetHieuLuc: number;
+    hetHanTrongKy: number;
+}
 
 @Component({
     selector: 'app-reports-overview',
@@ -81,6 +92,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
 
     stats: ReportsOverviewStats = this.createEmptyStats();
     payrollSummary: ReportsPayrollSummary = this.createEmptyPayrollSummary();
+    contractSummary: ReportsContractSummary = this.createEmptyContractSummary();
     decisionSummary: ReportsDecisionSummary = this.createEmptyDecisionSummary();
     departmentRows: ReportsDepartmentRow[] = [];
     monthlyPoints: ReportsMonthlyPoint[] = [];
@@ -93,6 +105,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
     private departmentsData: PhongBan[] = [];
     private attendanceData: ChamCong[] = [];
     private leavesData: NghiPhep[] = [];
+    private contractsData: HopDong[] = [];
     private payrollsData: BangLuong[] = [];
     private decisionsData: KhenThuongKyLuat[] = [];
     private hasLoadedData = false;
@@ -105,6 +118,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         private readonly phongBanService: PhongBanService,
         private readonly chamCongService: ChamCongService,
         private readonly nghiPhepService: NghiPhepService,
+        private readonly hopDongService: HopDongService,
         private readonly bangLuongService: BangLuongService,
         private readonly khenThuongKyLuatService: KhenThuongKyLuatService,
         private readonly excelExportService: ExcelExportService,
@@ -172,6 +186,15 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         );
     }
 
+    get canViewContracts(): boolean {
+        return (
+            this.canViewReports &&
+            canViewContractsForRole(
+                this.currentRole,
+            )
+        );
+    }
+
     get canViewPayroll(): boolean {
         return (
             this.canViewReports &&
@@ -219,6 +242,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                     item.tongThucLinh > 0,
             ) ||
             this.monthlyPoints.length > 0 ||
+            this.contractSummary.tongHopDong > 0 ||
             this.decisionSummary.tongKhenThuong > 0 ||
             this.decisionSummary.tongKyLuat > 0
         );
@@ -409,6 +433,30 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             },
             {
                 ...emptyRow,
+                Nhóm: 'Hợp đồng',
+                'Chỉ tiêu': 'Tổng hợp đồng trong kỳ',
+                'Giá trị': this.contractSummary.tongHopDong,
+            },
+            {
+                ...emptyRow,
+                Nhóm: 'Hợp đồng',
+                'Chỉ tiêu': 'Còn hiệu lực',
+                'Giá trị': this.contractSummary.conHieuLuc,
+            },
+            {
+                ...emptyRow,
+                Nhóm: 'Hợp đồng',
+                'Chỉ tiêu': 'Hết hiệu lực',
+                'Giá trị': this.contractSummary.hetHieuLuc,
+            },
+            {
+                ...emptyRow,
+                Nhóm: 'Hợp đồng',
+                'Chỉ tiêu': 'Hết hạn trong kỳ',
+                'Giá trị': this.contractSummary.hetHanTrongKy,
+            },
+            {
+                ...emptyRow,
                 Nhóm: 'Khen thưởng và kỷ luật',
                 'Chỉ tiêu': 'Số quyết định khen thưởng',
                 'Giá trị': this.decisionSummary.tongKhenThuong,
@@ -570,6 +618,12 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                         .getAll()
                     : of<NghiPhep[]>([]),
 
+            contracts:
+                this.canViewContracts
+                    ? this.hopDongService
+                        .getAll()
+                    : of<HopDong[]>([]),
+
             payrolls:
                 this.canViewPayroll
                     ? this.bangLuongService
@@ -595,6 +649,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                     departments,
                     attendance,
                     leaves,
+                    contracts,
                     payrolls,
                     decisions,
                 }) => {
@@ -602,6 +657,7 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                     let scopedDepartments = departments;
                     let scopedAttendance = attendance;
                     let scopedLeaves = leaves;
+                    let scopedContracts = contracts;
                     let scopedPayrolls = payrolls;
                     let scopedDecisions = decisions;
 
@@ -670,6 +726,14 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                                     ),
                             );
 
+                        scopedContracts =
+                            contracts.filter(
+                                (contract) =>
+                                    employeeIds.has(
+                                        contract.maNV,
+                                    ),
+                            );
+
                         scopedPayrolls =
                             payrolls.filter(
                                 (payroll) =>
@@ -701,6 +765,8 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                         scopedAttendance;
                     this.leavesData =
                         scopedLeaves;
+                    this.contractsData =
+                        scopedContracts;
                     this.payrollsData =
                         scopedPayrolls;
                     this.decisionsData =
@@ -784,6 +850,12 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                 this.leaveMatchesPeriod(leave),
         );
 
+        const periodContracts = this.contractsData.filter(
+            (contract) =>
+                scopedEmployeeIds.has(contract.maNV) &&
+                this.contractMatchesPeriod(contract),
+        );
+
         const periodDecisions = this.decisionsData.filter(
             (decision) =>
                 scopedEmployeeIds.has(decision.maNV) &&
@@ -810,6 +882,21 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             tyLeChamCong: attendanceRate,
             donNghiChoDuyet: periodLeaves.filter(
                 (leave) => leave.trangThai === NGHI_PHEP_TRANG_THAI.CHO_DUYET,
+            ).length,
+        };
+
+        this.contractSummary = {
+            tongHopDong: periodContracts.length,
+            conHieuLuc: periodContracts.filter(
+                (contract) =>
+                    contract.trangThai === HOP_DONG_TRANG_THAI.CON_HIEU_LUC,
+            ).length,
+            hetHieuLuc: periodContracts.filter(
+                (contract) =>
+                    contract.trangThai === HOP_DONG_TRANG_THAI.HET_HIEU_LUC,
+            ).length,
+            hetHanTrongKy: periodContracts.filter(
+                (contract) => this.contractEndsInPeriod(contract),
             ).length,
         };
 
@@ -1039,6 +1126,18 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
                 years.add(endYear);
             }
         });
+        this.contractsData.forEach((contract) => {
+            const startYear = this.extractYear(contract.ngayBatDau);
+            const endYear = this.extractYear(contract.ngayKetThuc);
+
+            if (startYear) {
+                years.add(startYear);
+            }
+
+            if (endYear) {
+                years.add(endYear);
+            }
+        });
         this.decisionsData.forEach((decision) => {
             const year = this.extractYear(decision.ngayQuyetDinh);
             if (year) {
@@ -1054,6 +1153,30 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             payroll.nam === this.filter.nam &&
             (this.filter.thang === null || payroll.thang === this.filter.thang)
         );
+    }
+
+    private contractMatchesPeriod(contract: HopDong): boolean {
+        const start = this.toDateValue(contract.ngayBatDau);
+
+        if (!start) {
+            return false;
+        }
+
+        const end = this.toDateValue(contract.ngayKetThuc);
+        const range = this.getPeriodRange(this.filter.nam, this.filter.thang);
+
+        return start <= range.end && (!end || end >= range.start);
+    }
+
+    private contractEndsInPeriod(contract: HopDong): boolean {
+        const end = this.toDateValue(contract.ngayKetThuc);
+
+        if (!end) {
+            return false;
+        }
+
+        const range = this.getPeriodRange(this.filter.nam, this.filter.thang);
+        return end >= range.start && end <= range.end;
     }
 
     private dateMatchesPeriod(value: string): boolean {
@@ -1134,6 +1257,15 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
             tongQuyLuong: 0,
             tyLeChamCong: 0,
             donNghiChoDuyet: 0,
+        };
+    }
+
+    private createEmptyContractSummary(): ReportsContractSummary {
+        return {
+            tongHopDong: 0,
+            conHieuLuc: 0,
+            hetHieuLuc: 0,
+            hetHanTrongKy: 0,
         };
     }
 
@@ -1242,10 +1374,13 @@ export class ReportsOverviewComponent implements OnInit, OnDestroy {
         this.departmentsData = [];
         this.attendanceData = [];
         this.leavesData = [];
+        this.contractsData = [];
         this.payrollsData = [];
         this.decisionsData = [];
         this.departments = [];
         this.stats = this.createEmptyStats();
+        this.contractSummary =
+            this.createEmptyContractSummary();
         this.payrollSummary =
             this.createEmptyPayrollSummary();
         this.decisionSummary =

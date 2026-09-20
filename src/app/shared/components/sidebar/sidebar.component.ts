@@ -192,26 +192,7 @@ export class SidebarComponent {
                     },
                 );
 
-        if (
-            currentEmployeeId ===
-            null
-        ) {
-            return visibleItems;
-        }
-
-        return [
-            {
-                label:
-                    'Hồ sơ của tôi',
-                icon:
-                    'employees',
-                route:
-                    `/employees/${currentEmployeeId}`,
-                exact:
-                    true,
-            },
-            ...visibleItems,
-        ];
+        return visibleItems;
     }
 
     close():
