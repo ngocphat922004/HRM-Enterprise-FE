@@ -262,6 +262,14 @@ export class HeaderUserComponent
         this.restoreTheme();
 
         this.loadCurrentUser();
+
+        if (
+            this.canOpenNotifications &&
+            !this.notificationsLoaded &&
+            !this.isNotificationLoading
+        ) {
+            this.loadNotifications();
+        }
     }
 
     /*

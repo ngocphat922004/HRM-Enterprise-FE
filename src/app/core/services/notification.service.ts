@@ -62,9 +62,23 @@ export class NotificationService {
             return [];
         }
 
+        /*
+         * API thực tế trả wrapper:
+         * { success, message, data: ThongBao[] }
+         *
+         * Phải ưu tiên lấy data trước khi kiểm tra object có phải
+         * thông báo hay không. Nếu kiểm tra `message` trước, wrapper
+         * có thể bị nhận nhầm thành một ThongBao.
+         */
+        const directData =
+            response['data'] ??
+            response['Data'];
+
+        if (Array.isArray(directData)) {
+            return directData;
+        }
+
         const preferredKeys = [
-            'data',
-            'Data',
             'items',
             'Items',
             'result',
@@ -84,76 +98,25 @@ export class NotificationService {
             '$values',
         ] as const;
 
-        const queue: unknown[] = [response];
-        const visited = new Set<unknown>();
+        for (const key of preferredKeys) {
+            const candidate = response[key];
 
-        while (queue.length > 0) {
-            const current = queue.shift();
-
-            if (
-                current === undefined ||
-                current === null ||
-                visited.has(current)
-            ) {
-                continue;
+            if (Array.isArray(candidate)) {
+                return candidate;
             }
 
-            if (typeof current === 'object') {
-                visited.add(current);
-            }
+            if (this.isRecord(candidate)) {
+                const nested =
+                    this.unwrapNotificationList(candidate);
 
-            if (Array.isArray(current)) {
-                if (current.length === 0) {
-                    return [];
-                }
-
-                if (
-                    current.some((item) =>
-                        this.looksLikeNotification(item),
-                    )
-                ) {
-                    return current;
-                }
-
-                queue.push(...current);
-                continue;
-            }
-
-            if (!this.isRecord(current)) {
-                continue;
-            }
-
-            if (this.looksLikeNotification(current)) {
-                return [current];
-            }
-
-            for (const key of preferredKeys) {
-                const candidate = current[key];
-
-                if (
-                    candidate !== undefined &&
-                    candidate !== null
-                ) {
-                    queue.unshift(candidate);
+                if (nested.length > 0) {
+                    return nested;
                 }
             }
+        }
 
-            for (const [key, value] of Object.entries(current)) {
-                if (
-                    preferredKeys.includes(
-                        key as typeof preferredKeys[number],
-                    )
-                ) {
-                    continue;
-                }
-
-                if (
-                    Array.isArray(value) ||
-                    this.isRecord(value)
-                ) {
-                    queue.push(value);
-                }
-            }
+        if (this.looksLikeNotification(response)) {
+            return [response];
         }
 
         return [];
@@ -176,8 +139,6 @@ export class NotificationService {
             'title',
             'noiDung',
             'NoiDung',
-            'message',
-            'content',
             'daDoc',
             'DaDoc',
             'isRead',

@@ -50,9 +50,13 @@
                 <div>
                     <strong>Thông báo</strong>
 
-                    @if (hasUnreadNotifications) {
+                    @if (isNotificationLoading) {
+                    <span>Đang tải...</span>
+                    } @else if (notifications.length === 0) {
+                    <span>Không có thông báo</span>
+                    } @else {
                     <span>
-                        {{ unreadNotificationCount }} chưa đọc
+                        {{ notifications.length }} thông báo · {{ unreadNotificationCount }} chưa đọc
                     </span>
                     }
                 </div>
@@ -81,16 +85,17 @@
             </div>
             } @else if (notifications.length === 0) {
             <div class="notification-state">
-                <p>Bạn chưa có thông báo.</p>
+                <p>Không có thông báo.</p>
             </div>
             } @else {
             <div class="notification-list">
                 @for (
                 notification of notifications;
-                track notification.maThongBao
+                track $index
                 ) {
                 <button type="button" class="notification-item" [class.notification-item--unread]="!notification.daDoc"
-                    (click)="openNotification(notification)">
+                    (click)="openNotification(notification)"
+                    [attr.aria-label]="notification.tieuDe + ', ' + (notification.daDoc ? 'Đã đọc' : 'Chưa đọc')">
                     <span class="notification-item__status"
                         [class.notification-item__status--unread]="!notification.daDoc" aria-hidden="true"></span>
 
@@ -99,16 +104,25 @@
                             {{ notification.tieuDe }}
                         </strong>
 
+                        @if (notification.noiDung) {
                         <span>
                             {{ notification.noiDung }}
                         </span>
+                        }
 
-                        <small>
-                            {{
-                            notification.ngayTao
-                            | date: 'dd/MM/yyyy HH:mm'
-                            }}
-                        </small>
+                        <div class="notification-item__meta">
+                            <small>
+                                {{
+                                notification.ngayTao
+                                | date: 'dd/MM/yyyy HH:mm'
+                                }}
+                            </small>
+
+                            <span class="notification-item__read-state"
+                                [class.notification-item__read-state--unread]="!notification.daDoc">
+                                {{ notification.daDoc ? 'Đã đọc' : 'Chưa đọc' }}
+                            </span>
+                        </div>
                     </span>
                 </button>
                 }
